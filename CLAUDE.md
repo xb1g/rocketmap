@@ -1,0 +1,268 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+**RocketMap** is a startup interactive planbook copilot - a "Playable Business Model Engine" that transforms business strategy into a living system. It enables users to validate assumptions, detect contradictions, and stress-test their startup ideas through AI-powered analysis.
+
+### Core Philosophy
+
+- AI analyzes structural coherence across business model components
+- AI extracts hidden assumptions from user inputs
+- AI simulates shock scenarios and reveals fragility points
+- AI acts as an adversarial validator, not just a content generator
+
+### MVP Scope
+
+1. **Business Model Canvas (BMC)** - 9-block interactive board with expandable deep-dive layers
+2. **Multi-Layer Architecture** - Each BMC block expands into specialized analysis layers:
+   - **Layer 0 (Canvas):** The 9-block BMC grid overview
+   - **Layer 1 (Block Detail):** Expanded view with AI-generated structured outputs (draft, assumptions, risks, questions)
+   - **Layer 2 (Deep Dive):** Block-specific research modules (e.g., Customer Segments → Market Research)
+3. **Per-block AI Copilot** - LLM assists within each block for content generation, analysis, and validation
+4. **System-level AI** - Cross-block reasoning that flags contradictions, missing links, and logical gaps (Consistency Checker)
+
+The critical differentiator is **multi-layer depth + cross-block reasoning** - not just filling boxes, but drilling into each block with specialized research tools while validating coherence across the entire business model.
+
+## Development Commands
+
+```bash
+# Development server (runs on http://localhost:3000)
+npm run dev
+
+# Production build
+npm run build
+
+# Run production build locally
+npm run start
+
+# Linting
+npm run lint
+```
+
+## Tech Stack
+
+- **Framework:** Next.js 16.1.6 (App Router)
+- **UI Library:** Radix UI Themes 3.3.0
+- **Styling:** Tailwind CSS v4 + custom CSS variables
+- **Fonts:** Lexend Deca (sans), Cormorant (display/serif), Geist Mono (mono)
+- **TypeScript:** Strict mode enabled
+
+## Architecture & Key Concepts
+
+### Design System: "Calm Until Critical"
+
+The interface maintains a neutral, professional state during normal operation. Visual emphasis (chromatic effects, glows, animations) emerges only when blocks become fragile or require attention.
+
+**State-Based Visual Language:**
+- **Calm:** Muted gray, subtle holographic borders, allows focus
+- **Healthy/Validated:** Green-blue shimmer with subtle glow
+- **Warning/Fragile:** Amber-gold with rainbow edge highlights
+- **Critical/Collapse Risk:** Hot pink-red with chromatic aberration and pulsing glow
+- **AI Analysis Active:** Cyan-purple holographic gradient with scanning effects
+
+### Multi-Layer Block Architecture
+
+Each BMC block supports expanding into deeper analysis layers:
+
+**Customer Segments → Market Research Layer:**
+- TAM / SAM / SOM estimation (with AI-assisted sizing)
+- Market segmentation (demographic, psychographic, behavioral, geographic)
+- Customer personas generation
+- Competitor landscape mapping
+- Market trends and growth drivers
+
+**Other blocks will have their own deep-dive layers** (planned):
+- Value Propositions → Feature-benefit mapping, competitive positioning matrix
+- Revenue Streams → Pricing strategy analysis, unit economics modeling
+- Channels → Channel effectiveness analysis, customer journey mapping
+- Key Resources → Resource gap analysis, build-vs-buy assessment
+- Cost Structure → Cost modeling, break-even analysis
+- Key Activities → Process mapping, capability assessment
+- Key Partnerships → Partnership evaluation framework
+- Customer Relationships → Retention strategy, lifecycle mapping
+
+### AI Architecture
+
+**Two levels of LLM integration:**
+
+1. **Block-level AI Copilot** - Operates within a single block or its deep-dive layer:
+   - Content drafting and refinement
+   - Research assistance (e.g., market sizing calculations for Customer Segments)
+   - Structured output generation (assumptions, risks, questions)
+   - Layer-specific analysis (e.g., TAM estimation, persona generation)
+
+2. **System-level AI (Consistency Checker)** - Operates across the entire canvas:
+   - Cross-block contradiction detection
+   - Missing link identification
+   - Coherence scoring
+   - Suggested fixes with specific block references
+
+AI prompts receive the **entire canvas as context** but focus on the selected block/layer while referencing others for consistency checking.
+
+### Data Structure
+
+Each BMC block is stored as structured JSON containing:
+- Block type (e.g., "Customer Segments", "Value Propositions")
+- User-entered content (per canvas mode: BMC / Lean)
+- AI-generated analysis (assumptions, risks, questions)
+- Deep-dive layer data (block-specific, e.g., market research results)
+- Confidence level (Low/Med/High)
+- State (calm/healthy/warning/critical)
+- Connections to other blocks
+
+### Component Organization
+
+```
+app/
+├── layout.tsx              # Radix Theme wrapper, global fonts
+├── globals.css             # CSS variables, chromatic effects, animations
+├── page.tsx                # Landing page
+├── dashboard/              # User dashboard with canvas list
+├── canvas/[slug]/          # Canvas view (BMC grid)
+│   ├── page.tsx            # Server component, data fetching
+│   └── CanvasClient.tsx    # Client component, interactive canvas
+├── components/
+│   ├── canvas/             # BMC grid, block cells, toolbar, connection lines
+│   │   ├── BMCGrid.tsx     # 9-block grid layout
+│   │   ├── BlockCell.tsx   # Individual block with state variants
+│   │   ├── CanvasToolbar.tsx # Mode toggle, actions
+│   │   └── constants.ts    # Block definitions and grid positions
+│   ├── blocks/             # (Planned) Expanded block views with deep-dive layers
+│   │   └── market-research/ # Customer Segments deep-dive (TAM, segmentation, etc.)
+│   └── ui/                 # Control panel, AI analysis panel
+├── api/
+│   ├── canvas/             # Canvas CRUD endpoints
+│   └── complete-onboarding/ # Onboarding flow
+lib/
+├── types/
+│   └── canvas.ts           # BlockType, BlockState, CanvasMode, BlockData types
+├── appwrite.ts             # Appwrite client SDK
+├── appwrite-server.ts      # Appwrite server SDK
+└── utils.ts                # Shared utilities
+```
+
+### Styling Approach
+
+- **CSS Variables** in `globals.css` for colors, states, and chromatic effects
+- **Tailwind** for layout, spacing, responsive design
+- **Radix Theme tokens** for component styling via props
+- **Custom animations** for holographic effects, state transitions, and glows
+
+Key classes:
+- `.chromatic-border` - Multi-color gradient borders
+- `.glow-{state}` - State-based shadow effects (calm/healthy/warning/critical/ai)
+- `.holographic-bg` / `.holographic-strong` - Gradient backgrounds with shimmer
+- `.glass-morphism` - Semi-transparent cards with backdrop blur
+- `.state-transition` - Smooth state changes (300ms/500ms)
+
+### Theme Configuration
+
+Radix Theme is configured in [app/layout.tsx](app/layout.tsx:37-43) with:
+- `appearance: "dark"`
+- `accentColor: "iris"` (purple-blue for holographic feel)
+- `grayColor: "gray"` (neutral surfaces)
+- `radius: "large"` (modern curves)
+
+## Development Guidelines
+
+### AI Prompt Engineering
+
+When implementing AI features, prompts must:
+1. Send the entire canvas state as context
+2. Instruct the model to focus on the selected block while cross-referencing others
+3. Return structured JSON output with all 4 required fields (draft, assumptions, risks, questions)
+4. Be versioned and stored in the repository (judges/evaluators value this)
+
+### Consistency Checker (System-Level AI)
+
+The killer feature. After users fill 2-3 blocks, it should:
+- Compare customer segments with channels and value propositions
+- Validate revenue streams match cost structures
+- Flag vague or contradictory statements
+- Suggest missing connections between blocks
+- Cross-reference deep-dive layer data (e.g., does TAM support the revenue projections?)
+
+Output format:
+- List of contradictions with specific block references
+- Severity indicators (minor/major/critical)
+- Suggested fixes or validation questions
+
+### Market Research Layer (Customer Segments Deep-Dive)
+
+**First deep-dive layer to implement.** When the Customer Segments block is expanded:
+
+1. **TAM/SAM/SOM Calculator** - AI-assisted market sizing with source citations
+2. **Segmentation Builder** - Define segments by demographics, psychographics, behavior, geography
+3. **Persona Generator** - AI creates detailed customer personas from segment data
+4. **Market Size Validation** - Cross-reference with industry data and benchmarks
+5. **Competitive Landscape** - Map competitors within each segment
+
+Each sub-module has its own LLM integration for research assistance, with results feeding back into the main Customer Segments block content and influencing cross-block consistency checks.
+
+### Visual Feedback Signals
+
+Two simple indicators make the system feel "alive":
+1. **Confidence meter per block** (Low/Med/High) - based on specificity of content and depth of research
+2. **Red flags count** - aggregated from AI-detected risks + contradictions
+3. **Depth indicator** - Shows how many layers have been explored per block
+
+### Animation Performance
+
+- Use `transform` and `opacity` for GPU acceleration
+- Respect `prefers-reduced-motion` (already implemented in globals.css)
+- Use `will-change` sparingly (only for active animations)
+- Debounce pan/zoom interactions
+
+### Accessibility
+
+- Keyboard navigation for all interactive elements
+- ARIA labels for canvas controls
+- Screen reader announcements for state changes
+- High contrast text even with chromatic effects (white on dark backgrounds)
+
+## Current State (as of 2026-02-14)
+
+The codebase currently has:
+- ✅ Radix UI + Tailwind setup complete
+- ✅ Dark theme with chromatic effects system implemented
+- ✅ Typography system (Lexend Deca, Cormorant, Geist Mono)
+- ✅ State-based glow and animation utilities
+- ✅ Landing page with auth flow
+- ✅ Appwrite integration (auth, database)
+- ✅ Dashboard with canvas list and onboarding
+- ✅ BMC grid layout (9 blocks) with BlockCell components
+- ✅ Canvas view with BMC/Lean mode toggle
+- ✅ Block definitions with grid positioning
+- ✅ Type system for canvas data (BlockType, BlockState, CanvasMode, BlockData)
+
+Next implementation steps:
+1. Add block expand/detail view (Layer 1 - structured AI outputs per block)
+2. Build Market Research deep-dive layer for Customer Segments (Layer 2 - TAM, segmentation, personas)
+3. Integrate LLM for per-block AI copilot (content drafting, analysis)
+4. Integrate LLM for system-level Consistency Checker (cross-block reasoning)
+5. Add AI analysis panel UI (assumptions, risks, questions display)
+6. Persist deep-dive layer data to Appwrite
+7. Build additional deep-dive layers for other blocks
+
+## Design Documentation
+
+See [docs/plans/2026-02-13-radix-chromatic-theme-design.md](docs/plans/2026-02-13-radix-chromatic-theme-design.md) for comprehensive design specifications including:
+- Complete color system and state definitions
+- Component architecture and layout details
+- Animation keyframes and timing functions
+- Technical implementation approach
+- Accessibility requirements
+
+## Demo Flow (3-minute pitch)
+
+1. Start with a vague startup idea
+2. Fill 2-3 blocks quickly with basic content
+3. Click "AI Analyze" on one block → show assumptions + risks + tests
+4. Expand Customer Segments → deep-dive into Market Research → AI estimates TAM/SAM/SOM
+5. Click "Run Consistency Check" → flags contradictions (e.g., TAM doesn't support revenue projections)
+6. Fix blocks based on feedback → rerun → fewer red flags, higher confidence
+7. End message: "This is a judgment amplifier, not a template filler"
+
+The goal is to show **depth (multi-layer drill-down) + breadth (cross-block reasoning)** within minutes.

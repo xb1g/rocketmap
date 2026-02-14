@@ -1,29 +1,17 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/appwrite-server';
 import { serverDatabases, DATABASE_ID, USERS_COLLECTION_ID } from '@/lib/appwrite';
-import { Query } from 'node-appwrite';
 
 export async function POST() {
   try {
     // Require authentication
     const user = await requireAuth();
 
-    // Find user document
-    const docs = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      USERS_COLLECTION_ID,
-      [Query.equal('userId', user.$id)]
-    );
-
-    if (docs.documents.length === 0) {
-      return NextResponse.json({ error: 'User document not found' }, { status: 404 });
-    }
-
-    // Update onboarding status
+    // Update onboarding status using Appwrite user ID as document ID
     await serverDatabases.updateDocument(
       DATABASE_ID,
       USERS_COLLECTION_ID,
-      docs.documents[0].$id,
+      user.$id,
       {
         onboardingCompleted: true,
       }

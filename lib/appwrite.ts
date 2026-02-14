@@ -1,5 +1,9 @@
-import { Client, Account, Databases } from 'appwrite';
-import { Client as ServerClient, Account as ServerAccount, Databases as ServerDatabases } from 'node-appwrite';
+import { Client, Account, Databases } from "appwrite";
+import {
+  Client as ServerClient,
+  Account as ServerAccount,
+  Databases as ServerDatabases,
+} from "node-appwrite";
 
 // Client-side SDK (browser)
 export const client = new Client()
@@ -19,6 +23,7 @@ export const serverAccount = new ServerAccount(serverClient);
 export const serverDatabases = new ServerDatabases(serverClient);
 
 // Constants for database
-export const DATABASE_ID = 'rocketmap_production';
-export const USERS_COLLECTION_ID = 'users';
-export const CANVASES_COLLECTION_ID = 'canvases';
+export const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
+export const USERS_COLLECTION_ID = "users";
+export const CANVASES_COLLECTION_ID = "canvases";
+export const BLOCKS_COLLECTION_ID = "blocks";

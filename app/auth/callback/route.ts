@@ -1,21 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { createAdminClient, SESSION_COOKIE } from '@/lib/appwrite-server';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check if we have the session cookie
-    const cookieStore = await cookies();
-    const session = cookieStore.get('a_session_' + process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID);
+    const userId = request.nextUrl.searchParams.get('userId');
+    const secret = request.nextUrl.searchParams.get('secret');
 
-    if (!session) {
-      // OAuth failed, redirect to landing with error
+    if (!userId || !secret) {
       const url = request.nextUrl.clone();
       url.pathname = '/';
       url.searchParams.set('error', 'auth_failed');
       return NextResponse.redirect(url);
     }
 
-    // Success - redirect to dashboard
+    // Exchange the token for a session
+    const { account } = createAdminClient();
+    const session = await account.createSession({ userId, secret });
+
+    // Set session cookie on our domain
+    const cookieStore = await cookies();
+    cookieStore.set(SESSION_COOKIE, session.secret, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      expires: new Date(session.expire),
+    });
+
+    // Redirect to dashboard
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     url.search = '';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Dialog, Button, Heading, Text, Flex } from '@radix-ui/themes';
+import { Dialog, Button, Heading, Text, Flex, VisuallyHidden } from '@radix-ui/themes';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -26,6 +26,9 @@ export function OnboardingModal({ isOpen, onComplete }: OnboardingModalProps) {
   return (
     <Dialog.Root open={isOpen}>
       <Dialog.Content maxWidth="600px" className="glow-ai">
+        <VisuallyHidden>
+          <Dialog.Title>Onboarding</Dialog.Title>
+        </VisuallyHidden>
         <Flex direction="column" gap="4">
           {/* Header with Skip button */}
           <Flex justify="between" align="center">

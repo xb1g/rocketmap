@@ -30,7 +30,7 @@ export async function generateSlug(title: string, userId: string): Promise<strin
         DATABASE_ID,
         CANVASES_COLLECTION_ID,
         [
-          Query.equal('userId', userId),
+          Query.equal('ownerId', userId),
           Query.equal('slug', finalSlug),
         ]
       );
