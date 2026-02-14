@@ -6,28 +6,57 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Authentication Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+RocketMap uses Appwrite for authentication with Google OAuth.
 
-## Learn More
+### Prerequisites
 
-To learn more about Next.js, take a look at the following resources:
+1. Create an Appwrite account at [cloud.appwrite.io](https://cloud.appwrite.io)
+2. Create a new project
+3. Enable Google OAuth provider in **Authentication > Settings**
+4. Add your OAuth redirect URLs:
+   - Development: `http://localhost:3000/auth/callback`
+   - Production: `https://yourdomain.com/auth/callback`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Environment Variables
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Copy `.env.example` to `.env.local` and fill in your Appwrite credentials:
+
+```bash
+cp .env.example .env.local
+```
+
+Required variables:
+- `NEXT_PUBLIC_APPWRITE_ENDPOINT` - Your Appwrite endpoint
+- `NEXT_PUBLIC_APPWRITE_PROJECT_ID` - Your project ID
+- `APPWRITE_API_KEY` - Server API key with documents.read/write permissions
+
+### Database Setup
+
+Create these collections in your Appwrite database:
+
+**Database:** `rocketmap_production`
+
+**Collection:** `users`
+- Attributes:
+  - `userId` (string, required)
+  - `email` (string, required)
+  - `name` (string)
+  - `onboardingCompleted` (boolean, default: false)
+
+**Collection:** `canvases`
+- Attributes:
+  - `userId` (string, required)
+  - `title` (string, required)
+  - `slug` (string, required)
+  - `blocks` (string, required) - JSON stringified data
+
+Set permissions appropriately (user-level for canvases, server-only for users).
 
 ## Deploy on Vercel
 
