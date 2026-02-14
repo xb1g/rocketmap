@@ -14,7 +14,7 @@ interface DashboardClientProps {
     name: string;
   };
   onboardingCompleted: boolean;
-  canvases: any[];
+  canvases: { $id: string; title: string; slug: string; $updatedAt: string }[];
 }
 
 export function DashboardClient({ user, onboardingCompleted, canvases }: DashboardClientProps) {

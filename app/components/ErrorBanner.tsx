@@ -1,7 +1,6 @@
 'use client';
 
 import { Callout } from '@radix-ui/themes';
-import { useState, useEffect } from 'react';
 
 interface ErrorBannerProps {
   error: string | null;
@@ -14,13 +13,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 export function ErrorBanner({ error }: ErrorBannerProps) {
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    setVisible(true);
-  }, [error]);
-
-  if (!error || !visible) {
+  if (!error) {
     return null;
   }
 

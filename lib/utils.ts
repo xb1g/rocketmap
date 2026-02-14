@@ -41,7 +41,7 @@ export async function generateSlug(title: string, userId: string): Promise<strin
 
       finalSlug = `${slug}-${counter}`;
       counter++;
-    } catch (error) {
+    } catch {
       // Collection might not exist yet, that's okay
       break;
     }

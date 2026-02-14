@@ -18,7 +18,7 @@ export async function getSessionUser(): Promise<Models.User<Models.Preferences> 
     // Validate session with Appwrite
     const user = await serverAccount.get();
     return user;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

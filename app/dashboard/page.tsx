@@ -46,7 +46,7 @@ export default async function DashboardPage() {
   }
 
   // Fetch user's canvases
-  let canvases: any[] = [];
+  let canvases: { $id: string; title: string; slug: string; $updatedAt: string }[] = [];
   try {
     const canvasesResult = await serverDatabases.listDocuments(
       DATABASE_ID,
@@ -56,7 +56,7 @@ export default async function DashboardPage() {
         Query.orderDesc('$updatedAt'),
       ]
     );
-    canvases = canvasesResult.documents;
+    canvases = canvasesResult.documents as unknown as typeof canvases;
   } catch (error) {
     // Collection might not exist yet
     console.error('Error fetching canvases:', error);

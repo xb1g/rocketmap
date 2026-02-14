@@ -1,19 +1,20 @@
 'use client';
 
+import { Suspense } from 'react';
 import { Button, Heading, Text } from "@radix-ui/themes";
 import { useSearchParams } from 'next/navigation';
 import { account } from '@/lib/appwrite';
+import { OAuthProvider } from 'appwrite';
 import { ErrorBanner } from './components/ErrorBanner';
 
-export default function Home() {
+function LandingContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
 
   const handleSignIn = async () => {
     try {
-      // Initiate OAuth flow with Google
       account.createOAuth2Session(
-        'google',
+        OAuthProvider.Google,
         `${window.location.origin}/auth/callback`,
         `${window.location.origin}/?error=auth_failed`
       );
@@ -63,5 +64,13 @@ export default function Home() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense>
+      <LandingContent />
+    </Suspense>
   );
 }
