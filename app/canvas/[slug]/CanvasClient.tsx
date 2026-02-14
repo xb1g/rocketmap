@@ -1,18 +1,25 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import type { BlockData, BlockType, CanvasMode, CanvasTab, CanvasData, AIAnalysis } from '@/lib/types/canvas';
-import type { ConsistencyData } from '@/app/components/canvas/ConsistencyReport';
-import { BMCGrid } from '@/app/components/canvas/BMCGrid';
-import { CanvasToolbar } from '@/app/components/canvas/CanvasToolbar';
-import { CanvasTabs } from '@/app/components/canvas/CanvasTabs';
-import { NotesView } from '@/app/components/canvas/NotesView';
-import { CanvasSettingsModal } from '@/app/components/canvas/CanvasSettingsModal';
-import { BlockFocusPanel } from '@/app/components/canvas/BlockFocusPanel';
-import { AnalysisView } from '@/app/components/canvas/AnalysisView';
-import { ChatBar } from '@/app/components/ai/ChatBar';
-import { BlockChatSection } from '@/app/components/ai/BlockChatSection';
+import { useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
+import type {
+  BlockData,
+  BlockType,
+  CanvasMode,
+  CanvasTab,
+  CanvasData,
+  AIAnalysis,
+} from "@/lib/types/canvas";
+import type { ConsistencyData } from "@/app/components/canvas/ConsistencyReport";
+import { BMCGrid } from "@/app/components/canvas/BMCGrid";
+import { CanvasToolbar } from "@/app/components/canvas/CanvasToolbar";
+import { CanvasTabs } from "@/app/components/canvas/CanvasTabs";
+import { NotesView } from "@/app/components/canvas/NotesView";
+import { CanvasSettingsModal } from "@/app/components/canvas/CanvasSettingsModal";
+import { BlockFocusPanel } from "@/app/components/canvas/BlockFocusPanel";
+import { AnalysisView } from "@/app/components/canvas/AnalysisView";
+import { ChatBar } from "@/app/components/ai/ChatBar";
+import { BlockChatSection } from "@/app/components/ai/BlockChatSection";
 
 interface CanvasClientProps {
   canvasId: string;
@@ -20,19 +27,23 @@ interface CanvasClientProps {
   initialBlocks: BlockData[];
 }
 
-type SaveStatus = 'saved' | 'saving' | 'unsaved';
+type SaveStatus = "saved" | "saving" | "unsaved";
 
-function deriveBlockState(block: BlockData): BlockData['state'] {
-  if (!block.aiAnalysis) return 'calm';
-  if (block.confidenceScore >= 0.7 && block.riskScore < 0.3) return 'healthy';
-  if (block.riskScore >= 0.6) return 'critical';
-  if (block.riskScore >= 0.3 || block.confidenceScore < 0.5) return 'warning';
-  return 'healthy';
+function deriveBlockState(block: BlockData): BlockData["state"] {
+  if (!block.aiAnalysis) return "calm";
+  if (block.confidenceScore >= 0.7 && block.riskScore < 0.3) return "healthy";
+  if (block.riskScore >= 0.6) return "critical";
+  if (block.riskScore >= 0.3 || block.confidenceScore < 0.5) return "warning";
+  return "healthy";
 }
 
-export function CanvasClient({ canvasId, initialCanvasData, initialBlocks }: CanvasClientProps) {
+export function CanvasClient({
+  canvasId,
+  initialCanvasData,
+  initialBlocks,
+}: CanvasClientProps) {
   const router = useRouter();
-  const [mode, setMode] = useState<CanvasMode>('bmc');
+  const [mode, setMode] = useState<CanvasMode>("bmc");
   const [blocks, setBlocks] = useState<Map<BlockType, BlockData>>(() => {
     const map = new Map<BlockType, BlockData>();
     for (const block of initialBlocks) {
@@ -40,32 +51,38 @@ export function CanvasClient({ canvasId, initialCanvasData, initialBlocks }: Can
     }
     return map;
   });
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [focusedBlock, setFocusedBlock] = useState<BlockType | null>(null);
   const [expandedBlock, setExpandedBlock] = useState<BlockType | null>(null);
-  const [activeTab, setActiveTab] = useState<CanvasTab>('canvas');
+  const [activeTab, setActiveTab] = useState<CanvasTab>("canvas");
   const [canvasData, setCanvasData] = useState<CanvasData>(initialCanvasData);
   const [showSettings, setShowSettings] = useState(false);
   const [analyzingBlock, setAnalyzingBlock] = useState<BlockType | null>(null);
-  const [consistencyData, setConsistencyData] = useState<ConsistencyData | null>(null);
+  const [consistencyData, setConsistencyData] =
+    useState<ConsistencyData | null>(null);
   const [isCheckingConsistency, setIsCheckingConsistency] = useState(false);
   const [notes, setNotes] = useState(initialCanvasData.description);
 
-  const saveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const saveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
 
   // Save block content
   const saveBlock = useCallback(
     async (blockType: BlockType, content: { bmc: string; lean: string }) => {
-      setSaveStatus('saving');
+      setSaveStatus("saving");
       try {
         const res = await fetch(`/api/canvas/${canvasId}/blocks`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ blockType, contentJson: JSON.stringify(content) }),
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            blockType,
+            contentJson: JSON.stringify(content),
+          }),
         });
-        setSaveStatus(res.ok ? 'saved' : 'unsaved');
+        setSaveStatus(res.ok ? "saved" : "unsaved");
       } catch {
-        setSaveStatus('unsaved');
+        setSaveStatus("unsaved");
       }
     },
     [canvasId],
@@ -73,11 +90,13 @@ export function CanvasClient({ canvasId, initialCanvasData, initialBlocks }: Can
 
   // Save canvas metadata
   const saveCanvas = useCallback(
-    async (updates: Partial<Pick<CanvasData, 'title' | 'description' | 'isPublic'>>) => {
+    async (
+      updates: Partial<Pick<CanvasData, "title" | "description" | "isPublic">>,
+    ) => {
       try {
         const res = await fetch(`/api/canvas/${canvasId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updates),
         });
 
@@ -101,20 +120,21 @@ export function CanvasClient({ canvasId, initialCanvasData, initialBlocks }: Can
 
   const handleBlockChange = useCallback(
     (blockType: BlockType, value: string) => {
-      let updatedContent = { bmc: '', lean: '' };
+      let updatedContent = { bmc: "", lean: "" };
 
       setBlocks((prev) => {
         const next = new Map(prev);
         const existing = next.get(blockType);
-        const content = existing?.content ?? { bmc: '', lean: '' };
-        updatedContent = mode === 'lean'
-          ? { ...content, lean: value }
-          : { ...content, bmc: value };
+        const content = existing?.content ?? { bmc: "", lean: "" };
+        updatedContent =
+          mode === "lean"
+            ? { ...content, lean: value }
+            : { ...content, bmc: value };
         next.set(blockType, {
           ...existing!,
           blockType,
           content: updatedContent,
-          state: existing?.state ?? 'calm',
+          state: existing?.state ?? "calm",
           aiAnalysis: existing?.aiAnalysis ?? null,
           confidenceScore: existing?.confidenceScore ?? 0,
           riskScore: existing?.riskScore ?? 0,
@@ -122,7 +142,7 @@ export function CanvasClient({ canvasId, initialCanvasData, initialBlocks }: Can
         return next;
       });
 
-      setSaveStatus('unsaved');
+      setSaveStatus("unsaved");
 
       const existing = saveTimers.current.get(blockType);
       if (existing) clearTimeout(existing);
@@ -144,14 +164,17 @@ export function CanvasClient({ canvasId, initialCanvasData, initialBlocks }: Can
       setBlocks((prev) => {
         const next = new Map(prev);
         const b = next.get(blockType);
-        if (b) next.set(blockType, { ...b, state: 'ai' });
+        if (b) next.set(blockType, { ...b, state: "ai" });
         return next;
       });
 
       try {
-        const res = await fetch(`/api/canvas/${canvasId}/blocks/${blockType}/analyze`, {
-          method: 'POST',
-        });
+        const res = await fetch(
+          `/api/canvas/${canvasId}/blocks/${blockType}/analyze`,
+          {
+            method: "POST",
+          },
+        );
         const data = await res.json();
 
         if (res.ok) {
@@ -190,21 +213,27 @@ export function CanvasClient({ canvasId, initialCanvasData, initialBlocks }: Can
     setIsCheckingConsistency(true);
     try {
       const res = await fetch(`/api/canvas/${canvasId}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [{
-            role: 'user',
-            content: 'Run a full consistency check across all blocks. Use the checkConsistency tool to provide your structured analysis of contradictions, missing links, and overall coherence.',
-          }],
+          messages: [
+            {
+              role: "user",
+              content:
+                "Run a full consistency check across all blocks. Use the checkConsistency tool to provide your structured analysis of contradictions, missing links, and overall coherence.",
+            },
+          ],
         }),
       });
 
       // Parse streaming response for tool results
       const text = await res.text();
-      const lines = text.split('\n');
+      const lines = text.split("\n");
       for (const line of lines) {
-        if (line.includes('"toolName":"checkConsistency"') && line.includes('"result"')) {
+        if (
+          line.includes('"toolName":"checkConsistency"') &&
+          line.includes('"result"')
+        ) {
           try {
             // Try to extract the result from the stream
             const match = line.match(/"result":(\{[^}]+\})/);
@@ -227,13 +256,13 @@ export function CanvasClient({ canvasId, initialCanvasData, initialBlocks }: Can
   const handleNotesChange = useCallback(
     (value: string) => {
       setNotes(value);
-      const existing = saveTimers.current.get('__notes');
+      const existing = saveTimers.current.get("__notes");
       if (existing) clearTimeout(existing);
       saveTimers.current.set(
-        '__notes',
+        "__notes",
         setTimeout(() => {
           saveCanvas({ description: value });
-          saveTimers.current.delete('__notes');
+          saveTimers.current.delete("__notes");
         }, 1000),
       );
     },
@@ -242,14 +271,16 @@ export function CanvasClient({ canvasId, initialCanvasData, initialBlocks }: Can
 
   const handleDelete = useCallback(async () => {
     try {
-      await fetch(`/api/canvas/${canvasId}`, { method: 'DELETE' });
-      router.push('/dashboard');
+      await fetch(`/api/canvas/${canvasId}`, { method: "DELETE" });
+      router.push("/dashboard");
     } catch {
       // silently fail
     }
   }, [canvasId, router]);
 
-  const expandedBlockData = expandedBlock ? blocks.get(expandedBlock) : undefined;
+  const expandedBlockData = expandedBlock
+    ? blocks.get(expandedBlock)
+    : undefined;
 
   return (
     <div className="flex flex-col h-screen p-5 gap-3">
@@ -265,7 +296,7 @@ export function CanvasClient({ canvasId, initialCanvasData, initialBlocks }: Can
       <CanvasTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Tab content */}
-      {activeTab === 'canvas' && (
+      {activeTab === "canvas" && (
         <BMCGrid
           mode={mode}
           blocks={blocks}
@@ -278,7 +309,7 @@ export function CanvasClient({ canvasId, initialCanvasData, initialBlocks }: Can
         />
       )}
 
-      {activeTab === 'analysis' && (
+      {activeTab === "analysis" && (
         <AnalysisView
           blocks={blocks}
           consistencyData={consistencyData}
@@ -287,7 +318,7 @@ export function CanvasClient({ canvasId, initialCanvasData, initialBlocks }: Can
         />
       )}
 
-      {activeTab === 'notes' && (
+      {activeTab === "notes" && (
         <NotesView value={notes} onChange={handleNotesChange} />
       )}
 
@@ -302,7 +333,9 @@ export function CanvasClient({ canvasId, initialCanvasData, initialBlocks }: Can
           onChange={(value) => handleBlockChange(expandedBlock, value)}
           onClose={() => setExpandedBlock(null)}
           onAnalyze={() => handleAnalyze(expandedBlock)}
-          chatSection={<BlockChatSection canvasId={canvasId} blockType={expandedBlock} />}
+          chatSection={
+            <BlockChatSection canvasId={canvasId} blockType={expandedBlock} />
+          }
         />
       )}
 

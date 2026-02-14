@@ -1,13 +1,13 @@
-import { NextResponse } from 'next/server';
-import { Query } from 'node-appwrite';
-import { requireAuth } from '@/lib/appwrite-server';
-import { generateSlug } from '@/lib/utils';
+import { NextResponse } from "next/server";
+import { Query } from "node-appwrite";
+import { requireAuth } from "@/lib/appwrite-server";
+import { generateSlug } from "@/lib/utils";
 import {
   serverDatabases,
   DATABASE_ID,
   CANVASES_COLLECTION_ID,
   BLOCKS_COLLECTION_ID,
-} from '@/lib/appwrite';
+} from "@/lib/appwrite";
 
 interface RouteContext {
   params: Promise<{ canvasId: string }>;
@@ -26,22 +26,26 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
 
     if (canvas.ownerId !== user.$id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const updates: Record<string, unknown> = {};
-    if (typeof body.title === 'string') updates.title = body.title;
-    if (typeof body.description === 'string') updates.description = body.description;
-    if (typeof body.isPublic === 'boolean') updates.isPublic = body.isPublic;
+    if (typeof body.title === "string") updates.title = body.title;
+    if (typeof body.description === "string")
+      updates.description = body.description;
+    if (typeof body.isPublic === "boolean") updates.isPublic = body.isPublic;
 
     // If title changed, regenerate slug
-    if (typeof body.title === 'string' && body.title !== canvas.title) {
+    if (typeof body.title === "string" && body.title !== canvas.title) {
       const newSlug = await generateSlug(body.title, user.$id);
       updates.slug = newSlug;
     }
 
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+      return NextResponse.json(
+        { error: "No valid fields to update" },
+        { status: 400 },
+      );
     }
 
     await serverDatabases.updateDocument(
@@ -61,7 +65,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ success: true, canvas: updatedCanvas });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error('Canvas update error:', message);
+    console.error("Canvas update error:", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -78,7 +82,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     );
 
     if (canvas.ownerId !== user.$id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Delete all blocks first
@@ -86,20 +90,28 @@ export async function DELETE(_request: Request, context: RouteContext) {
     const blocks = await serverDatabases.listDocuments(
       DATABASE_ID,
       BLOCKS_COLLECTION_ID,
-      [Query.equal('canvasId', canvasIntId), Query.limit(25)],
+      [Query.equal("canvasId", canvasIntId), Query.limit(25)],
     );
 
     for (const block of blocks.documents) {
-      await serverDatabases.deleteDocument(DATABASE_ID, BLOCKS_COLLECTION_ID, block.$id);
+      await serverDatabases.deleteDocument(
+        DATABASE_ID,
+        BLOCKS_COLLECTION_ID,
+        block.$id,
+      );
     }
 
     // Delete canvas
-    await serverDatabases.deleteDocument(DATABASE_ID, CANVASES_COLLECTION_ID, canvasId);
+    await serverDatabases.deleteDocument(
+      DATABASE_ID,
+      CANVASES_COLLECTION_ID,
+      canvasId,
+    );
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error('Canvas delete error:', message);
+    console.error("Canvas delete error:", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
