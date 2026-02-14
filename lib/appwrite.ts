@@ -1,4 +1,5 @@
 import { Client, Account, Databases } from 'appwrite';
+import { Client as ServerClient, Account as ServerAccount, Databases as ServerDatabases } from 'node-appwrite';
 
 // Client-side SDK (browser)
 export const client = new Client()
@@ -9,13 +10,13 @@ export const account = new Account(client);
 export const databases = new Databases(client);
 
 // Server-side SDK (Node.js) - only for server components/routes
-export const serverClient = new Client()
+export const serverClient = new ServerClient()
   .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
   .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
   .setKey(process.env.APPWRITE_API_KEY!);
 
-export const serverAccount = new Account(serverClient);
-export const serverDatabases = new Databases(serverClient);
+export const serverAccount = new ServerAccount(serverClient);
+export const serverDatabases = new ServerDatabases(serverClient);
 
 // Constants for database
 export const DATABASE_ID = 'rocketmap_production';
