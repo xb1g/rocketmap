@@ -306,6 +306,43 @@ export function createGenerateCanvasTool(userId: string) {
   });
 }
 
+// ─── Surgical Card Tools (Atomic CRUD) ───────────────────────────────────────
+
+const blockTypeEnum = z.enum([
+  'key_partnerships', 'key_activities', 'key_resources',
+  'value_prop', 'customer_relationships', 'channels',
+  'customer_segments', 'cost_structure', 'revenue_streams',
+]);
+
+export const addCard = tool({
+  description: 'Add a new card to a specific block. Use this for atomic card creation — adding a single cost item, activity, resource, channel, partner, etc. Prefer this over createBlockItems when you want to add one card precisely.',
+  inputSchema: z.object({
+    blockType: blockTypeEnum.describe('Which block to add the card to'),
+    name: z.string().describe('Card title (e.g. "AWS hosting", "Content marketing")'),
+    description: z.string().describe('Brief description or details'),
+  }),
+  execute: async (params) => params,
+});
+
+export const modifyCard = tool({
+  description: 'Modify an existing card by its ID. Use this for surgical edits — fixing wording, updating description, or renaming a card without touching anything else in the block.',
+  inputSchema: z.object({
+    cardId: z.string().describe('The stable card ID (e.g. "card_123...")'),
+    name: z.string().optional().describe('New card title (omit to keep current)'),
+    description: z.string().optional().describe('New description (omit to keep current)'),
+  }),
+  execute: async (params) => params,
+});
+
+export const removeCard = tool({
+  description: 'Remove a card from a block by its ID. Use this when the user wants to delete a specific item, or when an item is redundant or incorrect.',
+  inputSchema: z.object({
+    cardId: z.string().describe('The stable card ID to remove'),
+    reason: z.string().describe('Brief explanation of why this card should be removed'),
+  }),
+  execute: async (params) => params,
+});
+
 // ─── Block Editing Tool ──────────────────────────────────────────────────────
 
 export const proposeBlockEdit = tool({
@@ -335,6 +372,9 @@ const allTools: Record<string, ReturnType<typeof tool<any, any>>> = {
   proposeBlockEdit,
   createBlockItems,
   createSegments,
+  addCard,
+  modifyCard,
+  removeCard,
   generateCanvas,
   estimateMarketSize,
   generateSegments,

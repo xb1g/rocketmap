@@ -5,7 +5,7 @@ import { buildSystemPrompt } from './prompts';
 export function getAgentConfig(agentType: AgentType, blocks: BlockData[]): AgentConfig {
   const systemPrompt = buildSystemPrompt(agentType, blocks);
 
-  const toolNames: string[] = ['analyzeBlock', 'proposeBlockEdit', 'createBlockItems', 'createSegments'];
+  const toolNames: string[] = ['analyzeBlock', 'proposeBlockEdit', 'createBlockItems', 'createSegments', 'addCard', 'modifyCard', 'removeCard'];
 
   if (agentType === 'general') {
     toolNames.push('checkConsistency');

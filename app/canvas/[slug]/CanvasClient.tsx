@@ -16,6 +16,7 @@ import type {
   AIUsage,
   MarketResearchData,
   Segment,
+  Card,
 } from "@/lib/types/canvas";
 import type { HoveredItem } from "@/app/components/canvas/ConnectionOverlay";
 import type { ConsistencyData } from "@/app/components/canvas/ConsistencyReport";
@@ -658,6 +659,107 @@ export function CanvasClient({
     [updateBlockItems],
   );
 
+  // ─── Card Handlers (Normalized Collection) ─────────────────────────────────
+
+  const handleCardCreate = useCallback(
+    async (blockType: BlockType, name: string, description = "") => {
+      try {
+        const res = await fetch(
+          `/api/canvas/${canvasId}/blocks/${blockType}/cards`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, description }),
+          },
+        );
+        if (!res.ok) return null;
+        const { card: doc } = await res.json();
+        const card: Card = {
+          $id: doc.$id,
+          id: doc.id,
+          blockId: doc.blockId,
+          canvasId: doc.canvasId,
+          name: doc.name,
+          description: doc.description ?? "",
+          order: doc.order ?? 0,
+          createdAt: doc.createdAt ?? "",
+        };
+        setBlocks((prev) => {
+          const next = new Map(prev);
+          const block = next.get(blockType);
+          if (block) {
+            next.set(blockType, {
+              ...block,
+              cards: [...(block.cards ?? []), card],
+            });
+          }
+          return next;
+        });
+        return card;
+      } catch {
+        return null;
+      }
+    },
+    [canvasId],
+  );
+
+  const handleCardUpdate = useCallback(
+    async (cardId: string, updates: Partial<Pick<Card, "name" | "description" | "order">>) => {
+      try {
+        const res = await fetch(`/api/cards/${cardId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        });
+        if (!res.ok) return;
+        const { card: doc } = await res.json();
+        setBlocks((prev) => {
+          const next = new Map(prev);
+          for (const [bt, block] of next) {
+            const cards = block.cards ?? [];
+            const idx = cards.findIndex((c) => c.id === cardId);
+            if (idx !== -1) {
+              const updated = cards.map((c) =>
+                c.id === cardId
+                  ? { ...c, name: doc.name, description: doc.description ?? "", order: doc.order ?? c.order }
+                  : c,
+              );
+              next.set(bt, { ...block, cards: updated });
+              break;
+            }
+          }
+          return next;
+        });
+      } catch {
+        // silently fail
+      }
+    },
+    [],
+  );
+
+  const handleCardDelete = useCallback(
+    async (cardId: string) => {
+      try {
+        const res = await fetch(`/api/cards/${cardId}`, { method: "DELETE" });
+        if (!res.ok) return;
+        setBlocks((prev) => {
+          const next = new Map(prev);
+          for (const [bt, block] of next) {
+            const cards = block.cards ?? [];
+            if (cards.some((c) => c.id === cardId)) {
+              next.set(bt, { ...block, cards: cards.filter((c) => c.id !== cardId) });
+              break;
+            }
+          }
+          return next;
+        });
+      } catch {
+        // silently fail
+      }
+    },
+    [],
+  );
+
   // Track old content for revert/undo of accepted edits
   const revertMapRef = useRef<Map<string, { blockType: BlockType; oldContent: { bmc: string; lean: string } }>>(new Map());
 
@@ -750,11 +852,12 @@ export function CanvasClient({
     [expandedBlock, handleSegmentCreate, handleSegmentUpdate, handleSegmentLink],
   );
 
-  // Handle accepted block item from AI chat — create as BlockItem on the expanded block
+  // Handle accepted block item from AI chat — create as BlockItem (legacy) + Card (normalized)
   const handleAcceptItem = useCallback(
     (_itemKey: string, proposal: BlockItemProposal) => {
       const targetBlock = expandedBlock;
       if (!targetBlock) return;
+      // Legacy: still write to contentJson items for backward compat
       const newItem: BlockItem = {
         id: crypto.randomUUID(),
         name: proposal.name,
@@ -764,8 +867,10 @@ export function CanvasClient({
         createdAt: new Date().toISOString(),
       };
       updateBlockItems(targetBlock, (items) => [...items, newItem]);
+      // Normalized: also create in cards collection
+      handleCardCreate(targetBlock, proposal.name, proposal.description ?? "");
     },
-    [expandedBlock, updateBlockItems],
+    [expandedBlock, updateBlockItems, handleCardCreate],
   );
 
   // Check if any non-shared block has lean content (to show convert button)

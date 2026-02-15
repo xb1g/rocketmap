@@ -8,8 +8,9 @@ import {
   BLOCKS_COLLECTION_ID,
   SEGMENTS_COLLECTION_ID,
   BLOCK_SEGMENTS_COLLECTION_ID,
+  CARDS_COLLECTION_ID,
 } from '@/lib/appwrite';
-import type { BlockData, BlockType, BlockContent, CanvasData, AIAnalysis, MarketResearchData, Segment } from '@/lib/types/canvas';
+import type { BlockData, BlockType, BlockContent, CanvasData, AIAnalysis, MarketResearchData, Segment, Card } from '@/lib/types/canvas';
 import { BLOCK_DEFINITIONS } from '@/app/components/canvas/constants';
 import { CanvasClient } from './CanvasClient';
 
@@ -93,11 +94,12 @@ export default async function CanvasPage({ params }: PageProps) {
     // blocks collection may not have data yet
   }
 
-  // Fetch segments and block_segment links
+  // Fetch segments, block_segment links, and cards
   let segmentDocs: Record<string, unknown>[] = [];
   let linkDocs: Record<string, unknown>[] = [];
+  let cardDocs: Record<string, unknown>[] = [];
   try {
-    const [segResult, linkResult] = await Promise.all([
+    const [segResult, linkResult, cardResult] = await Promise.all([
       serverDatabases.listDocuments(
         DATABASE_ID,
         SEGMENTS_COLLECTION_ID,
@@ -108,11 +110,17 @@ export default async function CanvasPage({ params }: PageProps) {
         BLOCK_SEGMENTS_COLLECTION_ID,
         [Query.limit(500)],
       ),
+      serverDatabases.listDocuments(
+        DATABASE_ID,
+        CARDS_COLLECTION_ID,
+        [Query.equal('canvasId', canvasIntId), Query.orderAsc('order'), Query.limit(500)],
+      ),
     ]);
     segmentDocs = segResult.documents as unknown as Record<string, unknown>[];
     linkDocs = linkResult.documents as unknown as Record<string, unknown>[];
+    cardDocs = cardResult.documents as unknown as Record<string, unknown>[];
   } catch {
-    // segments collections may not exist yet
+    // collections may not exist yet
   }
 
   // Build segment map by integer id
@@ -146,6 +154,24 @@ export default async function CanvasPage({ params }: PageProps) {
     blockSegmentLinks.get(blockId)!.push(segmentId);
   }
 
+  // Build blockId -> cards mapping
+  const blockCardsMap = new Map<number, Card[]>();
+  for (const doc of cardDocs) {
+    const card: Card = {
+      $id: doc.$id as string,
+      id: doc.id as string,
+      blockId: doc.blockId as number,
+      canvasId: doc.canvasId as number,
+      name: doc.name as string,
+      description: (doc.description as string) ?? '',
+      order: (doc.order as number) ?? 0,
+      createdAt: (doc.createdAt as string) ?? '',
+    };
+    const existing = blockCardsMap.get(card.blockId) ?? [];
+    existing.push(card);
+    blockCardsMap.set(card.blockId, existing);
+  }
+
   // Build initial blocks with defaults for missing ones
   const blockMap = new Map(blockDocs.map((d) => [d.blockType as string, d]));
   const initialBlocks: BlockData[] = BLOCK_DEFINITIONS.map((def) => {
@@ -156,6 +182,8 @@ export default async function CanvasPage({ params }: PageProps) {
       .map((sid) => segmentMap.get(sid))
       .filter((s): s is Segment => !!s);
 
+    const cards = blockIntId ? (blockCardsMap.get(blockIntId) ?? []) : [];
+
     return {
       blockType: def.type as BlockType,
       content: parseContentJson(doc?.contentJson as string | undefined),
@@ -165,6 +193,7 @@ export default async function CanvasPage({ params }: PageProps) {
       riskScore: (doc?.riskScore as number) ?? 0,
       deepDiveData: parseDeepDiveJson(doc?.deepDiveJson as string | undefined),
       linkedSegments,
+      cards,
     };
   });
 

@@ -30,6 +30,18 @@ export interface BlockItem {
   createdAt: string;
 }
 
+/** Normalized card stored in `cards` collection (replaces BlockItem in JSON) */
+export interface Card {
+  $id: string;
+  id: string;        // stable ID e.g. "card_123"
+  blockId: number;
+  canvasId: number;
+  name: string;
+  description: string;
+  order: number;
+  createdAt: string;
+}
+
 export const SEGMENT_COLORS = [
   "#6366f1", "#f43f5e", "#10b981", "#f59e0b", "#8b5cf6",
   "#06b6d4", "#ec4899", "#84cc16", "#f97316", "#14b8a6",
@@ -84,6 +96,7 @@ export interface BlockData {
   deepDiveData: MarketResearchData | null;
   lastUsage?: AIUsage | null;
   linkedSegments?: Segment[];
+  cards?: Card[];
 }
 
 export interface CanvasData {
