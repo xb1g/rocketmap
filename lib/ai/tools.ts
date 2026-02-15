@@ -1,5 +1,14 @@
 import { tool } from 'ai';
 import { z } from 'zod';
+import { ID } from 'node-appwrite';
+import {
+  serverDatabases,
+  DATABASE_ID,
+  CANVASES_COLLECTION_ID,
+  BLOCKS_COLLECTION_ID,
+} from '@/lib/appwrite';
+import { generateSlug } from '@/lib/utils';
+import type { BlockType } from '@/lib/types/canvas';
 
 export const analyzeBlock = tool({
   description: 'Analyze a business model canvas block and return structured insights including an improved draft, hidden assumptions, risks, and critical questions.',
@@ -161,6 +170,40 @@ export const compareSegments = tool({
   execute: async (params) => params,
 });
 
+// ─── Segment Profile Tool ────────────────────────────────────────────────────
+
+export const suggestSegmentProfile = tool({
+  description: 'Suggest a segment profile with market definition and buyer structure based on the canvas context and segment data.',
+  inputSchema: z.object({
+    marketDefinition: z.object({
+      geography: z.string().describe('Target geography (e.g. "Thailand", "Bangkok only", "Southeast Asia")'),
+      businessType: z.string().describe('Business type (e.g. "Specialty cafe", "chain restaurant", "SaaS startup")'),
+      sizeBucket: z.string().describe('Size bucket (e.g. "Revenue $1-5M, 1-3 locations", "10-50 employees")'),
+      estimatedCount: z.string().describe('Estimated count in target geography (e.g. "~2,500 in Bangkok", "15,000 nationwide")'),
+    }),
+    buyerStructure: z.object({
+      economicBuyer: z.string().describe('Who signs the check (e.g. "Owner-operator", "Purchasing manager")'),
+      user: z.string().describe('Who uses the product day-to-day (e.g. "Barista", "Store manager")'),
+      decisionCycle: z.string().describe('How long to close a deal (e.g. "1-2 weeks", "3-6 month procurement")'),
+      budgetOwnership: z.string().describe('Where budget comes from (e.g. "Owner personal budget", "Departmental OPEX")'),
+    }),
+  }),
+  execute: async (params) => params,
+});
+
+// ─── Block Item Creation Tool (Block Chat Copilot) ──────────────────────────
+
+export const createBlockItems = tool({
+  description: 'Create structured items for a business model canvas block. Use this when the user asks to add, suggest, or list specific items (costs, activities, resources, channels, partners, etc.) for ANY block. Each item becomes a card that can be linked to segments and other blocks. ALWAYS prefer this tool over writing markdown lists.',
+  inputSchema: z.object({
+    items: z.array(z.object({
+      name: z.string().describe('Short item name (e.g. "AWS hosting", "Content marketing", "$15/mo subscription")'),
+      description: z.string().describe('Brief description or details about this item'),
+    })).min(1).describe('Block items to create'),
+  }),
+  execute: async (params) => params,
+});
+
 // ─── Segment Creation Tool (Block Chat Copilot) ─────────────────────────────
 
 export const createSegments = tool({
@@ -182,22 +225,86 @@ export const createSegments = tool({
 
 // ─── Canvas Generation Tool ──────────────────────────────────────────────────
 
+const generateCanvasInputSchema = z.object({
+  title: z.string().min(3).describe('A concise title for the canvas (the startup or product name)'),
+  key_partnerships: z.string().min(10).describe('Key Partners block content'),
+  key_activities: z.string().min(10).describe('Key Activities block content'),
+  key_resources: z.string().min(10).describe('Key Resources block content'),
+  value_prop: z.string().min(10).describe('Value Propositions block content'),
+  customer_relationships: z.string().min(10).describe('Customer Relationships block content'),
+  channels: z.string().min(10).describe('Channels block content'),
+  customer_segments: z.string().min(10).describe('Customer Segments block content'),
+  cost_structure: z.string().min(10).describe('Cost Structure block content'),
+  revenue_streams: z.string().min(10).describe('Revenue Streams block content'),
+});
+
+/** Static version — echoes args back (used as fallback / in tool registry) */
 export const generateCanvas = tool({
   description: 'Generate a complete Business Model Canvas with content for all 9 blocks based on the startup idea discussed. Call this once you have enough context from the conversation.',
-  inputSchema: z.object({
-    title: z.string().min(3).describe('A concise title for the canvas (the startup or product name)'),
-    key_partnerships: z.string().min(10).describe('Key Partners block content'),
-    key_activities: z.string().min(10).describe('Key Activities block content'),
-    key_resources: z.string().min(10).describe('Key Resources block content'),
-    value_prop: z.string().min(10).describe('Value Propositions block content'),
-    customer_relationships: z.string().min(10).describe('Customer Relationships block content'),
-    channels: z.string().min(10).describe('Channels block content'),
-    customer_segments: z.string().min(10).describe('Customer Segments block content'),
-    cost_structure: z.string().min(10).describe('Cost Structure block content'),
-    revenue_streams: z.string().min(10).describe('Revenue Streams block content'),
-  }),
+  inputSchema: generateCanvasInputSchema,
   execute: async (params) => params,
 });
+
+const ALL_BLOCK_TYPES: BlockType[] = [
+  'key_partnerships', 'key_activities', 'key_resources',
+  'value_prop', 'customer_relationships', 'channels',
+  'customer_segments', 'cost_structure', 'revenue_streams',
+];
+
+/**
+ * Factory: creates a generateCanvas tool that persists the canvas + blocks
+ * in Appwrite and returns { slug, canvasId, title }.
+ */
+export function createGenerateCanvasTool(userId: string) {
+  return tool({
+    description: 'Generate a complete Business Model Canvas with content for all 9 blocks based on the startup idea discussed. Call this once you have enough context from the conversation.',
+    inputSchema: generateCanvasInputSchema,
+    execute: async (params) => {
+      const { title, ...blocks } = params;
+      const slug = await generateSlug(title, userId);
+      const now = new Date().toISOString();
+      const canvasIntId = Date.now();
+
+      // Create canvas document
+      await serverDatabases.createDocument(
+        DATABASE_ID,
+        CANVASES_COLLECTION_ID,
+        ID.unique(),
+        {
+          id: canvasIntId,
+          title: title.trim(),
+          slug,
+          description: '',
+          createdAt: now,
+          updatedAt: now,
+          isPublic: false,
+          ownerId: userId,
+        },
+      );
+
+      // Create all 9 blocks in parallel
+      await Promise.all(
+        ALL_BLOCK_TYPES.map((blockType, index) => {
+          const content = blocks[blockType as keyof typeof blocks] ?? '';
+          const contentJson = JSON.stringify({ bmc: content, lean: content });
+          return serverDatabases.createDocument(
+            DATABASE_ID,
+            BLOCKS_COLLECTION_ID,
+            ID.unique(),
+            {
+              id: canvasIntId * 100 + index + 1,
+              canvasId: canvasIntId,
+              blockType,
+              contentJson,
+            },
+          );
+        }),
+      );
+
+      return { slug, canvasId: canvasIntId, title: title.trim() };
+    },
+  });
+}
 
 // ─── Block Editing Tool ──────────────────────────────────────────────────────
 
@@ -226,6 +333,7 @@ const allTools: Record<string, ReturnType<typeof tool<any, any>>> = {
   analyzeBlock,
   checkConsistency,
   proposeBlockEdit,
+  createBlockItems,
   createSegments,
   generateCanvas,
   estimateMarketSize,
@@ -235,13 +343,20 @@ const allTools: Record<string, ReturnType<typeof tool<any, any>>> = {
   analyzeCompetitors,
   scoreSegment,
   compareSegments,
+  suggestSegmentProfile,
 };
 
-export function getToolsForAgent(toolNames: string[]) {
+export function getToolsForAgent(
+  toolNames: string[],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  overrides?: Record<string, ReturnType<typeof tool<any, any>>>,
+) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result: Record<string, ReturnType<typeof tool<any, any>>> = {};
   for (const name of toolNames) {
-    if (allTools[name]) {
+    if (overrides?.[name]) {
+      result[name] = overrides[name];
+    } else if (allTools[name]) {
       result[name] = allTools[name];
     }
   }

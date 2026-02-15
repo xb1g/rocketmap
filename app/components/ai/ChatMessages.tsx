@@ -2,16 +2,22 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { UIMessage } from "ai";
-import type { BlockEditProposal, SegmentProposal } from "@/lib/types/canvas";
+import type { BlockEditProposal, BlockItemProposal, SegmentProposal } from "@/lib/types/canvas";
 import { ChatMessageWithParts } from "./ChatMessage";
+
+type ChatStatus = 'ready' | 'submitted' | 'streaming' | 'error';
 
 interface ChatMessagesProps {
   messages: UIMessage[];
   isLoading?: boolean;
+  status?: ChatStatus;
+  /** Slug of a canvas created via generateCanvas tool — shows link in the tool card */
+  canvasSlug?: string;
   onAcceptEdit?: (proposalId: string, edit: BlockEditProposal) => void;
   onRejectEdit?: (proposalId: string, editIndex: number) => void;
   onRevertEdit?: (proposalId: string, editIndex: number) => void;
   onAcceptSegment?: (segKey: string, segment: SegmentProposal) => void;
+  onAcceptItem?: (itemKey: string, item: BlockItemProposal) => void;
   onEditMessage?: (messageId: string, newText: string) => void;
   onRegenerate?: () => void;
 }
@@ -27,10 +33,13 @@ function isToolLikePart(p: Record<string, unknown>): boolean {
 export function ChatMessages({
   messages,
   isLoading,
+  status,
+  canvasSlug,
   onAcceptEdit,
   onRejectEdit,
   onRevertEdit,
   onAcceptSegment,
+  onAcceptItem,
   onEditMessage,
   onRegenerate,
 }: ChatMessagesProps) {
@@ -41,6 +50,8 @@ export function ChatMessages({
   const [rejectedEdits, setRejectedEdits] = useState<Set<string>>(new Set());
   const [acceptedSegments, setAcceptedSegments] = useState<Set<string>>(new Set());
   const [rejectedSegments, setRejectedSegments] = useState<Set<string>>(new Set());
+  const [acceptedItems, setAcceptedItems] = useState<Set<string>>(new Set());
+  const [rejectedItems, setRejectedItems] = useState<Set<string>>(new Set());
 
   const checkNearBottom = useCallback(() => {
     const el = scrollRef.current;
@@ -99,6 +110,15 @@ export function ChatMessages({
     setRejectedSegments((prev) => new Set(prev).add(segKey));
   };
 
+  const handleAcceptItem = (itemKey: string, item: BlockItemProposal) => {
+    setAcceptedItems((prev) => new Set(prev).add(itemKey));
+    onAcceptItem?.(itemKey, item);
+  };
+
+  const handleRejectItem = (itemKey: string) => {
+    setRejectedItems((prev) => new Set(prev).add(itemKey));
+  };
+
   if (visible.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-2 px-6 text-center">
@@ -152,6 +172,8 @@ export function ChatMessages({
           onRevertEdit={m.role === "assistant" ? onRevertEdit : undefined}
           onAcceptSegment={m.role === "assistant" ? handleAcceptSegment : undefined}
           onRejectSegment={m.role === "assistant" ? handleRejectSegment : undefined}
+          onAcceptItem={m.role === "assistant" ? handleAcceptItem : undefined}
+          onRejectItem={m.role === "assistant" ? handleRejectItem : undefined}
           onEditMessage={m.role === "user" ? onEditMessage : undefined}
           onRegenerate={
             m.role === "assistant" && i === lastAssistantIdx && !isLoading
@@ -162,9 +184,120 @@ export function ChatMessages({
           rejectedEdits={rejectedEdits}
           acceptedSegments={acceptedSegments}
           rejectedSegments={rejectedSegments}
+          acceptedItems={acceptedItems}
+          rejectedItems={rejectedItems}
+          canvasSlug={canvasSlug}
         />
       ))}
+      {isLoading && <AIStatusIndicator messages={visible} status={status} />}
       <div ref={bottomRef} />
     </div>
+  );
+}
+
+// ─── AI Status Indicator ─────────────────────────────────────────────────────
+
+/** Derive what the AI is currently doing from messages + status */
+function getAIActivity(
+  messages: UIMessage[],
+  status?: ChatStatus,
+): { label: string; icon: 'thinking' | 'tool' | 'writing' } {
+  // Check the last assistant message for in-progress tool invocations
+  const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+  if (lastAssistant) {
+    for (const part of lastAssistant.parts ?? []) {
+      const p = part as Record<string, unknown>;
+
+      // Extract tool name + state from either part format
+      let toolName = '';
+      let toolState = '';
+      if (p.type === 'tool-invocation') {
+        const inv = p.toolInvocation as { toolName?: string; state?: string } | undefined;
+        toolName = inv?.toolName ?? '';
+        toolState = inv?.state ?? '';
+      } else if (p.type === 'dynamic-tool' || (typeof p.type === 'string' && (p.type as string).startsWith('tool-'))) {
+        toolName = p.type === 'dynamic-tool' ? (p.toolName as string ?? '') : (p.type as string).slice(5);
+        toolState = (p.state as string) ?? '';
+      } else {
+        continue;
+      }
+
+      // Tool is being called but hasn't returned yet
+      const isPending = p.type === 'tool-invocation'
+        ? (toolState !== 'result')
+        : (toolState !== 'output-available');
+      if (!isPending) continue;
+
+      if (toolName === 'generateCanvas') return { label: 'Building your canvas...', icon: 'tool' };
+      if (toolName === 'analyzeBlock') return { label: 'Analyzing block...', icon: 'tool' };
+      if (toolName === 'proposeBlockEdit') return { label: 'Drafting changes...', icon: 'tool' };
+      if (toolName === 'checkConsistency') return { label: 'Checking consistency...', icon: 'tool' };
+      if (toolName === 'createSegments') return { label: 'Creating segments...', icon: 'tool' };
+      if (toolName === 'createBlockItems') return { label: 'Creating items...', icon: 'tool' };
+      return { label: 'Using tools...', icon: 'tool' };
+    }
+    // If the last assistant message has text content, AI is actively writing
+    const hasText = (lastAssistant.parts ?? []).some(
+      (p) => (p as Record<string, unknown>).type === 'text' && (p as Record<string, unknown>).text,
+    );
+    if (hasText && status === 'streaming') {
+      // Text is visible and streaming — no extra indicator needed
+      return { label: '', icon: 'writing' };
+    }
+  }
+
+  // Request sent but no response yet
+  if (status === 'submitted') return { label: 'Thinking...', icon: 'thinking' };
+
+  // Streaming started but no visible text yet
+  return { label: 'Thinking...', icon: 'thinking' };
+}
+
+function AIStatusIndicator({
+  messages,
+  status,
+}: {
+  messages: UIMessage[];
+  status?: ChatStatus;
+}) {
+  const activity = getAIActivity(messages, status);
+  // Don't show indicator if text is actively streaming (it's already visible)
+  if (!activity.label) return null;
+
+  return (
+    <div className="flex justify-start">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-2xl rounded-bl-md bg-white/4 border border-white/4">
+        {activity.icon === 'thinking' && <ThinkingDots />}
+        {activity.icon === 'tool' && <ToolSpinner />}
+        <span className="text-[11px] text-foreground-muted/60">{activity.label}</span>
+      </div>
+    </div>
+  );
+}
+
+function ThinkingDots() {
+  return (
+    <div className="flex items-center gap-0.5">
+      <span className="w-1 h-1 rounded-full bg-foreground-muted/40 animate-[thinking-dot_1.4s_ease-in-out_infinite]" />
+      <span className="w-1 h-1 rounded-full bg-foreground-muted/40 animate-[thinking-dot_1.4s_ease-in-out_0.2s_infinite]" />
+      <span className="w-1 h-1 rounded-full bg-foreground-muted/40 animate-[thinking-dot_1.4s_ease-in-out_0.4s_infinite]" />
+    </div>
+  );
+}
+
+function ToolSpinner() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--chroma-indigo)"
+      strokeWidth="2"
+      strokeLinecap="round"
+      className="animate-spin"
+    >
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
   );
 }

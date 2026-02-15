@@ -3,6 +3,7 @@ import {
   loadChatMessages,
   saveChatMessage,
   deleteChatMessages,
+  listChatSessions,
 } from '@/lib/ai/chat-persistence';
 
 interface RouteContext {
@@ -14,10 +15,18 @@ export async function GET(request: Request, context: RouteContext) {
     const user = await requireAuth();
     const { canvasId } = await context.params;
     const { searchParams } = new URL(request.url);
+    const sessions = searchParams.get('sessions');
+    const scope = searchParams.get('scope');
+
+    if (sessions === '1' && scope) {
+      const sessionList = await listChatSessions(canvasId, scope, user.$id);
+      return Response.json({ sessions: sessionList });
+    }
+
     const chatKey = searchParams.get('chatKey');
 
     if (!chatKey) {
-      return Response.json({ error: 'chatKey is required' }, { status: 400 });
+      return Response.json({ error: 'chatKey or sessions+scope is required' }, { status: 400 });
     }
 
     const messages = await loadChatMessages(canvasId, chatKey, user.$id);

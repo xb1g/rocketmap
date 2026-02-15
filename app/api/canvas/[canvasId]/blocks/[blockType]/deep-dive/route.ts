@@ -30,6 +30,7 @@ const VALID_MODULES: DeepDiveModule[] = [
   'competitive_landscape',
   'segment_scoring',
   'segment_comparison',
+  'segment_profile',
 ];
 
 // POST — AI generation for a specific deep-dive module
@@ -75,7 +76,31 @@ export async function POST(request: Request, context: RouteContext) {
         behav && `Behavioral: ${behav}`,
         geo && `Geographic: ${geo}`,
       ].filter(Boolean).join('\n');
-      userMessage = `Score the following customer segment using the scoreSegment tool.\n\n${segDetail}\n\nBlock content for context: "${content || '(empty)'}"`;
+      // Include profile data if available
+      const segId = inputs?.segmentId;
+      const profile = segId ? existingDeepDive?.segmentProfiles?.[segId] : undefined;
+      let profileDetail = '';
+      if (profile) {
+        const md = profile.marketDefinition;
+        const bs = profile.buyerStructure;
+        profileDetail = [
+          '\n\nMarket Definition:',
+          md.geography && `  Geography: ${md.geography}`,
+          md.businessType && `  Business Type: ${md.businessType}`,
+          md.sizeBucket && `  Size Bucket: ${md.sizeBucket}`,
+          md.estimatedCount && `  Estimated Count: ${md.estimatedCount}`,
+          '\nBuyer Structure:',
+          bs.economicBuyer && `  Economic Buyer: ${bs.economicBuyer}`,
+          bs.user && `  Day-to-day User: ${bs.user}`,
+          bs.decisionCycle && `  Decision Cycle: ${bs.decisionCycle}`,
+          bs.budgetOwnership && `  Budget Ownership: ${bs.budgetOwnership}`,
+        ].filter(Boolean).join('\n');
+      }
+      userMessage = `Score the following customer segment using the scoreSegment tool.\n\n${segDetail}${profileDetail}\n\nBlock content for context: "${content || '(empty)'}"`;
+    } else if (module === 'segment_profile') {
+      const name = inputs?.segmentName || '(unnamed)';
+      const desc = inputs?.segmentDescription || '';
+      userMessage = `Suggest a market definition and buyer structure profile for the customer segment "${name}". ${desc ? `Description: ${desc}` : ''}\n\nUse the suggestSegmentProfile tool to return your structured profile.\n\nBlock content for context: "${content || '(empty)'}"`;
     } else if (module === 'segment_comparison') {
       userMessage = `Compare these two customer segments using the compareSegments tool.\n\nSegment A: "${inputs?.segmentAName || '(unnamed)'}" — ${inputs?.segmentADescription || '(no description)'}\nSegment B: "${inputs?.segmentBName || '(unnamed)'}" — ${inputs?.segmentBDescription || '(no description)'}\n\nBlock content for context: "${content || '(empty)'}"`;
     } else {
@@ -118,6 +143,7 @@ export async function POST(request: Request, context: RouteContext) {
       marketValidation: existingDeepDive?.marketValidation ?? null,
       competitiveLandscape: existingDeepDive?.competitiveLandscape ?? null,
       scorecards: existingDeepDive?.scorecards,
+      segmentProfiles: existingDeepDive?.segmentProfiles,
     };
 
     // Map module to the correct field
@@ -189,6 +215,18 @@ export async function POST(request: Request, context: RouteContext) {
       case 'segment_comparison': {
         // Comparison results returned directly, no persistence needed
         // But we still persist the deep-dive to ensure consistency
+        break;
+      }
+      case 'segment_profile': {
+        const profileResult = toolResult as {
+          marketDefinition: { geography: string; businessType: string; sizeBucket: string; estimatedCount: string };
+          buyerStructure: { economicBuyer: string; user: string; decisionCycle: string; budgetOwnership: string };
+        };
+        const segId = inputs?.segmentId ?? '0';
+        updatedDeepDive.segmentProfiles = {
+          ...(updatedDeepDive.segmentProfiles ?? {}),
+          [segId]: profileResult,
+        };
         break;
       }
     }

@@ -7,6 +7,7 @@ import type {
   BlockItem,
   BlockType,
   BlockEditProposal,
+  BlockItemProposal,
   SegmentProposal,
   CanvasMode,
   CanvasTab,
@@ -749,6 +750,24 @@ export function CanvasClient({
     [expandedBlock, handleSegmentCreate, handleSegmentUpdate, handleSegmentLink],
   );
 
+  // Handle accepted block item from AI chat — create as BlockItem on the expanded block
+  const handleAcceptItem = useCallback(
+    (_itemKey: string, proposal: BlockItemProposal) => {
+      const targetBlock = expandedBlock;
+      if (!targetBlock) return;
+      const newItem: BlockItem = {
+        id: crypto.randomUUID(),
+        name: proposal.name,
+        description: proposal.description || undefined,
+        linkedSegmentIds: [],
+        linkedItemIds: [],
+        createdAt: new Date().toISOString(),
+      };
+      updateBlockItems(targetBlock, (items) => [...items, newItem]);
+    },
+    [expandedBlock, updateBlockItems],
+  );
+
   // Check if any non-shared block has lean content (to show convert button)
   const hasLeanContent = (() => {
     for (const def of BLOCK_DEFINITIONS) {
@@ -981,6 +1000,7 @@ export function CanvasClient({
               onRejectEdit={handleRejectEdit}
               onRevertEdit={handleRevertEdit}
               onAcceptSegment={handleAcceptSegment}
+              onAcceptItem={handleAcceptItem}
             />
           }
         />

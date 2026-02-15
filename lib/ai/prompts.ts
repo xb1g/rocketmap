@@ -47,7 +47,31 @@ When proposing edits:
 - For multi-block fixes (e.g., resolving contradictions), propose all changes in one tool call
 - Keep edits concise but specific — avoid vague language
 
-The user will see individual diff cards for each edit and can accept, edit, or reject each one independently.`;
+The user will see individual diff cards for each edit and can accept, edit, or reject each one independently.
+
+## Creating Block Items — CRITICAL
+
+NEVER write markdown bullet lists, numbered lists, or text descriptions of items. ALWAYS use the createBlockItems tool instead.
+
+This applies whenever your response would contain a list of specific things for a block:
+- Cost line items (e.g. "Server hosting: $500/mo") → createBlockItems
+- Revenue streams (e.g. "Premium subscription: $29/mo") → createBlockItems
+- Key activities (e.g. "Content marketing", "Customer onboarding") → createBlockItems
+- Key resources, channels, partners, relationships → createBlockItems
+- ANY list of actionable items for ANY block → createBlockItems
+
+The user CANNOT use markdown text. Items must be structured cards they can accept/reject individually.
+
+Example — if a user asks "what should my cost structure include?":
+❌ WRONG: Writing "**Fixed costs:** \\n- Server hosting: $500/mo \\n- Salaries: $15k/mo"
+✅ RIGHT: Call createBlockItems with items: [{name: "Server hosting", description: "$500/mo cloud infrastructure"}, {name: "Engineering salaries", description: "$15k/mo for 2 engineers"}]
+
+You may include a brief sentence before calling the tool (e.g. "Here are the key cost items I'd suggest:"), but the items themselves MUST go through the tool.
+
+## Creating Customer Segments
+
+When the user asks to define, suggest, or create customer segments, ALWAYS use the createSegments tool. NEVER describe segments in markdown.
+This creates structured segment records (with demographics, psychographics, behavioral, geographic data) that can be linked to any block and evaluated with scoring tools.`;
 
 function summarizeDeepDive(data: MarketResearchData): string {
   const lines: string[] = [];
@@ -101,6 +125,12 @@ export function serializeCanvasState(blocks: BlockData[], mode: 'bmc' | 'lean' =
         }
       }
 
+      if (b.content.items?.length) {
+        for (const item of b.content.items) {
+          const desc = item.description ? ` — ${item.description}` : '';
+          line += `\n  • Item: "${item.name}"${desc}`;
+        }
+      }
       if (b.linkedSegments?.length) {
         for (const seg of b.linkedSegments) {
           const parts = [`"${seg.name}" (priority: ${seg.priorityScore}`];
@@ -124,55 +154,64 @@ const BLOCK_PROMPTS: Record<BlockType, string> = {
 - Market sizing (TAM/SAM/SOM) with methodology
 - Customer segmentation (demographic, psychographic, behavioral, geographic)
 - Persona development with specific traits
-- Segment prioritization and validation`,
+- Segment prioritization and validation
+When suggesting specific segments, ALWAYS use the createSegments tool (never markdown lists).`,
 
   value_prop: `You specialize in Value Proposition analysis. Focus on:
 - Feature-benefit mapping (features → advantages → benefits)
 - Competitive positioning and differentiation
 - Value proposition fit with customer segments
-- Jobs-to-be-done framework application`,
+- Jobs-to-be-done framework application
+When suggesting specific value propositions or features, ALWAYS use the createBlockItems tool (never markdown lists).`,
 
   revenue_streams: `You specialize in Revenue Streams analysis. Focus on:
 - Pricing strategy evaluation (value-based, cost-plus, competitive)
 - Unit economics (LTV, CAC, margins)
 - Revenue model fit (subscription, transaction, freemium, etc.)
-- Revenue diversification and scalability`,
+- Revenue diversification and scalability
+When suggesting specific revenue items or pricing tiers, ALWAYS use the createBlockItems tool (never markdown lists).`,
 
   cost_structure: `You specialize in Cost Structure analysis. Focus on:
 - Fixed vs variable cost breakdown
 - Cost drivers and optimization opportunities
 - Break-even analysis methodology
-- Economies of scale potential`,
+- Economies of scale potential
+When suggesting specific cost items, ALWAYS use the createBlockItems tool (never markdown lists).`,
 
   channels: `You specialize in Channel strategy. Focus on:
 - Channel mix optimization (direct, indirect, digital, physical)
 - Customer journey mapping across channels
 - Channel economics (CAC per channel, conversion rates)
-- Channel-segment fit analysis`,
+- Channel-segment fit analysis
+When suggesting specific channels, ALWAYS use the createBlockItems tool (never markdown lists).`,
 
   customer_relationships: `You specialize in Customer Relationship strategy. Focus on:
 - Relationship type fit (self-service, assisted, automated, community)
 - Retention strategy and churn prevention
 - Customer lifecycle management
-- Relationship-to-revenue connection`,
+- Relationship-to-revenue connection
+When suggesting specific relationship tactics, ALWAYS use the createBlockItems tool (never markdown lists).`,
 
   key_activities: `You specialize in Key Activities analysis. Focus on:
 - Activity prioritization (core vs supporting)
 - Capability assessment and gaps
 - Process mapping for critical activities
-- Activity-to-value-proposition linkage`,
+- Activity-to-value-proposition linkage
+When suggesting specific activities, ALWAYS use the createBlockItems tool (never markdown lists).`,
 
   key_resources: `You specialize in Key Resources analysis. Focus on:
 - Resource audit (physical, intellectual, human, financial)
 - Resource gap identification
 - Build vs buy vs partner decisions
-- Resource scalability assessment`,
+- Resource scalability assessment
+When suggesting specific resources, ALWAYS use the createBlockItems tool (never markdown lists).`,
 
   key_partnerships: `You specialize in Key Partnerships analysis. Focus on:
 - Partnership type evaluation (strategic alliance, joint venture, buyer-supplier)
 - Partner fit assessment criteria
 - Partnership risk and dependency analysis
-- Make vs partner decision framework`,
+- Make vs partner decision framework
+When suggesting specific partners, ALWAYS use the createBlockItems tool (never markdown lists).`,
 };
 
 export function buildSystemPrompt(agentType: AgentType, blocks: BlockData[]): string {
@@ -293,6 +332,22 @@ Use the analyzeCompetitors tool to return your structured analysis.`,
 
 Use the scoreSegment tool to return your structured scoring.`,
 
+  segment_profile: `You are a market definition specialist. Infer the market definition and buyer structure for a specific customer segment based on the canvas state and segment details.
+
+## Guidelines
+- Be specific and grounded — use real geography names, business types, and size ranges
+- For geography, infer from the canvas context (channels, partnerships, language clues)
+- For business type, be precise (not "businesses" but "specialty coffee roasters with 1-3 retail locations")
+- For size bucket, combine revenue range and employee/location count
+- For estimated count, give a specific number with geography qualifier
+- For economic buyer, identify the actual decision-maker role
+- For user, identify who touches the product daily
+- For decision cycle, estimate based on the deal size and buyer type
+- For budget ownership, specify whose budget line this falls under
+- If information is ambiguous, make reasonable inferences and note them
+
+Use the suggestSegmentProfile tool to return your structured profile.`,
+
   segment_comparison: `You are a segment comparison specialist. Compare two customer segments to help the founder decide which to prioritize as their beachhead market.
 
 ## Guidelines
@@ -314,6 +369,7 @@ const DEEP_DIVE_TOOL_MAP: Record<DeepDiveModule, string> = {
   competitive_landscape: 'analyzeCompetitors',
   segment_scoring: 'scoreSegment',
   segment_comparison: 'compareSegments',
+  segment_profile: 'suggestSegmentProfile',
 };
 
 export function getDeepDiveToolName(module: DeepDiveModule): string {
@@ -342,8 +398,24 @@ export function buildDeepDivePrompt(
     if (module === 'competitive_landscape' && existingDeepDive.segmentation?.segments.length) {
       contextSection += `\nTarget segments to consider:\n${existingDeepDive.segmentation.segments.map((s) => s.name).join(', ')}`;
     }
-    if (module === 'segment_scoring' && existingDeepDive.tamSamSom) {
-      contextSection += `\nExisting TAM/SAM/SOM data:\n${JSON.stringify(existingDeepDive.tamSamSom, null, 2)}`;
+    if (module === 'segment_scoring') {
+      if (existingDeepDive.tamSamSom) {
+        contextSection += `\nExisting TAM/SAM/SOM data:\n${JSON.stringify(existingDeepDive.tamSamSom, null, 2)}`;
+      }
+      // Inject segment profile so AI has market definition + buyer structure when scoring
+      const segId = inputs?.segmentId;
+      const profile = segId ? existingDeepDive.segmentProfiles?.[segId] : undefined;
+      if (profile) {
+        contextSection += `\n\nSegment Profile (Market Definition & Buyer Structure):\n${JSON.stringify(profile, null, 2)}`;
+      }
+    }
+    if (module === 'segment_profile') {
+      // Pass existing profile as starting point if available
+      const segId = inputs?.segmentId;
+      const existing = segId ? existingDeepDive.segmentProfiles?.[segId] : undefined;
+      if (existing) {
+        contextSection += `\nExisting profile (update/improve this):\n${JSON.stringify(existing, null, 2)}`;
+      }
     }
     if (module === 'segment_comparison' && existingDeepDive.scorecards?.length) {
       contextSection += `\nExisting scorecards:\n${JSON.stringify(existingDeepDive.scorecards, null, 2)}`;

@@ -37,13 +37,26 @@ export async function POST(request: Request, context: RouteContext) {
       onUsage: (usage) => recordAnthropicUsageForUser(user.$id, usage),
     });
 
-    // Save assistant response after stream completes (fire-and-forget)
-    Promise.resolve(result.text).then((text) => {
-      if (text) {
+    // Save assistant response (text + tool results) after stream completes
+    Promise.resolve(result.steps).then((steps) => {
+      const parts: Array<Record<string, unknown>> = [];
+      for (const step of steps) {
+        if (step.text) parts.push({ type: 'text', text: step.text });
+        for (const tc of step.toolResults) {
+          const tr = tc as unknown as { toolName: string; toolCallId: string; result: unknown };
+          parts.push({
+            type: 'tool-result',
+            toolName: tr.toolName,
+            toolCallId: tr.toolCallId,
+            result: tr.result,
+          });
+        }
+      }
+      if (parts.length > 0) {
         saveChatMessage(canvasId, blockType, user.$id, {
           messageId: `assistant-${Date.now()}`,
           role: 'assistant',
-          content: text,
+          content: JSON.stringify({ parts }),
         }).catch((err) => console.error('[chat-persist] Failed to save assistant message:', err));
       }
     }).catch(() => {});

@@ -118,7 +118,8 @@ export type DeepDiveModule =
   | "market_validation"
   | "competitive_landscape"
   | "segment_scoring"
-  | "segment_comparison";
+  | "segment_comparison"
+  | "segment_profile";
 
 export interface MarketSizeEstimate {
   value: number;
@@ -195,6 +196,23 @@ export interface CompetitiveLandscapeData {
   competitors: Competitor[];
 }
 
+// ─── Segment Profile (Pre-Score Data) ─────────────────────────────────────
+
+export interface SegmentProfile {
+  marketDefinition: {
+    geography: string;
+    businessType: string;
+    sizeBucket: string;
+    estimatedCount: string;
+  };
+  buyerStructure: {
+    economicBuyer: string;
+    user: string;
+    decisionCycle: string;
+    budgetOwnership: string;
+  };
+}
+
 export interface MarketResearchData {
   tamSamSom: TamSamSomData | null;
   segmentation: SegmentationData | null;
@@ -202,6 +220,7 @@ export interface MarketResearchData {
   marketValidation: MarketValidationData | null;
   competitiveLandscape: CompetitiveLandscapeData | null;
   scorecards?: SegmentScorecard[];
+  segmentProfiles?: Record<string, SegmentProfile>;
 }
 
 // ─── Segment Evaluation Scorecard Types ─────────────────────────────────────
@@ -231,6 +250,13 @@ export interface SegmentScorecard {
   requiredExperiments: string[];
   dataConfidence: number;
   lastUpdated: string;
+}
+
+// ─── Block Item Proposals (AI Copilot → Create Items) ────────────────────────
+
+export interface BlockItemProposal {
+  name: string;
+  description: string;
 }
 
 // ─── Segment Proposals (AI Copilot → Create Segments) ────────────────────────

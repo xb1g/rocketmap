@@ -86,58 +86,54 @@ export function CanvasCard({ canvas, onDuplicate, onDelete }: CanvasCardProps) {
             alignSelf: "flex-start",
           }}
         >
-          {/* Key Partners (Tall Left) */}
+          {/* Key Partners */}
           <div
             className={`canvas-blocks-mini-cell ${0 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "span 2", gridRow: "span 2 " }}
+            style={{ gridColumn: "1 / 3", gridRow: "1 / 3" }}
           />
-          {/* Key Activities (Top Left-Mid) */}
+          {/* Key Activities */}
           <div
             className={`canvas-blocks-mini-cell ${1 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "span 2" }}
+            style={{ gridColumn: "3 / 5", gridRow: "1 / 2" }}
           />
-          {/* Key Resources (Bottom Left-Mid) */}
+          {/* Key Resources */}
           <div
             className={`canvas-blocks-mini-cell ${2 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "span 2", gridRow: "2" }}
+            style={{ gridColumn: "3 / 5", gridRow: "2 / 3" }}
           />
-          {/* Value Propositions (Tall Center) */}
+          {/* Value Propositions */}
           <div
             className={`canvas-blocks-mini-cell ${3 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "span 2", gridRow: "span 2" }}
+            style={{ gridColumn: "5 / 7", gridRow: "1 / 3" }}
           />
-          {/* Customer Relationships (Top Right-Mid) */}
+          {/* Customer Relationships */}
           <div
             className={`canvas-blocks-mini-cell ${4 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "span 2" }}
+            style={{ gridColumn: "7 / 9", gridRow: "1 / 2" }}
           />
-          {/* Channels (Bottom Right-Mid) */}
+          {/* Channels */}
           <div
             className={`canvas-blocks-mini-cell ${5 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "span 2", gridRow: "2" }}
+            style={{ gridColumn: "7 / 9", gridRow: "2 / 3" }}
           />
-          {/* Customer Segments (Tall Right) */}
+          {/* Customer Segments */}
           <div
             className={`canvas-blocks-mini-cell ${6 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "span 2", gridRow: "span 2" }}
+            style={{ gridColumn: "9 / 11", gridRow: "1 / 3" }}
           />
-
-          {/* Cost Structure (Bottom Left) */}
+          {/* Cost Structure */}
           <div
             className={`canvas-blocks-mini-cell ${7 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "span 5", gridRow: "3" }}
+            style={{ gridColumn: "1 / 6", gridRow: "3 / 4" }}
           />
-          {/* Revenue Streams (Bottom Right) */}
+          {/* Revenue Streams */}
           <div
             className={`canvas-blocks-mini-cell ${8 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "span 5", gridRow: "3" }}
+            style={{ gridColumn: "6 / 11", gridRow: "3 / 4" }}
           />
         </div>
       </div>
-      <div 
-        className="canvas-progress"
-        style={{ marginTop: "1rem" }}
-      >
+      <div className="canvas-progress" style={{ marginTop: "1rem" }}>
         <div
           className="canvas-progress-bar"
           style={{ width: `${progressPct}%` }}

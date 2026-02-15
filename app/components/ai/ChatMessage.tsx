@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
-import type { BlockEditProposal, SegmentProposal } from "@/lib/types/canvas";
+import type { BlockEditProposal, BlockItemProposal, SegmentProposal } from "@/lib/types/canvas";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -18,12 +18,17 @@ interface ChatMessageWithPartsProps {
   onRevertEdit?: (proposalId: string, editIndex: number) => void;
   onAcceptSegment?: (segKey: string, segment: SegmentProposal) => void;
   onRejectSegment?: (segKey: string) => void;
+  onAcceptItem?: (itemKey: string, item: BlockItemProposal) => void;
+  onRejectItem?: (itemKey: string) => void;
   onEditMessage?: (messageId: string, newText: string) => void;
   onRegenerate?: () => void;
   acceptedEdits?: Set<string>;
   rejectedEdits?: Set<string>;
   acceptedSegments?: Set<string>;
   rejectedSegments?: Set<string>;
+  acceptedItems?: Set<string>;
+  rejectedItems?: Set<string>;
+  canvasSlug?: string;
 }
 
 /**
@@ -35,6 +40,7 @@ interface ChatMessageWithPartsProps {
 function isToolPart(part: { type: string; [key: string]: unknown }): boolean {
   return (
     part.type === "dynamic-tool" ||
+    part.type === "tool-invocation" ||
     (part.type.startsWith("tool-") && part.type !== "tool")
   );
 }
@@ -42,8 +48,21 @@ function isToolPart(part: { type: string; [key: string]: unknown }): boolean {
 /** Extract tool name from a tool part */
 function getToolName(part: { type: string; [key: string]: unknown }): string {
   if (part.type === "dynamic-tool") return (part.toolName as string) ?? "";
+  if (part.type === "tool-invocation") {
+    const inv = part.toolInvocation as { toolName?: string } | undefined;
+    return inv?.toolName ?? "";
+  }
   if (part.type.startsWith("tool-")) return part.type.slice(5);
   return "";
+}
+
+/** Check if a tool part is still pending (not yet completed) */
+function isToolPending(part: { type: string; [key: string]: unknown }): boolean {
+  if (part.type === "tool-invocation") {
+    const inv = part.toolInvocation as { state?: string } | undefined;
+    return inv?.state !== "result";
+  }
+  return part.state !== "output-available";
 }
 
 /**
@@ -79,12 +98,17 @@ export function ChatMessageWithParts({
   onRevertEdit,
   onAcceptSegment,
   onRejectSegment,
+  onAcceptItem,
+  onRejectItem,
   onEditMessage,
   onRegenerate,
   acceptedEdits,
   rejectedEdits,
   acceptedSegments,
   rejectedSegments,
+  acceptedItems,
+  rejectedItems,
+  canvasSlug,
 }: ChatMessageWithPartsProps) {
   const isUser = role === "user";
   const [isEditing, setIsEditing] = useState(false);
@@ -291,6 +315,51 @@ export function ChatMessageWithParts({
                     );
                   })}
                 </div>
+              );
+            }
+
+            if (toolName === "createBlockItems") {
+              const output = part.output as Record<string, unknown> | undefined;
+              const input = part.input as Record<string, unknown> | undefined;
+              let rawItems = output?.items ?? input?.items;
+              if (!rawItems && Array.isArray(output)) rawItems = output;
+              if (!rawItems && Array.isArray(input)) rawItems = input;
+
+              const proposedItems = (
+                Array.isArray(rawItems) ? rawItems : []
+              ) as BlockItemProposal[];
+              if (!proposedItems.length || !proposedItems[0]?.name) return null;
+
+              const proposalId = part.toolCallId as string;
+              const isPending = part.state !== "output-available";
+
+              return (
+                <div key={idx} className="flex flex-col gap-1.5">
+                  {proposedItems.map((item, itemIdx) => {
+                    const itemKey = `${proposalId}-item-${itemIdx}`;
+                    const isAccepted = acceptedItems?.has(itemKey) ?? false;
+                    const isRejected = rejectedItems?.has(itemKey) ?? false;
+
+                    return (
+                      <ItemProposalCard
+                        key={itemKey}
+                        item={item}
+                        isPending={isPending}
+                        isAccepted={isAccepted}
+                        isRejected={isRejected}
+                        onAccept={() => onAcceptItem?.(itemKey, item)}
+                        onReject={() => onRejectItem?.(itemKey)}
+                      />
+                    );
+                  })}
+                </div>
+              );
+            }
+
+            // Show generateCanvas as a visible status card
+            if (toolName === "generateCanvas") {
+              return (
+                <GenerateCanvasCard key={idx} part={part} canvasSlug={canvasSlug} />
               );
             }
 
@@ -651,6 +720,246 @@ function SegmentProposalCard({
       {isRejected && (
         <div className="px-3 pb-2.5 text-foreground-muted/40 text-[10px] text-center font-display-small uppercase tracking-wider line-through">
           Skipped
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Block Item Proposal Card ───────────────────────────────────────────────
+
+function ItemProposalCard({
+  item,
+  isPending,
+  isAccepted,
+  isRejected,
+  onAccept,
+  onReject,
+}: {
+  item: BlockItemProposal;
+  isPending: boolean;
+  isAccepted: boolean;
+  isRejected: boolean;
+  onAccept: () => void;
+  onReject: () => void;
+}) {
+  return (
+    <div className="rounded-lg border border-white/8 bg-white/[0.03] overflow-hidden">
+      <div className="px-3 py-2 flex items-start gap-2">
+        <svg
+          width="11"
+          height="11"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-foreground-muted/50 shrink-0 mt-0.5"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+        <div className="flex-1 min-w-0">
+          <span className="text-[11px] font-medium text-foreground/80">
+            {item.name}
+          </span>
+          {item.description && (
+            <p className="text-[10px] text-foreground-muted/50 leading-relaxed mt-0.5">
+              {item.description}
+            </p>
+          )}
+        </div>
+
+        {/* Inline actions */}
+        {isPending && (
+          <span className="text-[9px] text-foreground-muted/30 shrink-0">...</span>
+        )}
+
+        {!isPending && !isAccepted && !isRejected && (
+          <div className="flex gap-1 shrink-0">
+            <button
+              onClick={onAccept}
+              className="px-2 py-0.5 rounded-md bg-green-500/12 hover:bg-green-500/22 text-green-400/80 text-[10px] font-display-small uppercase tracking-wider transition-colors"
+            >
+              Add
+            </button>
+            <button
+              onClick={onReject}
+              className="px-2 py-0.5 rounded-md bg-white/4 hover:bg-red-500/12 text-foreground-muted/40 hover:text-red-400/70 text-[10px] font-display-small uppercase tracking-wider transition-colors"
+            >
+              Skip
+            </button>
+          </div>
+        )}
+
+        {isAccepted && (
+          <span className="text-green-400/60 text-[9px] font-display-small uppercase tracking-wider shrink-0">
+            Added
+          </span>
+        )}
+
+        {isRejected && (
+          <span className="text-foreground-muted/30 text-[9px] font-display-small uppercase tracking-wider line-through shrink-0">
+            Skipped
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Generate Canvas Card ────────────────────────────────────────────────────
+
+function GenerateCanvasCard({
+  part,
+  canvasSlug: canvasSlugProp,
+}: {
+  part: { type: string; [key: string]: unknown };
+  canvasSlug?: string;
+}) {
+  const isPending = isToolPending(part);
+  const isDev = process.env.NODE_ENV === "development";
+
+  // Extract data from the tool invocation
+  const inv = part.type === "tool-invocation"
+    ? (part.toolInvocation as { args?: Record<string, string>; result?: Record<string, string>; toolCallId?: string } | undefined)
+    : undefined;
+  const args = inv?.args ?? (part.input as Record<string, string> | undefined);
+  const result = inv?.result ?? (part.output as Record<string, string> | undefined);
+  const title = result?.title ?? args?.title;
+  const toolCallId = inv?.toolCallId ?? (part.toolCallId as string | undefined);
+
+  // Server-side tool returns { slug, canvasId, title } in result
+  const canvasSlug = result?.slug ?? canvasSlugProp;
+
+  // Count filled blocks from args
+  const blockKeys = [
+    "key_partnerships", "key_activities", "key_resources",
+    "value_propositions", "customer_relationships", "channels",
+    "customer_segments", "cost_structure", "revenue_streams",
+  ];
+  const filledBlocks = args
+    ? blockKeys.filter((k) => args[k] && args[k].length > 10).length
+    : 0;
+
+  return (
+    <div className="rounded-xl border border-(--chroma-indigo)/20 bg-(--chroma-indigo)/5 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-3 py-2">
+        {isPending ? (
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--chroma-indigo)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            className="animate-spin shrink-0"
+          >
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+          </svg>
+        ) : (
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="rgb(52, 211, 153)"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="shrink-0"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        )}
+        <div className="flex-1 min-w-0">
+          <span className="text-[11px] text-foreground-muted/70">
+            {isPending ? "Building your canvas..." : "Canvas generated"}
+          </span>
+          {title && (
+            <span className="text-[11px] text-foreground/80 ml-1.5 font-medium">
+              &mdash; {title}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Block summary (when complete) */}
+      {!isPending && filledBlocks > 0 && (
+        <div className="px-3 pb-2 flex items-center gap-2">
+          <div className="flex gap-0.5">
+            {blockKeys.map((k) => (
+              <div
+                key={k}
+                className="w-1.5 h-1.5 rounded-full"
+                style={{
+                  background: args?.[k] && args[k].length > 10
+                    ? "rgb(52, 211, 153)"
+                    : "var(--gray-a5)",
+                }}
+                title={k.replace(/_/g, " ")}
+              />
+            ))}
+          </div>
+          <span className="text-[10px] text-foreground-muted/50">
+            {filledBlocks}/9 blocks filled
+          </span>
+        </div>
+      )}
+
+      {/* Canvas link */}
+      {!isPending && canvasSlug && (
+        <div className="px-3 pb-2">
+          <a
+            href={`/canvas/${canvasSlug}`}
+            className="inline-flex items-center gap-1.5 text-[11px] text-(--chroma-indigo) hover:text-(--chroma-indigo)/80 transition-colors"
+          >
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+            Open canvas
+          </a>
+        </div>
+      )}
+
+      {/* Dev debug info */}
+      {isDev && !isPending && (
+        <div className="px-3 pb-2 space-y-0.5">
+          {toolCallId && (
+            <p className="text-[9px] font-mono text-foreground-muted/30 truncate">
+              toolCallId: {toolCallId}
+            </p>
+          )}
+          {canvasSlug && (
+            <p className="text-[9px] font-mono text-foreground-muted/30 truncate">
+              slug: {canvasSlug}
+            </p>
+          )}
+          {args && (
+            <details className="text-[9px] font-mono text-foreground-muted/30">
+              <summary className="cursor-pointer hover:text-foreground-muted/50 transition-colors">
+                tool args ({Object.keys(args).length} fields)
+              </summary>
+              <pre className="mt-1 p-2 rounded-md bg-black/20 overflow-x-auto max-h-40 overflow-y-auto text-[8px] leading-relaxed">
+                {JSON.stringify(args, null, 2)}
+              </pre>
+            </details>
+          )}
         </div>
       )}
     </div>

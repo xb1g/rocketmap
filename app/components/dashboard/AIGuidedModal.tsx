@@ -71,10 +71,9 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
     [],
   );
 
-  const chatId = activeSessionId ?? 'guided-create-new';
-
+  // Use a stable ID — we manage session switching via setMessages, not by changing the chat ID
   const { messages, sendMessage, setMessages, stop, status } = useChat({
-    id: chatId,
+    id: 'guided-create',
     transport,
   });
 
@@ -169,7 +168,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
     });
   }, [startNewSession]);
 
-  // Watch for generateCanvas tool completion
+  // Watch for generateCanvas tool completion (server-side creation)
   useEffect(() => {
     if (creatingRef.current) return;
 
@@ -183,20 +182,14 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
           toolName?: string;
           state?: string;
           args?: Record<string, string>;
-          result?: Record<string, string>;
+          result?: { slug?: string; canvasId?: number; title?: string };
         } | undefined;
         if (!inv || inv.toolName !== 'generateCanvas') continue;
 
-        const data =
-          inv.state === 'result'
-            ? (inv.result ?? inv.args)
-            : inv.state === 'call'
-              ? inv.args
-              : undefined;
-
-        if (data && data.title && data.customer_segments) {
+        // The server-side tool returns { slug, canvasId, title } in `result`
+        if (inv.state === 'result' && inv.result?.slug) {
           creatingRef.current = true;
-          handleCreateCanvas(data);
+          handleCanvasReady(inv.result.slug, inv.result.title ?? inv.args?.title ?? 'Untitled Canvas');
           return;
         }
       }
@@ -212,46 +205,32 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
     return () => clearInterval(interval);
   }, [creationState]);
 
-  const handleCreateCanvas = useCallback(async (data: Record<string, string>) => {
-    const title = data.title || 'Untitled Canvas';
+  const handleCanvasReady = useCallback((slug: string, title: string) => {
     setCanvasTitle(title);
     setCreationState('creating');
     setCreationStep(0);
 
-    try {
-      const { title: t, ...blocks } = data;
-      const res = await fetch('/api/canvas/create-with-blocks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: t || title, blocks }),
+    // Mark session as completed
+    if (activeSessionId) {
+      setSessions((prev) => {
+        const updated = prev.map((s) =>
+          s.id === activeSessionId
+            ? { ...s, status: 'completed' as const, canvasSlug: slug }
+            : s,
+        );
+        saveSessions(updated);
+        return updated;
       });
-      if (!res.ok) throw new Error('Failed to create canvas');
-      const { slug } = await res.json();
+    }
 
-      // Mark session as completed
-      if (activeSessionId) {
-        setSessions((prev) => {
-          const updated = prev.map((s) =>
-            s.id === activeSessionId
-              ? { ...s, status: 'completed' as const, canvasSlug: slug }
-              : s,
-          );
-          saveSessions(updated);
-          return updated;
-        });
-      }
-
+    // Brief animation then redirect
+    setTimeout(() => {
       setCreationState('done');
       setTimeout(() => {
         onOpenChange(false);
         router.push(`/canvas/${slug}`);
       }, 1200);
-    } catch (err) {
-      console.error('Canvas creation failed:', err);
-      setCreationState('error');
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to create canvas');
-      creatingRef.current = false;
-    }
+    }, 1500);
   }, [router, onOpenChange, activeSessionId]);
 
   const handleSubmit = () => {
@@ -559,7 +538,12 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
                     </span>
                   </div>
                 ) : (
-                  <ChatMessages messages={messages} isLoading={isLoading} />
+                  <ChatMessages
+                    messages={messages}
+                    isLoading={isLoading}
+                    status={status}
+                    canvasSlug={sessions.find((s) => s.id === activeSessionId)?.canvasSlug}
+                  />
                 )}
                 <ChatInput
                   value={input}

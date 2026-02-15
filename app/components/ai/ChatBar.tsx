@@ -7,6 +7,8 @@ import type { UIMessage } from 'ai';
 import type { BlockType, BlockEditProposal } from '@/lib/types/canvas';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
+import { ChatSessionSelector } from './ChatSessionSelector';
+import { useChatSessions } from './useChatSessions';
 
 interface ChatBarProps {
   canvasId: string;
@@ -19,41 +21,83 @@ interface ChatBarProps {
 }
 
 function toUIMessages(msgs: { id: string; role: string; content: string; createdAt: string }[]): UIMessage[] {
-  return msgs.map((m) => ({
-    id: m.id,
-    role: m.role as UIMessage['role'],
-    parts: [{ type: 'text' as const, text: m.content }],
-    createdAt: new Date(m.createdAt),
-  }));
+  return msgs.map((m) => {
+    if (m.role === 'assistant') {
+      try {
+        const parsed = JSON.parse(m.content);
+        if (parsed.parts && Array.isArray(parsed.parts)) {
+          const uiParts = parsed.parts.map((p: Record<string, unknown>) => {
+            if (p.type === 'text') return { type: 'text' as const, text: p.text as string };
+            if (p.type === 'tool-result') {
+              return {
+                type: 'dynamic-tool',
+                toolName: p.toolName,
+                toolCallId: p.toolCallId,
+                state: 'output-available',
+                output: p.result,
+              };
+            }
+            return p;
+          });
+          return {
+            id: m.id,
+            role: m.role as UIMessage['role'],
+            parts: uiParts,
+            createdAt: new Date(m.createdAt),
+          };
+        }
+      } catch {
+        // Not JSON — fall through to plain text
+      }
+    }
+    return {
+      id: m.id,
+      role: m.role as UIMessage['role'],
+      parts: [{ type: 'text' as const, text: m.content }],
+      createdAt: new Date(m.createdAt),
+    };
+  });
 }
 
 function ChatBarLoader({
   canvasId,
   chatKey,
+  sessionKey,
   endpoint,
   docked,
   onDockedChange,
   onAcceptEdit,
   onRejectEdit,
   onRevertEdit,
+  sessions,
+  activeSessionKey,
+  onSelectSession,
+  onNewSession,
+  sessionsLoaded,
 }: {
   canvasId: string;
   chatKey: string;
+  sessionKey: string;
   endpoint: string;
   docked?: boolean;
   onDockedChange?: (docked: boolean) => void;
   onAcceptEdit?: (proposalId: string, edit: BlockEditProposal) => void;
   onRejectEdit?: (proposalId: string, editIndex: number) => void;
   onRevertEdit?: (proposalId: string, editIndex: number) => void;
+  sessions: { sessionKey: string; label: string; createdAt: string; messageCount: number }[];
+  activeSessionKey: string;
+  onSelectSession: (key: string) => void;
+  onNewSession: () => void;
+  sessionsLoaded: boolean;
 }) {
   const [persistedMessages, setPersistedMessages] = useState<UIMessage[] | null>(null);
 
   useEffect(() => {
-    fetch(`/api/canvas/${canvasId}/messages?chatKey=${chatKey}`)
+    fetch(`/api/canvas/${canvasId}/messages?chatKey=${encodeURIComponent(sessionKey)}`)
       .then((r) => r.json())
       .then((data) => setPersistedMessages(toUIMessages(data.messages ?? [])))
       .catch(() => setPersistedMessages([]));
-  }, [canvasId, chatKey]);
+  }, [canvasId, sessionKey]);
 
   if (persistedMessages === null) {
     if (docked) {
@@ -100,6 +144,7 @@ function ChatBarLoader({
     <ChatBarInner
       canvasId={canvasId}
       chatKey={chatKey}
+      sessionKey={sessionKey}
       endpoint={endpoint}
       persistedMessages={persistedMessages}
       docked={docked}
@@ -107,6 +152,11 @@ function ChatBarLoader({
       onAcceptEdit={onAcceptEdit}
       onRejectEdit={onRejectEdit}
       onRevertEdit={onRevertEdit}
+      sessions={sessions}
+      activeSessionKey={activeSessionKey}
+      onSelectSession={onSelectSession}
+      onNewSession={onNewSession}
+      sessionsLoaded={sessionsLoaded}
     />
   );
 }
@@ -114,6 +164,7 @@ function ChatBarLoader({
 function ChatBarInner({
   canvasId,
   chatKey,
+  sessionKey,
   endpoint,
   persistedMessages,
   docked,
@@ -121,9 +172,15 @@ function ChatBarInner({
   onAcceptEdit,
   onRejectEdit,
   onRevertEdit,
+  sessions,
+  activeSessionKey,
+  onSelectSession,
+  onNewSession,
+  sessionsLoaded,
 }: {
   canvasId: string;
   chatKey: string;
+  sessionKey: string;
   endpoint: string;
   persistedMessages: UIMessage[];
   docked?: boolean;
@@ -131,6 +188,11 @@ function ChatBarInner({
   onAcceptEdit?: (proposalId: string, edit: BlockEditProposal) => void;
   onRejectEdit?: (proposalId: string, editIndex: number) => void;
   onRevertEdit?: (proposalId: string, editIndex: number) => void;
+  sessions: { sessionKey: string; label: string; createdAt: string; messageCount: number }[];
+  activeSessionKey: string;
+  onSelectSession: (key: string) => void;
+  onNewSession: () => void;
+  sessionsLoaded: boolean;
 }) {
   const [internalDocked, setInternalDocked] = useState(false);
   const [input, setInput] = useState('');
@@ -153,7 +215,7 @@ function ChatBarInner({
   );
 
   const { messages, sendMessage, stop, regenerate, status } = useChat({
-    id: chatKey,
+    id: sessionKey,
     transport,
     messages: persistedMessages,
   });
@@ -176,10 +238,10 @@ function ChatBarInner({
       fetch(`/api/canvas/${canvasId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chatKey, role: 'user', content: text, messageId }),
+        body: JSON.stringify({ chatKey: sessionKey, role: 'user', content: text, messageId }),
       }).catch((err) => console.error('[chat-persist] Failed to save user message:', err));
     },
-    [canvasId, chatKey],
+    [canvasId, sessionKey],
   );
 
   const onSubmit = () => {
@@ -202,27 +264,52 @@ function ChatBarInner({
     return (
       <div className="chat-float-wrap">
         <div className="chat-float-card glass-morphism">
-          <button
+          <div
             onClick={() => setDocked(true)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                setDocked(true);
+              }
+            }}
             className="chat-float-header"
-            type="button"
+            role="button"
+            tabIndex={0}
           >
             <div className="min-w-0 text-left">
               <div className="text-[11px] font-medium text-foreground-muted">AI Copilot</div>
               <div className="text-[10px] text-foreground-muted/50 truncate">{label}</div>
             </div>
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-foreground-muted/70"
-            >
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNewSession();
+                  setDocked(true);
+                }}
+                className="text-[10px] px-1.5 py-0.5 rounded border transition-colors"
+                style={{
+                  borderColor: 'var(--chroma-indigo, #6366f1)',
+                  color: 'var(--chroma-indigo, #6366f1)',
+                }}
+                title="New chat session"
+              >
+                +
+              </button>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="text-foreground-muted/70"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          </div>
           <ChatInput
             value={input}
             onChange={setInput}
@@ -252,10 +339,21 @@ function ChatBarInner({
         </button>
       </div>
 
+      {sessionsLoaded && (
+        <ChatSessionSelector
+          sessions={sessions}
+          activeSessionKey={activeSessionKey}
+          onSelect={onSelectSession}
+          onNewChat={onNewSession}
+          scopePrefix={chatKey}
+        />
+      )}
+
       <div className="chat-dock-body">
         <ChatMessages
           messages={messages}
           isLoading={isLoading}
+          status={status}
           onAcceptEdit={onAcceptEdit}
           onRejectEdit={onRejectEdit}
           onRevertEdit={onRevertEdit}
@@ -280,18 +378,31 @@ export function ChatBar({ canvasId, chatBlock, docked, onDockedChange, onAcceptE
     ? `/api/canvas/${canvasId}/blocks/${chatBlock}/chat`
     : `/api/canvas/${canvasId}/chat`;
 
-  // Key forces full remount when chatKey changes, avoiding stale state
+  const {
+    sessions,
+    activeSessionKey,
+    setActiveSessionKey,
+    createNewSession,
+    sessionsLoaded,
+  } = useChatSessions({ canvasId, scopePrefix: chatKey });
+
   return (
     <ChatBarLoader
-      key={`${canvasId}-${chatKey}`}
+      key={`${canvasId}-${activeSessionKey}`}
       canvasId={canvasId}
       chatKey={chatKey}
+      sessionKey={activeSessionKey}
       endpoint={endpoint}
       docked={docked}
       onDockedChange={onDockedChange}
       onAcceptEdit={onAcceptEdit}
       onRejectEdit={onRejectEdit}
       onRevertEdit={onRevertEdit}
+      sessions={sessions}
+      activeSessionKey={activeSessionKey}
+      onSelectSession={setActiveSessionKey}
+      onNewSession={createNewSession}
+      sessionsLoaded={sessionsLoaded}
     />
   );
 }

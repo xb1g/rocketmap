@@ -6,6 +6,7 @@ import type {
   Segment,
   MarketResearchData,
   SegmentScorecard,
+  SegmentProfile,
 } from '@/lib/types/canvas';
 import { BlockChatSection } from '@/app/components/ai/BlockChatSection';
 import { SegmentSelector } from './SegmentSelector';
@@ -42,6 +43,7 @@ export function SegmentEvalOverlay({
   );
   const [isScoring, setIsScoring] = useState(false);
   const [isComparing, setIsComparing] = useState(false);
+  const [isSuggestingProfile, setIsSuggestingProfile] = useState(false);
   const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null);
   const [creatingSegment, setCreatingSegment] = useState(false);
   const [newSegmentName, setNewSegmentName] = useState('');
@@ -238,6 +240,55 @@ export function SegmentEvalOverlay({
     [selectedScorecard, data, persistDeepDive],
   );
 
+  // Profile change (debounced persist)
+  const handleProfileChange = useCallback(
+    (profile: SegmentProfile) => {
+      if (selectedSegmentId == null) return;
+      const updatedData: MarketResearchData = {
+        ...data,
+        segmentProfiles: {
+          ...(data.segmentProfiles ?? {}),
+          [String(selectedSegmentId)]: profile,
+        },
+      };
+      persistDeepDive(updatedData);
+    },
+    [selectedSegmentId, data, persistDeepDive],
+  );
+
+  // AI suggest profile
+  const handleSuggestProfile = useCallback(async () => {
+    if (!selectedSegment || isSuggestingProfile) return;
+    setIsSuggestingProfile(true);
+
+    try {
+      const res = await fetch(
+        `/api/canvas/${canvasId}/blocks/customer_segments/deep-dive`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            module: 'segment_profile',
+            inputs: {
+              segmentId: String(selectedSegment.id),
+              segmentName: selectedSegment.name,
+              segmentDescription: selectedSegment.description,
+            },
+          }),
+        },
+      );
+
+      if (res.ok) {
+        const { updatedDeepDive } = await res.json();
+        onDataChange(updatedDeepDive as MarketResearchData);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setIsSuggestingProfile(false);
+    }
+  }, [canvasId, selectedSegment, isSuggestingProfile, onDataChange]);
+
   return (
     <>
       {/* Backdrop */}
@@ -312,9 +363,13 @@ export function SegmentEvalOverlay({
                   segment={selectedSegment}
                   scorecard={selectedScorecard}
                   deepDiveData={data}
+                  profile={data.segmentProfiles?.[String(selectedSegmentId)] ?? null}
                   isScoring={isScoring}
+                  isSuggestingProfile={isSuggestingProfile}
                   onScore={handleScore}
                   onArpuChange={handleArpuChange}
+                  onProfileChange={handleProfileChange}
+                  onSuggestProfile={handleSuggestProfile}
                 />
 
                 {selectedScorecard && (

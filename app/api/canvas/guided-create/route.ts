@@ -1,7 +1,7 @@
 import { stepCountIs, convertToModelMessages } from 'ai';
 import { streamTextWithLogging } from '@/lib/ai/logger';
 import { requireAuth } from '@/lib/appwrite-server';
-import { getToolsForAgent } from '@/lib/ai/tools';
+import { getToolsForAgent, createGenerateCanvasTool } from '@/lib/ai/tools';
 import { ONBOARDING_SYSTEM_PROMPT } from '@/lib/ai/prompts';
 import {
   getAnthropicModelForUser,
@@ -13,13 +13,31 @@ export async function POST(request: Request) {
     const user = await requireAuth();
     const { messages } = await request.json();
 
-    const tools = getToolsForAgent(['generateCanvas']);
+    // Use the server-side factory so the tool creates the canvas in Appwrite
+    const serverGenerateCanvas = createGenerateCanvasTool(user.$id);
+    const tools = getToolsForAgent(['generateCanvas'], {
+      generateCanvas: serverGenerateCanvas,
+    });
     const modelMessages = await convertToModelMessages(messages);
 
-    // Count user messages — force tool call after enough conversation
-    const userMessageCount = modelMessages.filter(
+    // Count user messages from both raw UIMessages and converted model messages
+    const rawUserCount = Array.isArray(messages)
+      ? messages.filter((m: { role: string }) => m.role === 'user').length
+      : 0;
+    const modelUserCount = modelMessages.filter(
       (m) => m.role === 'user',
     ).length;
+
+    const shouldForceTool = rawUserCount >= 3 || modelUserCount >= 3;
+
+    console.log(
+      `[AI] guided-create | rawUserCount=${rawUserCount}, modelUserCount=${modelUserCount}, forceTool=${shouldForceTool}`,
+    );
+
+    // Build params — set toolChoice explicitly when forcing
+    const toolChoice = shouldForceTool
+      ? ({ type: 'tool', toolName: 'generateCanvas' } as const)
+      : undefined;
 
     const result = streamTextWithLogging('guided-create', {
       model: getAnthropicModelForUser(user, 'claude-sonnet-4-5-20250929'),
@@ -27,9 +45,7 @@ export async function POST(request: Request) {
       messages: modelMessages,
       tools,
       stopWhen: stepCountIs(2),
-      ...(userMessageCount >= 3 && {
-        toolChoice: { type: 'tool', toolName: 'generateCanvas' },
-      }),
+      toolChoice,
     }, {
       onUsage: (usage) => recordAnthropicUsageForUser(user.$id, usage),
     });
