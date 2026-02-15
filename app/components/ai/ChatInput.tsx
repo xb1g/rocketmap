@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 
 interface ChatInputProps {
   value: string;
@@ -11,7 +11,18 @@ interface ChatInputProps {
 }
 
 export function ChatInput({ value, onChange, onSubmit, isLoading, placeholder }: ChatInputProps) {
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const resize = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, []);
+
+  useEffect(() => {
+    resize();
+  }, [value, resize]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -23,27 +34,35 @@ export function ChatInput({ value, onChange, onSubmit, isLoading, placeholder }:
   };
 
   return (
-    <div className="flex items-end gap-2 p-3 border-t border-white/5">
-      <textarea
-        ref={inputRef}
-        className="flex-1 bg-transparent text-xs outline-none resize-none max-h-[80px] leading-relaxed placeholder:text-foreground-muted/50"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder ?? 'Ask about your business model...'}
-        rows={1}
-      />
-      <button
-        onClick={() => { if (value.trim() && !isLoading) onSubmit(); }}
-        disabled={!value.trim() || isLoading}
-        className="text-foreground-muted hover:text-foreground disabled:opacity-30 transition-colors p-1 shrink-0"
-        aria-label="Send message"
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13" />
-          <polygon points="22 2 15 22 11 13 2 9 22 2" />
-        </svg>
-      </button>
+    <div className="shrink-0 px-3 pb-3 pt-1.5">
+      <div className="flex items-end gap-2 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2 focus-within:border-[var(--chroma-indigo)]/20 transition-colors">
+        <textarea
+          ref={textareaRef}
+          className="flex-1 bg-transparent text-xs outline-none resize-none leading-relaxed placeholder:text-foreground-muted/30"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder ?? 'Ask about your business model...'}
+          rows={1}
+        />
+        <button
+          onClick={() => { if (value.trim() && !isLoading) onSubmit(); }}
+          disabled={!value.trim() || isLoading}
+          className="shrink-0 w-6 h-6 flex items-center justify-center rounded-lg text-foreground-muted/40 hover:text-foreground hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-transparent transition-all"
+          aria-label="Send message"
+        >
+          {isLoading ? (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
+              <circle cx="12" cy="12" r="10" strokeDasharray="31.4" strokeDashoffset="10" />
+            </svg>
+          ) : (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="19" x2="12" y2="5" />
+              <polyline points="5 12 12 5 19 12" />
+            </svg>
+          )}
+        </button>
+      </div>
     </div>
   );
 }

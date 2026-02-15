@@ -16,17 +16,23 @@ function logParams(label: string, params: GenerateTextParams | StreamTextParams)
 
   const toolNames = params.tools ? Object.keys(params.tools) : [];
 
-  const messages = 'messages' in params && Array.isArray(params.messages)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const messages: any[] = 'messages' in params && Array.isArray(params.messages)
     ? params.messages
     : [];
   const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
-  const userPreview = lastUserMsg
-    ? String(
-        typeof lastUserMsg.content === 'string'
-          ? lastUserMsg.content
-          : JSON.stringify(lastUserMsg.content),
-      ).slice(0, 200)
-    : '(none)';
+  let userPreview = '(none)';
+  if (lastUserMsg) {
+    if (typeof lastUserMsg.content === 'string') {
+      userPreview = lastUserMsg.content.slice(0, 200);
+    } else if (Array.isArray(lastUserMsg.parts)) {
+      // UIMessage format: extract text from parts
+      const textPart = lastUserMsg.parts.find((p: { type: string }) => p.type === 'text');
+      userPreview = textPart?.text?.slice(0, 200) ?? '(non-text)';
+    } else {
+      userPreview = JSON.stringify(lastUserMsg.content).slice(0, 200);
+    }
+  }
 
   console.log(
     `[AI] ${label} | model=${String(params.model)} | tools=[${toolNames.join(', ')}]`,

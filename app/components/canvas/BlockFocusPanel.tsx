@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { BlockData, BlockType, CanvasMode } from '@/lib/types/canvas';
 import { BlockFocusHeader } from './BlockFocusHeader';
 import { BlockFocusEditor } from './BlockFocusEditor';
@@ -37,6 +38,7 @@ export function BlockFocusPanel({
   const def = BLOCK_DEFINITIONS.find((d) => d.type === blockType);
   const label = mode === 'lean' && def?.leanLabel ? def.leanLabel : def?.bmcLabel ?? blockType;
   const value = mode === 'lean' ? block.content.lean : block.content.bmc;
+  const [contentCollapsed, setContentCollapsed] = useState(false);
 
   return (
     <>
@@ -53,69 +55,88 @@ export function BlockFocusPanel({
           onClose={onClose}
         />
 
-        <div className="flex-1 overflow-y-auto min-h-0">
-          <BlockFocusEditor
-            value={value}
-            placeholder={`Describe your ${label.toLowerCase()}...`}
-            onChange={onChange}
-          />
+        {/* Unified scrollable body — everything lives here */}
+        <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
 
-          {/* Analyze button */}
-          <div className="px-4 pb-2">
-            <button
-              onClick={onAnalyze}
-              disabled={isAnalyzing}
-              className={`w-full px-4 py-2 text-xs font-medium rounded-lg transition-all ${
-                isAnalyzing
-                  ? 'glow-ai text-[var(--state-ai)] border border-[var(--state-ai)]/20'
-                  : 'glass-morphism hover:bg-white/10 text-foreground-muted hover:text-foreground'
-              }`}
-            >
-              {isAnalyzing ? 'Analyzing...' : 'Analyze with AI'}
-            </button>
-          </div>
+          {/* Collapsible content section */}
+          <div className={`shrink-0 transition-all duration-300 ease-out overflow-hidden ${
+            contentCollapsed ? 'max-h-0 opacity-0' : 'max-h-[2000px] opacity-100'
+          }`}>
+            <BlockFocusEditor
+              value={value}
+              placeholder={`Describe your ${label.toLowerCase()}...`}
+              onChange={onChange}
+            />
 
-          {/* Deep Dive button — only for customer_segments */}
-          {blockType === 'customer_segments' && onDeepDive && (
-            <div className="px-4 pb-2">
-              {allBlocksFilled ? (
+            {/* Action buttons */}
+            <div className="px-4 pb-3 flex gap-2">
+              <button
+                onClick={onAnalyze}
+                disabled={isAnalyzing}
+                className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${
+                  isAnalyzing
+                    ? 'glow-ai text-[var(--state-ai)] border border-[var(--state-ai)]/20'
+                    : 'glass-morphism hover:bg-white/10 text-foreground-muted hover:text-foreground'
+                }`}
+              >
+                {isAnalyzing ? 'Analyzing...' : 'Analyze with AI'}
+              </button>
+
+              {blockType === 'customer_segments' && onDeepDive && allBlocksFilled && (
                 <button
                   onClick={onDeepDive}
-                  className="w-full px-4 py-2 text-xs font-medium rounded-lg glass-morphism hover:chromatic-border text-foreground-muted hover:text-foreground transition-all"
+                  className="flex-1 px-4 py-2 text-xs font-medium rounded-lg glass-morphism hover:chromatic-border text-foreground-muted hover:text-foreground transition-all"
                 >
-                  Deep Dive — Market Research
+                  Deep Dive
                 </button>
-              ) : (
-                <div className="w-full px-4 py-3 text-xs rounded-lg bg-white/3 border border-white/5">
-                  <div className="text-foreground-muted/60 font-medium mb-1">
-                    Deep Dive — Market Research
-                  </div>
-                  <div className="text-foreground-muted/40 text-[11px]">
-                    Fill all 9 canvas blocks to unlock deep-dive research.
-                    {filledCount !== undefined && (
-                      <span className="ml-1 text-foreground-muted/50">
-                        ({filledCount}/9 filled)
-                      </span>
-                    )}
-                    <span className="block mt-1">
-                      Use the AI chat below to help draft your blocks faster.
-                    </span>
-                  </div>
-                </div>
               )}
             </div>
-          )}
 
-          {/* AI Results */}
-          <BlockAIResults analysis={block.aiAnalysis} usage={block.lastUsage} />
-        </div>
+            {/* Deep dive gate message */}
+            {blockType === 'customer_segments' && onDeepDive && !allBlocksFilled && (
+              <div className="px-4 pb-3">
+                <div className="px-3 py-2.5 text-[11px] rounded-lg bg-white/[0.02] border border-white/5 text-foreground-muted/50">
+                  Fill all 9 blocks to unlock deep-dive research.
+                  {filledCount !== undefined && (
+                    <span className="ml-1 text-foreground-muted/40">
+                      ({filledCount}/9)
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
 
-        {/* Chat section */}
-        {chatSection && (
-          <div className="border-t border-white/5">
-            {chatSection}
+            {/* AI Results */}
+            <BlockAIResults analysis={block.aiAnalysis} usage={block.lastUsage} />
           </div>
-        )}
+
+          {/* Divider with collapse toggle */}
+          <div className="shrink-0 relative flex items-center px-4 py-1.5">
+            <div className="flex-1 h-px bg-white/5" />
+            <button
+              onClick={() => setContentCollapsed(!contentCollapsed)}
+              className="group flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/5 transition-all"
+            >
+              <svg
+                width="10" height="10" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round"
+                className={`transition-transform duration-200 ${contentCollapsed ? 'rotate-180' : ''}`}
+              >
+                <polyline points="18 15 12 9 6 15" />
+              </svg>
+              {contentCollapsed ? 'Show content' : 'Copilot'}
+            </button>
+            <div className="flex-1 h-px bg-white/5" />
+          </div>
+
+          {/* Chat — fills all remaining space */}
+          {chatSection && (
+            <div className="flex-1 min-h-[180px] flex flex-col">
+              {chatSection}
+            </div>
+          )}
+        </div>
       </div>
     </>
   );
