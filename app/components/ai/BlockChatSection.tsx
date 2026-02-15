@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import type { UIMessage } from 'ai';
-import type { BlockType, BlockEditProposal } from '@/lib/types/canvas';
+import type { BlockType, BlockEditProposal, SegmentProposal } from '@/lib/types/canvas';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
 
@@ -14,6 +14,7 @@ interface BlockChatSectionProps {
   onAcceptEdit?: (proposalId: string, edit: BlockEditProposal) => void;
   onRejectEdit?: (proposalId: string, editIndex: number) => void;
   onRevertEdit?: (proposalId: string, editIndex: number) => void;
+  onAcceptSegment?: (segKey: string, segment: SegmentProposal) => void;
 }
 
 function toUIMessages(msgs: { id: string; role: string; content: string; createdAt: string }[]): UIMessage[] {
@@ -25,7 +26,7 @@ function toUIMessages(msgs: { id: string; role: string; content: string; created
   }));
 }
 
-function BlockChatLoader({ canvasId, blockType, onAcceptEdit, onRejectEdit, onRevertEdit }: BlockChatSectionProps) {
+function BlockChatLoader({ canvasId, blockType, onAcceptEdit, onRejectEdit, onRevertEdit, onAcceptSegment }: BlockChatSectionProps) {
   const [persistedMessages, setPersistedMessages] = useState<UIMessage[] | null>(null);
 
   useEffect(() => {
@@ -51,6 +52,7 @@ function BlockChatLoader({ canvasId, blockType, onAcceptEdit, onRejectEdit, onRe
       onAcceptEdit={onAcceptEdit}
       onRejectEdit={onRejectEdit}
       onRevertEdit={onRevertEdit}
+      onAcceptSegment={onAcceptSegment}
     />
   );
 }
@@ -62,6 +64,7 @@ function BlockChat({
   onAcceptEdit,
   onRejectEdit,
   onRevertEdit,
+  onAcceptSegment,
 }: BlockChatSectionProps & { persistedMessages: UIMessage[] }) {
   const [input, setInput] = useState('');
   const chatKey = blockType;
@@ -118,6 +121,7 @@ function BlockChat({
         onAcceptEdit={onAcceptEdit}
         onRejectEdit={onRejectEdit}
         onRevertEdit={onRevertEdit}
+        onAcceptSegment={onAcceptSegment}
         onEditMessage={handleEditMessage}
         onRegenerate={handleRegenerate}
       />
@@ -133,7 +137,7 @@ function BlockChat({
   );
 }
 
-export function BlockChatSection({ canvasId, blockType, onAcceptEdit, onRejectEdit, onRevertEdit }: BlockChatSectionProps) {
+export function BlockChatSection({ canvasId, blockType, onAcceptEdit, onRejectEdit, onRevertEdit, onAcceptSegment }: BlockChatSectionProps) {
   // Key forces full remount when blockType changes, avoiding stale state
   return (
     <BlockChatLoader
@@ -143,6 +147,7 @@ export function BlockChatSection({ canvasId, blockType, onAcceptEdit, onRejectEd
       onAcceptEdit={onAcceptEdit}
       onRejectEdit={onRejectEdit}
       onRevertEdit={onRevertEdit}
+      onAcceptSegment={onAcceptSegment}
     />
   );
 }

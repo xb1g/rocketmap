@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { stepCountIs } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
 import { generateTextWithLogging } from '@/lib/ai/logger';
 import { Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
@@ -14,6 +13,10 @@ import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { getAgentConfig } from '@/lib/ai/agents';
 import { getToolsForAgent } from '@/lib/ai/tools';
 import type { BlockType } from '@/lib/types/canvas';
+import {
+  getAnthropicModelForUser,
+  recordAnthropicUsageForUser,
+} from '@/lib/ai/user-preferences';
 
 interface RouteContext {
   params: Promise<{ canvasId: string; blockType: string }>;
@@ -33,18 +36,24 @@ export async function POST(_request: Request, context: RouteContext) {
       ? `${targetBlock.content.bmc}\n${targetBlock.content.lean}`.trim()
       : '';
 
-    const { result, usage } = await generateTextWithLogging(`analyze:${blockType}`, {
-      model: anthropic('claude-sonnet-4-5-20250929'),
-      system: config.systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: `Analyze the "${blockType}" block. Current content: "${content || '(empty)'}". Use the analyzeBlock tool to provide your structured analysis.`,
-        },
-      ],
-      tools,
-      stopWhen: stepCountIs(3),
-    });
+    const { result, usage } = await generateTextWithLogging(
+      `analyze:${blockType}`,
+      {
+        model: getAnthropicModelForUser(user, 'claude-sonnet-4-5-20250929'),
+        system: config.systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: `Analyze the "${blockType}" block. Current content: "${content || '(empty)'}". Use the analyzeBlock tool to provide your structured analysis.`,
+          },
+        ],
+        tools,
+        stopWhen: stepCountIs(3),
+      },
+      {
+        onUsage: (usageData) => recordAnthropicUsageForUser(user.$id, usageData),
+      },
+    );
 
     // Extract tool call result
     let analysis = { draft: '', assumptions: [] as string[], risks: [] as string[], questions: [] as string[] };

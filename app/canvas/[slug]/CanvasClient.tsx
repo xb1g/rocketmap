@@ -4,8 +4,10 @@ import { useState, useCallback, useRef, useEffect, type CSSProperties } from "re
 import { useRouter } from "next/navigation";
 import type {
   BlockData,
+  BlockItem,
   BlockType,
   BlockEditProposal,
+  SegmentProposal,
   CanvasMode,
   CanvasTab,
   CanvasData,
@@ -14,6 +16,7 @@ import type {
   MarketResearchData,
   Segment,
 } from "@/lib/types/canvas";
+import type { HoveredItem } from "@/app/components/canvas/ConnectionOverlay";
 import type { ConsistencyData } from "@/app/components/canvas/ConsistencyReport";
 import { isSharedBlock, BLOCK_DEFINITIONS } from "@/app/components/canvas/constants";
 import { BMCGrid } from "@/app/components/canvas/BMCGrid";
@@ -26,6 +29,7 @@ import { AnalysisView } from "@/app/components/canvas/AnalysisView";
 import { ChatBar } from "@/app/components/ai/ChatBar";
 import { BlockChatSection } from "@/app/components/ai/BlockChatSection";
 import { DeepDiveOverlay } from "@/app/components/blocks/DeepDiveOverlay";
+import { InlineSegmentEval } from "@/app/components/blocks/segment-eval/InlineSegmentEval";
 
 interface CanvasClientProps {
   canvasId: string;
@@ -92,6 +96,7 @@ export function CanvasClient({
     }
     return map;
   });
+  const [hoveredItem, setHoveredItem] = useState<HoveredItem | null>(null);
 
   const saveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
@@ -135,7 +140,7 @@ export function CanvasClient({
 
   // Save block content
   const saveBlock = useCallback(
-    async (blockType: BlockType, content: { bmc: string; lean: string }) => {
+    async (blockType: BlockType, content: { bmc: string; lean: string; items?: BlockItem[] }) => {
       setSaveStatus("saving");
       try {
         const res = await fetch(`/api/canvas/${canvasId}/blocks`, {
@@ -186,7 +191,7 @@ export function CanvasClient({
 
   const handleBlockChange = useCallback(
     (blockType: BlockType, value: string) => {
-      let updatedContent = { bmc: "", lean: "" };
+      let updatedContent: { bmc: string; lean: string; items?: BlockItem[] } = { bmc: "", lean: "" };
 
       setBlocks((prev) => {
         const next = new Map(prev);
@@ -195,7 +200,7 @@ export function CanvasClient({
         // Shared blocks (channels, customer_segments, cost_structure, revenue_streams)
         // always write to both bmc and lean so content stays in sync across modes
         if (isSharedBlock(blockType)) {
-          updatedContent = { bmc: value, lean: value };
+          updatedContent = { bmc: value, lean: value, items: content.items };
         } else {
           updatedContent =
             mode === "lean"
@@ -393,6 +398,7 @@ export function CanvasClient({
           behavioral: doc.behavioral ?? "",
           geographic: doc.geographic ?? "",
           estimatedSize: doc.estimatedSize ?? "",
+          colorHex: doc.colorHex ?? undefined,
         };
         setSegments((prev) => new Map(prev).set(seg.id, seg));
         return seg;
@@ -429,6 +435,7 @@ export function CanvasClient({
           behavioral: doc.behavioral ?? "",
           geographic: doc.geographic ?? "",
           estimatedSize: doc.estimatedSize ?? "",
+          colorHex: doc.colorHex ?? undefined,
         };
         setSegments((prev) => new Map(prev).set(seg.id, seg));
         setBlocks((prev) => {
@@ -549,6 +556,107 @@ export function CanvasClient({
     [canvasId],
   );
 
+  // ─── Block Item Handlers ───────────────────────────────────────────────────
+
+  const debouncedSaveItems = useCallback(
+    (blockType: BlockType, content: { bmc: string; lean: string; items?: BlockItem[] }) => {
+      setSaveStatus("unsaved");
+      const key = `__items_${blockType}`;
+      const existing = saveTimers.current.get(key);
+      if (existing) clearTimeout(existing);
+      saveTimers.current.set(
+        key,
+        setTimeout(() => {
+          saveBlock(blockType, content);
+          saveTimers.current.delete(key);
+        }, 800),
+      );
+    },
+    [saveBlock],
+  );
+
+  const updateBlockItems = useCallback(
+    (blockType: BlockType, updater: (items: BlockItem[]) => BlockItem[]) => {
+      setBlocks((prev) => {
+        const next = new Map(prev);
+        const block = next.get(blockType);
+        if (!block) return prev;
+        const items = updater(block.content.items ?? []);
+        const newContent = { ...block.content, items };
+        next.set(blockType, { ...block, content: newContent });
+        debouncedSaveItems(blockType, newContent);
+        return next;
+      });
+    },
+    [debouncedSaveItems],
+  );
+
+  const handleItemCreate = useCallback(
+    (blockType: BlockType) => {
+      const newItem: BlockItem = {
+        id: crypto.randomUUID(),
+        name: "New item",
+        linkedSegmentIds: [],
+        linkedItemIds: [],
+        createdAt: new Date().toISOString(),
+      };
+      updateBlockItems(blockType, (items) => [...items, newItem]);
+    },
+    [updateBlockItems],
+  );
+
+  const handleItemUpdate = useCallback(
+    (blockType: BlockType, itemId: string, updates: Partial<BlockItem>) => {
+      updateBlockItems(blockType, (items) =>
+        items.map((item) => (item.id === itemId ? { ...item, ...updates } : item)),
+      );
+    },
+    [updateBlockItems],
+  );
+
+  const handleItemDelete = useCallback(
+    (blockType: BlockType, itemId: string) => {
+      updateBlockItems(blockType, (items) => items.filter((item) => item.id !== itemId));
+    },
+    [updateBlockItems],
+  );
+
+  const handleItemToggleSegment = useCallback(
+    (blockType: BlockType, itemId: string, segmentId: number) => {
+      updateBlockItems(blockType, (items) =>
+        items.map((item) => {
+          if (item.id !== itemId) return item;
+          const linked = item.linkedSegmentIds.includes(segmentId);
+          return {
+            ...item,
+            linkedSegmentIds: linked
+              ? item.linkedSegmentIds.filter((id) => id !== segmentId)
+              : [...item.linkedSegmentIds, segmentId],
+          };
+        }),
+      );
+    },
+    [updateBlockItems],
+  );
+
+  const handleItemToggleLink = useCallback(
+    (blockType: BlockType, itemId: string, linkedItemId: string) => {
+      updateBlockItems(blockType, (items) =>
+        items.map((item) => {
+          if (item.id !== itemId) return item;
+          const linked = item.linkedItemIds.includes(linkedItemId);
+          return {
+            ...item,
+            linkedItemIds: linked
+              ? item.linkedItemIds.filter((id) => id !== linkedItemId)
+              : [...item.linkedItemIds, linkedItemId],
+          };
+        }),
+      );
+    },
+    [updateBlockItems],
+  );
+
   // Track old content for revert/undo of accepted edits
   const revertMapRef = useRef<Map<string, { blockType: BlockType; oldContent: { bmc: string; lean: string } }>>(new Map());
 
@@ -616,6 +724,29 @@ export function CanvasClient({
       }
     },
     [blocks, saveBlock, handleAnalyze],
+  );
+
+  // Handle accepted segment from AI chat — create in DB and link to expanded block
+  const handleAcceptSegment = useCallback(
+    async (_segKey: string, proposal: SegmentProposal) => {
+      const targetBlock = expandedBlock ?? "customer_segments";
+      const seg = await handleSegmentCreate({
+        name: proposal.name,
+        description: proposal.description,
+        priorityScore: proposal.priority === "high" ? 80 : proposal.priority === "medium" ? 50 : 20,
+      });
+      if (!seg) return;
+      // Also persist the extra fields
+      await handleSegmentUpdate(seg.id, {
+        demographics: proposal.demographics,
+        psychographics: proposal.psychographics,
+        behavioral: proposal.behavioral,
+        geographic: proposal.geographic,
+        estimatedSize: proposal.estimatedSize,
+      });
+      await handleSegmentLink(targetBlock, seg.id, seg);
+    },
+    [expandedBlock, handleSegmentCreate, handleSegmentUpdate, handleSegmentLink],
   );
 
   // Check if any non-shared block has lean content (to show convert button)
@@ -766,6 +897,8 @@ export function CanvasClient({
           analyzingBlock={analyzingBlock}
           chatTargetBlock={activeChatBlock}
           dimmed={!!expandedBlock}
+          allSegments={Array.from(segments.values())}
+          hoveredItem={hoveredItem}
           onBlockChange={handleBlockChange}
           onBlockFocus={setFocusedBlock}
           onBlockBlur={() => setFocusedBlock(null)}
@@ -781,8 +914,8 @@ export function CanvasClient({
               }
             }
           }}
-          onAddSegment={async (name) => {
-            const seg = await handleSegmentCreate({ name });
+          onAddSegment={async (name, description) => {
+            const seg = await handleSegmentCreate({ name, description });
             if (seg) {
               await handleSegmentLink("customer_segments", seg.id, seg);
             }
@@ -793,6 +926,12 @@ export function CanvasClient({
           onSegmentFocus={(segmentId) => {
             setExpandedBlock("customer_segments");
           }}
+          onItemCreate={handleItemCreate}
+          onItemUpdate={handleItemUpdate}
+          onItemDelete={handleItemDelete}
+          onItemToggleSegment={handleItemToggleSegment}
+          onItemToggleLink={handleItemToggleLink}
+          onItemHover={setHoveredItem}
         />
       )}
 
@@ -841,10 +980,40 @@ export function CanvasClient({
               onAcceptEdit={handleAcceptEdit}
               onRejectEdit={handleRejectEdit}
               onRevertEdit={handleRevertEdit}
+              onAcceptSegment={handleAcceptSegment}
             />
           }
         />
       )}
+
+      {/* Segment Evaluation — main area panel (left of sidebar) */}
+      {expandedBlock === "customer_segments" &&
+        expandedBlockData &&
+        (expandedBlockData.linkedSegments?.length ?? 0) > 0 && (
+          <div className="fixed inset-0 z-40 pointer-events-none">
+            <div
+              className="absolute top-0 bottom-0 left-0 pointer-events-auto overflow-y-auto"
+              style={{ right: '420px' }}
+            >
+              <div className="p-6 max-w-3xl mx-auto space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-display-small text-xs uppercase tracking-wider text-foreground-muted/70">
+                    Segment Evaluation
+                  </span>
+                  <div className="flex-1 h-px bg-white/5" />
+                </div>
+                <InlineSegmentEval
+                  canvasId={canvasId}
+                  block={expandedBlockData}
+                  segments={expandedBlockData.linkedSegments ?? []}
+                  onDataChange={(data) =>
+                    handleDeepDiveDataChange("customer_segments", data)
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* Chat Bar */}
       <ChatBar

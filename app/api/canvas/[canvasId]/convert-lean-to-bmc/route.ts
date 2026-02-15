@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { tool, stepCountIs } from 'ai';
 import { z } from 'zod';
-import { anthropic } from '@ai-sdk/anthropic';
 import { generateTextWithLogging } from '@/lib/ai/logger';
 import { Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
@@ -13,16 +12,34 @@ import {
 } from '@/lib/appwrite';
 import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { BLOCK_DEFINITIONS, isSharedBlock } from '@/app/components/canvas/constants';
-import type { BlockType } from '@/lib/types/canvas';
+import {
+  getAnthropicModelForUser,
+  recordAnthropicUsageForUser,
+} from '@/lib/ai/user-preferences';
 
 const convertLeanToBmc = tool({
-  description: 'Convert Lean Canvas content into Business Model Canvas content for each non-shared block. Reinterpret the concepts appropriately.',
+  description: 'Provide the converted BMC content for each of the 5 non-shared blocks, derived from the full Lean Canvas context.',
   inputSchema: z.object({
-    conversions: z.array(z.object({
-      blockType: z.string().describe('The block type identifier'),
-      bmcContent: z.string().describe('The converted BMC content for this block'),
-      reasoning: z.string().describe('Brief explanation of how the lean concept was reinterpreted'),
-    })).describe('Converted BMC content for each non-shared block'),
+    key_partnerships: z.object({
+      content: z.string().describe('BMC Key Partners content: strategic alliances, supplier relationships, partner networks needed'),
+      reasoning: z.string().describe('How this was derived from the lean canvas'),
+    }),
+    key_activities: z.object({
+      content: z.string().describe('BMC Key Activities content: core actions required to deliver the value proposition'),
+      reasoning: z.string().describe('How this was derived from the lean canvas'),
+    }),
+    key_resources: z.object({
+      content: z.string().describe('BMC Key Resources content: physical, intellectual, human, and financial assets required'),
+      reasoning: z.string().describe('How this was derived from the lean canvas'),
+    }),
+    value_prop: z.object({
+      content: z.string().describe('BMC Value Propositions content: the bundle of products/services that create value for customers'),
+      reasoning: z.string().describe('How this was derived from the lean canvas'),
+    }),
+    customer_relationships: z.object({
+      content: z.string().describe('BMC Customer Relationships content: how you acquire, retain, and grow customers'),
+      reasoning: z.string().describe('How this was derived from the lean canvas'),
+    }),
   }),
   execute: async (params) => params,
 });
@@ -38,85 +55,85 @@ export async function POST(_request: Request, context: RouteContext) {
 
     const blocks = await getCanvasBlocks(canvasId, user.$id);
 
-    // Build lean content summary for non-shared blocks
-    const leanBlocks: { type: BlockType; leanLabel: string; bmcLabel: string; lean: string }[] = [];
+    // Build full lean canvas summary
+    const leanLines: string[] = [];
+    const sharedLines: string[] = [];
+
     for (const def of BLOCK_DEFINITIONS) {
-      if (isSharedBlock(def.type)) continue;
       const block = blocks.find((b) => b.blockType === def.type);
-      if (block && block.content.lean.trim().length > 0) {
-        leanBlocks.push({
-          type: def.type,
-          leanLabel: def.leanLabel!,
-          bmcLabel: def.bmcLabel,
-          lean: block.content.lean,
-        });
-      }
-    }
+      if (!block) continue;
 
-    if (leanBlocks.length === 0) {
-      return NextResponse.json({ error: 'No lean content to convert' }, { status: 400 });
-    }
-
-    // Also include shared blocks for context
-    const sharedContext = blocks
-      .filter((b) => isSharedBlock(b.blockType) && b.content.bmc.trim())
-      .map((b) => {
-        const def = BLOCK_DEFINITIONS.find((d) => d.type === b.blockType);
-        return `${def?.bmcLabel}: ${b.content.bmc}`;
-      })
-      .join('\n');
-
-    const leanSummary = leanBlocks
-      .map((b) => `- ${b.leanLabel} (→ ${b.bmcLabel}): "${b.lean}"`)
-      .join('\n');
-
-    const { result, usage } = await generateTextWithLogging('convert-lean-to-bmc', {
-      model: anthropic('claude-sonnet-4-5-20250929'),
-      system: `You are a business model expert. The user has filled out a Lean Canvas and wants to convert it to a Business Model Canvas (BMC).
-
-The Lean Canvas and BMC share the same 9-block grid, but 5 blocks have DIFFERENT meanings:
-- Lean "Problem" → BMC "Key Partners" (strategic alliances, supplier relationships)
-- Lean "Solution" → BMC "Key Activities" (core actions to deliver value)
-- Lean "Key Metrics" → BMC "Key Resources" (physical, IP, human, financial assets)
-- Lean "Unique Value Proposition" → BMC "Value Propositions" (broader value delivery)
-- Lean "Unfair Advantage" → BMC "Customer Relationships" (acquire, retain, grow customers)
-
-4 blocks are shared (same in both): Channels, Customer Segments, Cost Structure, Revenue Streams.
-
-Your job: Take the Lean Canvas content and reinterpret it into the corresponding BMC block. Do NOT just copy text — translate the business concept from the Lean framework to the BMC framework while preserving the user's business idea and details.
-
-For example:
-- Lean "Problem: Restaurants waste 30% of food" → BMC "Key Partners: Food waste analytics providers, restaurant supply chain partners, composting/recycling facilities"
-- Lean "Solution: AI-powered inventory forecasting" → BMC "Key Activities: Develop and maintain AI forecasting engine, integrate with restaurant POS systems, continuous model training"`,
-      messages: [
-        {
-          role: 'user',
-          content: `Convert the following Lean Canvas content to BMC.
-
-Lean Canvas blocks to convert:
-${leanSummary}
-
-${sharedContext ? `Shared blocks (for context):\n${sharedContext}` : ''}
-
-Use the convertLeanToBmc tool to provide the converted content for each block. Make each BMC block specific, actionable, and aligned with the overall business model.`,
-        },
-      ],
-      tools: { convertLeanToBmc },
-      stopWhen: stepCountIs(3),
-    });
-
-    // Extract tool result
-    let conversions: { blockType: string; bmcContent: string; reasoning: string }[] = [];
-    for (const step of result.steps) {
-      for (const tc of step.toolResults) {
-        if (tc.toolName === 'convertLeanToBmc') {
-          const res = (tc as unknown as { result: { conversions: typeof conversions } }).result;
-          conversions = res.conversions;
+      if (isSharedBlock(def.type)) {
+        if (block.content.bmc.trim()) {
+          sharedLines.push(`${def.bmcLabel}: ${block.content.bmc}`);
+        }
+      } else {
+        if (block.content.lean.trim()) {
+          leanLines.push(`${def.leanLabel}: ${block.content.lean}`);
         }
       }
     }
 
-    if (conversions.length === 0) {
+    if (leanLines.length === 0) {
+      return NextResponse.json({ error: 'No lean content to convert' }, { status: 400 });
+    }
+
+    const { result, usage } = await generateTextWithLogging(
+      'convert-lean-to-bmc',
+      {
+        model: getAnthropicModelForUser(user, 'claude-sonnet-4-5-20250929'),
+        system: `You are a business model expert helping convert a Lean Canvas into a Business Model Canvas (BMC).
+
+The Lean Canvas has these blocks: Problem, Solution, Key Metrics, Unique Value Proposition, Unfair Advantage, Channels, Customer Segments, Cost Structure, Revenue Streams.
+
+The BMC has: Key Partners, Key Activities, Key Resources, Value Propositions, Customer Relationships, Channels, Customer Segments, Cost Structure, Revenue Streams.
+
+4 blocks are identical in both (Channels, Customer Segments, Cost Structure, Revenue Streams) — these are already shared.
+
+The 5 blocks that differ occupy the same grid positions but have DIFFERENT meanings. Do NOT do a 1:1 positional copy. Instead, use the ENTIRE lean canvas holistically to generate appropriate content for each BMC block:
+
+- **Key Partners**: Who does this business need to partner with? Derive from the lean Problem (what ecosystem exists), Solution (who helps build/deliver it), and Unfair Advantage.
+- **Key Activities**: What must the business DO to succeed? Derive from Solution (core product work), Key Metrics (what drives those metrics), and the overall business model.
+- **Key Resources**: What assets are needed? Derive from Solution (tech/IP needed), Unfair Advantage (moats to build), Key Metrics (data/systems required).
+- **Value Propositions**: What value do customers get? Derive from Problem (pain points solved), Solution (how), and Unique Value Proposition (positioning).
+- **Customer Relationships**: How to acquire/retain/grow customers? Derive from Channels context, Unfair Advantage (retention moats), and the overall customer journey.
+
+Be specific and actionable. Use the user's actual business details, not generic templates.`,
+        messages: [
+          {
+            role: 'user',
+            content: `Here is the full Lean Canvas:
+
+${leanLines.join('\n')}
+
+${sharedLines.length > 0 ? `Shared blocks (same in both canvases):\n${sharedLines.join('\n')}` : ''}
+
+Use the convertLeanToBmc tool to generate BMC content for all 5 non-shared blocks. Draw from the ENTIRE lean canvas to create each BMC block — don't just map one lean block to one BMC block.`,
+          },
+        ],
+        tools: { convertLeanToBmc },
+        stopWhen: stepCountIs(3),
+      },
+      {
+        onUsage: (usageData) => recordAnthropicUsageForUser(user.$id, usageData),
+      },
+    );
+
+    // Extract tool result
+    type BlockConversion = { content: string; reasoning: string };
+    type ConvertedResult = Record<string, BlockConversion>;
+
+    let converted: ConvertedResult | null = null;
+    for (const step of result.steps) {
+      for (const tc of step.toolResults) {
+        if (tc.toolName === 'convertLeanToBmc') {
+          converted = (tc as unknown as { result: ConvertedResult }).result;
+        }
+      }
+    }
+
+    if (!converted) {
+      console.error('[convert] No tool result found. Steps:', result.steps.length, 'Text:', result.text?.slice(0, 300));
       return NextResponse.json({ error: 'AI did not produce conversions' }, { status: 500 });
     }
 
@@ -128,20 +145,24 @@ Use the convertLeanToBmc tool to provide the converted content for each block. M
     );
     const canvasIntId = canvas.id as number;
 
+    const NON_SHARED_TYPES = ['key_partnerships', 'key_activities', 'key_resources', 'value_prop', 'customer_relationships'];
     const updates: { blockType: string; bmc: string; lean: string; reasoning: string }[] = [];
 
-    for (const conv of conversions) {
-      const block = blocks.find((b) => b.blockType === conv.blockType);
+    for (const blockType of NON_SHARED_TYPES) {
+      const conv = converted[blockType];
+      if (!conv?.content) continue;
+
+      const block = blocks.find((b) => b.blockType === blockType);
       if (!block) continue;
 
-      const newContent = { bmc: conv.bmcContent, lean: block.content.lean };
+      const newContent = { bmc: conv.content, lean: block.content.lean };
 
       const existing = await serverDatabases.listDocuments(
         DATABASE_ID,
         BLOCKS_COLLECTION_ID,
         [
           Query.equal('canvasId', canvasIntId),
-          Query.equal('blockType', conv.blockType),
+          Query.equal('blockType', blockType),
           Query.limit(1),
         ],
       );
@@ -156,8 +177,8 @@ Use the convertLeanToBmc tool to provide the converted content for each block. M
       }
 
       updates.push({
-        blockType: conv.blockType,
-        bmc: conv.bmcContent,
+        blockType,
+        bmc: conv.content,
         lean: block.content.lean,
         reasoning: conv.reasoning,
       });
@@ -166,7 +187,9 @@ Use the convertLeanToBmc tool to provide the converted content for each block. M
     return NextResponse.json({ updates, usage });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : undefined;
     console.error('Convert lean-to-bmc error:', message);
+    if (stack) console.error('Stack:', stack);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -24,12 +24,26 @@ const accentColors = [
   { name: 'amber', color: '#f59e0b' },
 ];
 
-export function SettingsClient() {
+interface AnthropicKeyStatus {
+  hasKey: boolean;
+  maskedKey: string | null;
+}
+
+interface SettingsClientProps {
+  initialAnthropicKeyStatus: AnthropicKeyStatus;
+}
+
+export function SettingsClient({ initialAnthropicKeyStatus }: SettingsClientProps) {
   const router = useRouter();
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [showSaved, setShowSaved] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [anthropicApiKey, setAnthropicApiKey] = useState('');
+  const [anthropicKeyStatus, setAnthropicKeyStatus] = useState<AnthropicKeyStatus>(initialAnthropicKeyStatus);
+  const [savingAnthropicKey, setSavingAnthropicKey] = useState(false);
+  const [removingAnthropicKey, setRemovingAnthropicKey] = useState(false);
+  const [anthropicError, setAnthropicError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -46,6 +60,82 @@ export function SettingsClient() {
     setShowSaved(true);
     setTimeout(() => setShowSaved(false), 2000);
   }, []);
+
+  const showSavedToast = useCallback(() => {
+    setShowSaved(true);
+    setTimeout(() => setShowSaved(false), 2000);
+  }, []);
+
+  const handleSaveAnthropicKey = async () => {
+    if (!anthropicApiKey.trim()) {
+      setAnthropicError('Enter your Anthropic API key.');
+      return;
+    }
+
+    setAnthropicError(null);
+    setSavingAnthropicKey(true);
+    try {
+      const res = await fetch('/api/user/anthropic-key', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: anthropicApiKey.trim() }),
+      });
+
+      const data = (await res.json()) as {
+        hasKey?: boolean;
+        maskedKey?: string | null;
+        error?: string;
+      };
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to save API key');
+      }
+
+      setAnthropicKeyStatus({
+        hasKey: Boolean(data.hasKey),
+        maskedKey: data.maskedKey ?? null,
+      });
+      setAnthropicApiKey('');
+      showSavedToast();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save API key';
+      setAnthropicError(message);
+    } finally {
+      setSavingAnthropicKey(false);
+    }
+  };
+
+  const handleRemoveAnthropicKey = async () => {
+    setAnthropicError(null);
+    setRemovingAnthropicKey(true);
+    try {
+      const res = await fetch('/api/user/anthropic-key', {
+        method: 'DELETE',
+      });
+
+      const data = (await res.json()) as {
+        hasKey?: boolean;
+        maskedKey?: string | null;
+        error?: string;
+      };
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to remove API key');
+      }
+
+      setAnthropicKeyStatus({
+        hasKey: Boolean(data.hasKey),
+        maskedKey: data.maskedKey ?? null,
+      });
+      setAnthropicApiKey('');
+      showSavedToast();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to remove API key';
+      setAnthropicError(message);
+    } finally {
+      setRemovingAnthropicKey(false);
+    }
+  };
 
   const handleDeleteAll = async () => {
     setDeleting(true);
@@ -137,6 +227,53 @@ export function SettingsClient() {
             />
           ))}
         </div>
+      </div>
+
+      <div className="settings-section">
+        <div className="settings-section-title">AI Provider</div>
+        <Text size="2" style={{ color: 'var(--foreground-muted)', marginBottom: '0.75rem', display: 'block' }}>
+          Add your own Anthropic API key to run AI with your account and track usage in the dashboard.
+        </Text>
+        {anthropicKeyStatus.hasKey && (
+          <Text size="2" style={{ color: 'var(--foreground-muted)', marginBottom: '1rem', display: 'block' }}>
+            Current key: <span style={{ fontFamily: 'var(--font-mono)' }}>{anthropicKeyStatus.maskedKey}</span>
+          </Text>
+        )}
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <input
+            className="input-soft"
+            type="password"
+            value={anthropicApiKey}
+            onChange={(event) => setAnthropicApiKey(event.target.value)}
+            placeholder="sk-ant-..."
+            autoComplete="off"
+            spellCheck={false}
+            style={{ minWidth: '280px', flex: 1, padding: '0.65rem 0.8rem', fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}
+          />
+          <Button
+            onClick={handleSaveAnthropicKey}
+            disabled={savingAnthropicKey}
+            style={{ cursor: 'pointer' }}
+          >
+            {savingAnthropicKey ? 'Saving...' : anthropicKeyStatus.hasKey ? 'Update Key' : 'Save Key'}
+          </Button>
+          {anthropicKeyStatus.hasKey && (
+            <Button
+              variant="soft"
+              color="red"
+              onClick={handleRemoveAnthropicKey}
+              disabled={removingAnthropicKey}
+              style={{ cursor: 'pointer' }}
+            >
+              {removingAnthropicKey ? 'Removing...' : 'Remove Key'}
+            </Button>
+          )}
+        </div>
+        {anthropicError && (
+          <Text size="2" style={{ color: 'var(--state-critical)', marginTop: '0.75rem', display: 'block' }}>
+            {anthropicError}
+          </Text>
+        )}
       </div>
 
       <div className="settings-section">

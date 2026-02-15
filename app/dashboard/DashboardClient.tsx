@@ -26,6 +26,7 @@ interface DashboardClientProps {
     totalCanvases: number;
     lastUpdated: string | null;
     avgCompletion: number;
+    aiApiCalls: number;
   };
 }
 
@@ -146,7 +147,28 @@ export function DashboardClient({
           Your Canvases
         </Heading>
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <button className="quick-launch" onClick={handleNewCanvas}>
+          <button
+            className="quick-launch"
+            onClick={() => setShowGuidedModal(true)}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            Chat to Create
+          </button>
+          <button
+            className="quick-launch ui-btn-secondary"
+            onClick={handleNewCanvas}
+          >
             <svg
               width="16"
               height="16"
@@ -159,31 +181,7 @@ export function DashboardClient({
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            Quick Canvas
-          </button>
-          <button
-            className="quick-launch"
-            onClick={() => setShowGuidedModal(true)}
-            style={{
-              background: 'linear-gradient(135deg, var(--chroma-indigo), var(--chroma-violet))',
-              borderColor: 'transparent',
-            }}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 2L2 7l10 5 10-5-10-5z" />
-              <path d="M2 17l10 5 10-5" />
-              <path d="M2 12l10 5 10-5" />
-            </svg>
-            AI-Guided
+            Start Blank
           </button>
         </div>
       </div>
@@ -229,7 +227,28 @@ export function DashboardClient({
             validate your ideas, and stress-test your startup.
           </Text>
           <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
-            <button className="quick-launch" onClick={handleNewCanvas}>
+            <button
+              className="quick-launch"
+              onClick={() => setShowGuidedModal(true)}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              Chat to Create
+            </button>
+            <button
+              className="quick-launch ui-btn-secondary"
+              onClick={handleNewCanvas}
+            >
               <svg
                 width="16"
                 height="16"
@@ -242,31 +261,7 @@ export function DashboardClient({
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Quick Canvas
-            </button>
-            <button
-              className="quick-launch"
-              onClick={() => setShowGuidedModal(true)}
-              style={{
-                background: 'linear-gradient(135deg, var(--chroma-indigo), var(--chroma-violet))',
-                borderColor: 'transparent',
-              }}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
-              AI-Guided
+              Start Blank
             </button>
           </div>
         </div>

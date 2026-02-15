@@ -61,10 +61,25 @@ export async function POST(request: Request, context: RouteContext) {
     const canvasIntId = await verifyCanvasOwnership(canvasId, user.$id);
     const body = await request.json();
 
-    const { name, description, earlyAdopterFlag, priorityScore, demographics, psychographics, behavioral, geographic, estimatedSize } = body;
+    const { name, description, earlyAdopterFlag, priorityScore, demographics, psychographics, behavioral, geographic, estimatedSize, colorHex } = body;
 
     if (!name || typeof name !== 'string') {
       return NextResponse.json({ error: 'name is required' }, { status: 400 });
+    }
+
+    // Assign a color from palette if not provided
+    const SEGMENT_COLORS = [
+      '#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6',
+      '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#14b8a6',
+    ];
+    let assignedColor = colorHex;
+    if (!assignedColor) {
+      const existingSegments = await serverDatabases.listDocuments(
+        DATABASE_ID,
+        SEGMENTS_COLLECTION_ID,
+        [Query.equal('canvasId', canvasIntId), Query.limit(100)],
+      );
+      assignedColor = SEGMENT_COLORS[existingSegments.total % SEGMENT_COLORS.length];
     }
 
     const doc = await serverDatabases.createDocument(
@@ -83,6 +98,7 @@ export async function POST(request: Request, context: RouteContext) {
         behavioral: behavioral ?? '',
         geographic: geographic ?? '',
         estimatedSize: estimatedSize ?? '',
+        colorHex: assignedColor,
       },
     );
 

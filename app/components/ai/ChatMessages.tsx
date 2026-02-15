@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { UIMessage } from "ai";
-import type { BlockEditProposal } from "@/lib/types/canvas";
+import type { BlockEditProposal, SegmentProposal } from "@/lib/types/canvas";
 import { ChatMessageWithParts } from "./ChatMessage";
 
 interface ChatMessagesProps {
@@ -11,6 +11,7 @@ interface ChatMessagesProps {
   onAcceptEdit?: (proposalId: string, edit: BlockEditProposal) => void;
   onRejectEdit?: (proposalId: string, editIndex: number) => void;
   onRevertEdit?: (proposalId: string, editIndex: number) => void;
+  onAcceptSegment?: (segKey: string, segment: SegmentProposal) => void;
   onEditMessage?: (messageId: string, newText: string) => void;
   onRegenerate?: () => void;
 }
@@ -29,6 +30,7 @@ export function ChatMessages({
   onAcceptEdit,
   onRejectEdit,
   onRevertEdit,
+  onAcceptSegment,
   onEditMessage,
   onRegenerate,
 }: ChatMessagesProps) {
@@ -37,6 +39,8 @@ export function ChatMessages({
   const isNearBottomRef = useRef(true);
   const [acceptedEdits, setAcceptedEdits] = useState<Set<string>>(new Set());
   const [rejectedEdits, setRejectedEdits] = useState<Set<string>>(new Set());
+  const [acceptedSegments, setAcceptedSegments] = useState<Set<string>>(new Set());
+  const [rejectedSegments, setRejectedSegments] = useState<Set<string>>(new Set());
 
   const checkNearBottom = useCallback(() => {
     const el = scrollRef.current;
@@ -84,6 +88,15 @@ export function ChatMessages({
     const editKey = `${proposalId}-${editIndex}`;
     setRejectedEdits((prev) => new Set(prev).add(editKey));
     onRejectEdit?.(proposalId, editIndex);
+  };
+
+  const handleAcceptSegment = (segKey: string, segment: SegmentProposal) => {
+    setAcceptedSegments((prev) => new Set(prev).add(segKey));
+    onAcceptSegment?.(segKey, segment);
+  };
+
+  const handleRejectSegment = (segKey: string) => {
+    setRejectedSegments((prev) => new Set(prev).add(segKey));
   };
 
   if (visible.length === 0) {
@@ -137,6 +150,8 @@ export function ChatMessages({
           onAcceptEdit={m.role === "assistant" ? handleAccept : undefined}
           onRejectEdit={m.role === "assistant" ? handleReject : undefined}
           onRevertEdit={m.role === "assistant" ? onRevertEdit : undefined}
+          onAcceptSegment={m.role === "assistant" ? handleAcceptSegment : undefined}
+          onRejectSegment={m.role === "assistant" ? handleRejectSegment : undefined}
           onEditMessage={m.role === "user" ? onEditMessage : undefined}
           onRegenerate={
             m.role === "assistant" && i === lastAssistantIdx && !isLoading
@@ -145,6 +160,8 @@ export function ChatMessages({
           }
           acceptedEdits={acceptedEdits}
           rejectedEdits={rejectedEdits}
+          acceptedSegments={acceptedSegments}
+          rejectedSegments={rejectedSegments}
         />
       ))}
       <div ref={bottomRef} />

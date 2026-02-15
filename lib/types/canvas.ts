@@ -18,7 +18,22 @@ export type CanvasTab = "canvas" | "analysis" | "notes";
 export interface BlockContent {
   bmc: string;
   lean: string;
+  items?: BlockItem[];
 }
+
+export interface BlockItem {
+  id: string;
+  name: string;
+  description?: string;
+  linkedSegmentIds: number[];
+  linkedItemIds: string[]; // format: "blockType:itemId"
+  createdAt: string;
+}
+
+export const SEGMENT_COLORS = [
+  "#6366f1", "#f43f5e", "#10b981", "#f59e0b", "#8b5cf6",
+  "#06b6d4", "#ec4899", "#84cc16", "#f97316", "#14b8a6",
+] as const;
 
 export interface AIAnalysis {
   draft: string;
@@ -49,6 +64,7 @@ export interface Segment {
   behavioral: string;
   geographic: string;
   estimatedSize: string; // varchar(100) in DB, e.g. "10,000 startups worldwide" or "15% of TAM"
+  colorHex?: string;
 }
 
 export interface BlockSegmentLink {
@@ -100,7 +116,9 @@ export type DeepDiveModule =
   | "segmentation"
   | "personas"
   | "market_validation"
-  | "competitive_landscape";
+  | "competitive_landscape"
+  | "segment_scoring"
+  | "segment_comparison";
 
 export interface MarketSizeEstimate {
   value: number;
@@ -183,6 +201,49 @@ export interface MarketResearchData {
   personas: PersonasData | null;
   marketValidation: MarketValidationData | null;
   competitiveLandscape: CompetitiveLandscapeData | null;
+  scorecards?: SegmentScorecard[];
+}
+
+// ─── Segment Evaluation Scorecard Types ─────────────────────────────────────
+
+export type BeachheadStatus = "primary" | "secondary" | "later";
+
+export interface DecisionCriterion {
+  id: string;
+  category: "demand" | "market" | "execution";
+  name: string;
+  weight: number;       // 0-1 within category
+  score: number;        // 1-5
+  reasoning: string;
+  confidence: "low" | "medium" | "high";
+}
+
+export interface SegmentScorecard {
+  segmentId: number;
+  beachheadStatus: BeachheadStatus;
+  arpu: number | null;
+  revenuePotential: number | null;
+  criteria: DecisionCriterion[];
+  overallScore: number;
+  aiRecommendation: "pursue" | "test" | "defer";
+  aiReasoning: string;
+  keyRisks: string[];
+  requiredExperiments: string[];
+  dataConfidence: number;
+  lastUpdated: string;
+}
+
+// ─── Segment Proposals (AI Copilot → Create Segments) ────────────────────────
+
+export interface SegmentProposal {
+  name: string;
+  description: string;
+  demographics: string;
+  psychographics: string;
+  behavioral: string;
+  geographic: string;
+  estimatedSize: string;
+  priority: "high" | "medium" | "low";
 }
 
 // ─── Block Edit Proposals (AI Agent Editing) ─────────────────────────────────

@@ -3,17 +3,17 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type {
   BlockDefinition,
+  BlockItem,
   BlockState,
   BlockType,
   CanvasMode,
   Segment,
 } from "@/lib/types/canvas";
 import { BlockTooltip } from "./BlockTooltip";
+import { BlockItemCard } from "./BlockItemCard";
+import { LinkPicker } from "./LinkPicker";
 
-const BLOCK_ABBREVIATIONS: Record<
-  BlockType,
-  { bmc: string; lean: string }
-> = {
+const BLOCK_ABBREVIATIONS: Record<BlockType, { bmc: string; lean: string }> = {
   key_partnerships: { bmc: "KP", lean: "PROB" },
   key_activities: { bmc: "KA", lean: "SOL" },
   key_resources: { bmc: "KR", lean: "KM" },
@@ -132,6 +132,9 @@ interface BlockCellProps {
   confidenceScore: number;
   hasAnalysis: boolean;
   linkedSegments?: Segment[];
+  items?: BlockItem[];
+  allSegments?: Segment[];
+  allBlockItems?: Map<BlockType, BlockItem[]>;
   onChange: (value: string) => void;
   onFocus: () => void;
   onBlur: () => void;
@@ -139,9 +142,20 @@ interface BlockCellProps {
   onAddToChat: () => void;
   onAnalyze: () => void;
   onSegmentClick?: (segmentId: number) => void;
-  onAddSegment?: (name: string) => Promise<void>;
-  onSegmentUpdate?: (segmentId: number, updates: Partial<Pick<Segment, 'name' | 'description'>>) => Promise<void>;
+  onAddSegment?: (name: string, description?: string) => Promise<void>;
+  onSegmentUpdate?: (
+    segmentId: number,
+    updates: Partial<Pick<Segment, "name" | "description">>,
+  ) => Promise<void>;
   onSegmentFocus?: (segmentId: number) => void;
+  onItemCreate?: () => void;
+  onItemUpdate?: (itemId: string, updates: Partial<BlockItem>) => void;
+  onItemDelete?: (itemId: string) => void;
+  onItemToggleSegment?: (itemId: string, segmentId: number) => void;
+  onItemToggleLink?: (itemId: string, linkedItemId: string) => void;
+  onItemHover?: (itemId: string | null) => void;
+  itemRefCallback?: (itemId: string, el: HTMLElement | null) => void;
+  segmentRefCallback?: (segmentId: number, el: HTMLElement | null) => void;
 }
 
 export function BlockCell({
@@ -155,6 +169,9 @@ export function BlockCell({
   confidenceScore,
   hasAnalysis,
   linkedSegments,
+  items,
+  allSegments,
+  allBlockItems,
   onChange,
   onFocus,
   onBlur,
@@ -165,40 +182,67 @@ export function BlockCell({
   onAddSegment,
   onSegmentUpdate,
   onSegmentFocus,
+  onItemCreate,
+  onItemUpdate,
+  onItemDelete,
+  onItemToggleSegment,
+  onItemToggleLink,
+  onItemHover,
+  itemRefCallback,
+  segmentRefCallback,
 }: BlockCellProps) {
   const cellRef = useRef<HTMLDivElement>(null);
   const [isCompact, setIsCompact] = useState(false);
   const [newSegmentName, setNewSegmentName] = useState("");
+  const [newSegmentDesc, setNewSegmentDesc] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [addingNew, setAddingNew] = useState(false);
   const [editingSegmentId, setEditingSegmentId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
+  const [linkPickerItemId, setLinkPickerItemId] = useState<string | null>(null);
+  const linkPickerAnchorRef = useRef<HTMLElement>(null);
 
-  const isSegmentBlock = definition.type === "customer_segments" && !!onAddSegment;
+  const isSegmentBlock =
+    definition.type === "customer_segments" && !!onAddSegment;
+  const hasItems = !!onItemCreate;
 
   const handleCreateSegment = useCallback(async () => {
     if (!newSegmentName.trim() || !onAddSegment || isSaving) return;
     setIsSaving(true);
-    await onAddSegment(newSegmentName.trim());
+    await onAddSegment(
+      newSegmentName.trim(),
+      newSegmentDesc.trim() || undefined,
+    );
     setNewSegmentName("");
+    setNewSegmentDesc("");
+    setAddingNew(false);
     setIsSaving(false);
-  }, [newSegmentName, onAddSegment, isSaving]);
+  }, [newSegmentName, newSegmentDesc, onAddSegment, isSaving]);
 
-  const handleSaveSegmentEdit = useCallback(async (segId: number) => {
-    if (!onSegmentUpdate) {
+  const handleSaveSegmentEdit = useCallback(
+    async (segId: number) => {
+      if (!onSegmentUpdate) {
+        setEditingSegmentId(null);
+        return;
+      }
+      const original = linkedSegments?.find((s) => s.id === segId);
+      if (!original) {
+        setEditingSegmentId(null);
+        return;
+      }
+      const updates: Partial<Pick<Segment, "name" | "description">> = {};
+      if (editName.trim() && editName.trim() !== original.name)
+        updates.name = editName.trim();
+      if (editDesc.trim() !== (original.description || ""))
+        updates.description = editDesc.trim();
+      if (Object.keys(updates).length > 0) {
+        await onSegmentUpdate(segId, updates);
+      }
       setEditingSegmentId(null);
-      return;
-    }
-    const original = linkedSegments?.find(s => s.id === segId);
-    if (!original) { setEditingSegmentId(null); return; }
-    const updates: Partial<Pick<Segment, 'name' | 'description'>> = {};
-    if (editName.trim() && editName.trim() !== original.name) updates.name = editName.trim();
-    if (editDesc.trim() !== (original.description || '')) updates.description = editDesc.trim();
-    if (Object.keys(updates).length > 0) {
-      await onSegmentUpdate(segId, updates);
-    }
-    setEditingSegmentId(null);
-  }, [editName, editDesc, onSegmentUpdate, linkedSegments]);
+    },
+    [editName, editDesc, onSegmentUpdate, linkedSegments],
+  );
 
   useEffect(() => {
     const node = cellRef.current;
@@ -245,7 +289,7 @@ export function BlockCell({
         gridRow: definition.gridRow,
       }}
     >
-      <div className={`block-cell-actions ${showActions ? "is-visible" : ""}`}>
+      <div className={`block-cell-actions ${showActions ? "is-visible" : ""} `}>
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -359,18 +403,82 @@ export function BlockCell({
           />
         )}
       </div>
-      {/* For customer_segments: segment cards as primary UI. For others: textarea */}
-      {isSegmentBlock ? (
-        <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-1.5 space-y-1.5">
-          {/* Segment cards */}
+      {/* Text content — shrink for segment blocks so cards fit */}
+      <textarea
+        className={`bmc-cell-textarea ${isSegmentBlock ? "!flex-none !min-h-[2.5rem] !max-h-[4rem]" : hasItems ? "bmc-cell-textarea-auto" : ""}`}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        placeholder={`Describe your ${label.toLowerCase()}...`}
+        spellCheck={false}
+      />
+
+      {/* Block item cards — shown for all blocks */}
+      {onItemCreate && (
+        <div
+          className="block-items-container"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {items?.map((item) => {
+            const linkPickerOpen = linkPickerItemId === item.id;
+            return (
+              <div key={item.id} className="relative">
+                <BlockItemCard
+                  ref={(el) => {
+                    itemRefCallback?.(`${definition.type}:${item.id}`, el);
+                  }}
+                  item={item}
+                  segments={allSegments ?? []}
+                  onUpdate={(updates) => onItemUpdate?.(item.id, updates)}
+                  onDelete={() => onItemDelete?.(item.id)}
+                  onLinkClick={() => {
+                    setLinkPickerItemId(linkPickerOpen ? null : item.id);
+                  }}
+                  onMouseEnter={() => onItemHover?.(item.id)}
+                  onMouseLeave={() => onItemHover?.(null)}
+                />
+                {linkPickerOpen && allBlockItems && (
+                  <LinkPicker
+                    item={item}
+                    blockType={definition.type}
+                    segments={allSegments ?? []}
+                    allBlockItems={allBlockItems}
+                    anchorRef={linkPickerAnchorRef}
+                    onToggleSegment={(segId) =>
+                      onItemToggleSegment?.(item.id, segId)
+                    }
+                    onToggleItem={(linkedId) =>
+                      onItemToggleLink?.(item.id, linkedId)
+                    }
+                    onClose={() => setLinkPickerItemId(null)}
+                  />
+                )}
+              </div>
+            );
+          })}
+          <button
+            onClick={onItemCreate}
+            className="w-full rounded-md border border-dashed border-white/8 hover:border-white/15 px-2 py-1 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/[0.03] transition-colors text-left"
+          >
+            + Add item
+          </button>
+        </div>
+      )}
+
+      {/* Segment cards — shown for customer_segments below text */}
+      {isSegmentBlock && (
+        <div
+          className="flex-1 min-h-0 overflow-y-auto px-2 pb-1.5 space-y-1"
+          onClick={(e) => e.stopPropagation()}
+        >
           {linkedSegments?.map((seg) => (
             <div
               key={seg.id}
+              ref={(el) => segmentRefCallback?.(seg.id, el)}
               className="rounded-md border border-white/8 bg-white/[0.03] hover:bg-white/[0.05] transition-colors"
-              onClick={(e) => e.stopPropagation()}
             >
               {editingSegmentId === seg.id ? (
-                /* ── Editing mode ── */
                 <div className="p-1.5 space-y-1">
                   <input
                     value={editName}
@@ -410,7 +518,6 @@ export function BlockCell({
                   </div>
                 </div>
               ) : (
-                /* ── Display mode ── */
                 <div className="p-1.5">
                   <div className="flex items-start gap-1.5">
                     <span
@@ -447,14 +554,22 @@ export function BlockCell({
                       </span>
                     )}
                   </div>
-                  {/* Card action buttons */}
                   <div className="flex items-center gap-1 mt-1 pt-1 border-t border-white/5">
                     <button
                       onClick={() => onSegmentFocus?.(seg.id)}
                       className="flex items-center gap-1 text-[9px] text-foreground-muted/40 hover:text-foreground-muted transition-colors px-1 py-0.5 rounded hover:bg-white/5"
                       title="Open in focus view"
                     >
-                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg
+                        width="9"
+                        height="9"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
                         <polyline points="15 3 21 3 21 9" />
                         <polyline points="9 21 3 21 3 15" />
                         <line x1="21" y1="3" x2="14" y2="10" />
@@ -467,7 +582,16 @@ export function BlockCell({
                       className="flex items-center gap-1 text-[9px] text-foreground-muted/40 hover:text-foreground-muted transition-colors px-1 py-0.5 rounded hover:bg-white/5"
                       title="Link to other blocks"
                     >
-                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg
+                        width="9"
+                        height="9"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
                         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
                         <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
                       </svg>
@@ -478,87 +602,116 @@ export function BlockCell({
               )}
             </div>
           ))}
-          {/* Always-visible new segment input */}
-          <div
-            className="rounded-md border border-dashed border-white/8 hover:border-white/15 transition-colors"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <input
-              value={newSegmentName}
-              onChange={(e) => setNewSegmentName(e.target.value)}
-              placeholder="Add segment..."
-              className="w-full bg-transparent rounded-md px-2 py-1.5 text-[10px] text-foreground outline-none placeholder:text-foreground-muted/30 focus:bg-white/[0.03]"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleCreateSegment();
-                if (e.key === "Escape") {
-                  setNewSegmentName("");
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-              onFocus={(e) => e.stopPropagation()}
-              onBlur={(e) => {
-                e.stopPropagation();
-                if (newSegmentName.trim()) handleCreateSegment();
-              }}
-              disabled={isSaving}
-            />
-          </div>
-        </div>
-      ) : (
-        <>
-          <textarea
-            className="bmc-cell-textarea"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onFocus={onFocus}
-            onBlur={onBlur}
-            placeholder={`Describe your ${label.toLowerCase()}...`}
-            spellCheck={false}
-          />
-          {/* Segment sub-rows for non-segment blocks */}
-          {linkedSegments && linkedSegments.length > 0 && (
-            <div className="px-2 pb-0.5 space-y-0.5">
-              {linkedSegments.slice(0, 4).map((seg) => (
+
+          {/* New segment card */}
+          {addingNew ? (
+            <div className="rounded-md border border-white/12 bg-white/[0.03] p-1.5 space-y-1">
+              <input
+                value={newSegmentName}
+                onChange={(e) => setNewSegmentName(e.target.value)}
+                className="w-full bg-white/5 rounded px-1.5 py-0.5 text-[10px] font-medium text-foreground outline-none border border-white/12 focus:border-white/25"
+                placeholder="Segment name"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newSegmentName.trim())
+                    handleCreateSegment();
+                  if (e.key === "Escape") {
+                    setNewSegmentName("");
+                    setNewSegmentDesc("");
+                    setAddingNew(false);
+                  }
+                }}
+                onFocus={(e) => e.stopPropagation()}
+              />
+              <textarea
+                value={newSegmentDesc}
+                onChange={(e) => setNewSegmentDesc(e.target.value)}
+                className="w-full bg-white/5 rounded px-1.5 py-0.5 text-[10px] text-foreground-muted outline-none border border-white/12 focus:border-white/25 resize-none"
+                placeholder="Description..."
+                rows={2}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setNewSegmentName("");
+                    setNewSegmentDesc("");
+                    setAddingNew(false);
+                  }
+                }}
+                onFocus={(e) => e.stopPropagation()}
+              />
+              <div className="flex items-center gap-1">
                 <button
-                  key={seg.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSegmentClick?.(seg.id);
-                  }}
-                  className="flex items-center gap-1.5 w-full text-left px-1.5 py-0.5 rounded hover:bg-white/5 transition-colors group/seg"
+                  onClick={() => handleCreateSegment()}
+                  disabled={isSaving || !newSegmentName.trim()}
+                  className="text-[9px] px-1.5 py-0.5 rounded bg-white/8 text-foreground hover:bg-white/12 transition-colors disabled:opacity-40"
                 >
-                  <span
-                    className="w-1.5 h-1.5 rounded-full shrink-0"
-                    style={{
-                      background:
-                        seg.priorityScore >= 70
-                          ? "var(--state-healthy)"
-                          : seg.priorityScore >= 40
-                            ? "var(--state-warning)"
-                            : "var(--state-critical)",
-                    }}
-                  />
-                  <span className="text-[10px] text-foreground-muted/70 group-hover/seg:text-foreground-muted truncate flex-1">
-                    {seg.name}
-                  </span>
-                  {seg.earlyAdopterFlag && (
-                    <span className="text-[8px] font-mono px-1 py-px rounded bg-emerald-400/10 text-emerald-400/70 shrink-0">
-                      EA
-                    </span>
-                  )}
-                  <span className="text-[9px] font-mono text-foreground-muted/40 shrink-0">
-                    {seg.priorityScore}
-                  </span>
+                  {isSaving ? "..." : "Create"}
                 </button>
-              ))}
-              {linkedSegments.length > 4 && (
-                <span className="text-[9px] text-foreground-muted/40 px-1.5">
-                  +{linkedSegments.length - 4} more
+                <button
+                  onClick={() => {
+                    setNewSegmentName("");
+                    setNewSegmentDesc("");
+                    setAddingNew(false);
+                  }}
+                  className="text-[9px] px-1.5 py-0.5 rounded text-foreground-muted/50 hover:text-foreground-muted transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setAddingNew(true)}
+              className="w-full rounded-md border border-dashed border-white/8 hover:border-white/15 px-2 py-1.5 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/[0.03] transition-colors text-left"
+            >
+              + New segment
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Segment sub-rows for non-segment blocks */}
+      {!isSegmentBlock && linkedSegments && linkedSegments.length > 0 && (
+        <div className="px-2 pb-0.5 space-y-0.5">
+          {linkedSegments.slice(0, 4).map((seg) => (
+            <button
+              key={seg.id}
+              ref={(el) => segmentRefCallback?.(seg.id, el)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSegmentClick?.(seg.id);
+              }}
+              className="flex items-center gap-1.5 w-full text-left px-1.5 py-0.5 rounded hover:bg-white/5 transition-colors group/seg"
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{
+                  background:
+                    seg.priorityScore >= 70
+                      ? "var(--state-healthy)"
+                      : seg.priorityScore >= 40
+                        ? "var(--state-warning)"
+                        : "var(--state-critical)",
+                }}
+              />
+              <span className="text-[10px] text-foreground-muted/70 group-hover/seg:text-foreground-muted truncate flex-1">
+                {seg.name}
+              </span>
+              {seg.earlyAdopterFlag && (
+                <span className="text-[8px] font-mono px-1 py-px rounded bg-emerald-400/10 text-emerald-400/70 shrink-0">
+                  EA
                 </span>
               )}
-            </div>
+              <span className="text-[9px] font-mono text-foreground-muted/40 shrink-0">
+                {seg.priorityScore}
+              </span>
+            </button>
+          ))}
+          {linkedSegments.length > 4 && (
+            <span className="text-[9px] text-foreground-muted/40 px-1.5">
+              +{linkedSegments.length - 4} more
+            </span>
           )}
-        </>
+        </div>
       )}
     </div>
   );

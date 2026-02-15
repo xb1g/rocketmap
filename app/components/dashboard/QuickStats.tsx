@@ -5,6 +5,7 @@ interface QuickStatsProps {
     totalCanvases: number;
     lastUpdated: string | null;
     avgCompletion: number;
+    aiApiCalls: number;
   };
 }
 
@@ -38,6 +39,10 @@ export function QuickStats({ stats }: QuickStatsProps) {
       <div className="stat-card">
         <div className="stat-card-label">Avg Completion</div>
         <div className="stat-number">{stats.avgCompletion}%</div>
+      </div>
+      <div className="stat-card">
+        <div className="stat-card-label">AI API Calls</div>
+        <div className="stat-number">{stats.aiApiCalls}</div>
       </div>
     </div>
   );

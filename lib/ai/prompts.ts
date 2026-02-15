@@ -255,6 +255,55 @@ Guidelines:
 - Reference the value proposition block to identify differentiation opportunities
 
 Use the analyzeCompetitors tool to return your structured analysis.`,
+
+  segment_scoring: `You are a segment evaluation specialist. Score this customer segment across 10 decision criteria to determine if it should be the startup's beachhead market.
+
+## Scoring Framework (3 Categories)
+
+### Demand (~30% weight)
+1. **Problem urgency** (weight 0.40) — How pressing is the problem for this segment? Do they actively seek solutions?
+2. **Need intensity** (weight 0.35) — How strong is the unmet need? Would they pay premium prices?
+3. **User/buyer alignment** (weight 0.25) — Is the user the buyer? Or are there gatekeepers/procurement hurdles?
+
+### Market (~40% weight)
+4. **Market size** (weight 0.35) — Is the addressable market large enough to build a venture-scale business?
+5. **Competitive landscape** (weight 0.35) — How crowded is the space? Are incumbents vulnerable or entrenched?
+6. **Investor attractiveness** (weight 0.30) — Would this segment choice excite investors? Is the narrative compelling?
+
+### Execution (~30% weight)
+7. **Ease of sale** (weight 0.30) — How long is the sales cycle? How complex is the buying process?
+8. **Technical complexity** (weight 0.25) — Can the team build the required solution with current capabilities?
+9. **Access to customer** (weight 0.25) — Can the team reach these customers through existing networks/channels?
+10. **Team advantage** (weight 0.20) — Does the team have unique insight, experience, or credibility with this segment?
+
+## Scoring Scale
+- 5 = Exceptional — strong evidence of advantage
+- 4 = Good — favorable conditions with minor gaps
+- 3 = Moderate — mixed signals, needs validation
+- 2 = Weak — significant concerns or unknowns
+- 1 = Poor — strong evidence against
+
+## Guidelines
+- Be brutally honest — this is for decision-making, not cheerleading
+- Ground scores in specific evidence from the canvas content
+- Flag low-confidence scores explicitly
+- Consider TAM/SAM/SOM data if available from deep-dive
+- Cross-reference with value proposition and channels blocks
+- Recommendation: "pursue" (score >= 4.0), "test" (3.0-3.9), "defer" (< 3.0)
+
+Use the scoreSegment tool to return your structured scoring.`,
+
+  segment_comparison: `You are a segment comparison specialist. Compare two customer segments to help the founder decide which to prioritize as their beachhead market.
+
+## Guidelines
+- Compare across all 10 decision criteria
+- Highlight the 3-5 criteria where segments differ most
+- Consider the startup's current stage and resources
+- Factor in execution risk — a slightly smaller market that's easier to win may be better
+- Be specific about trade-offs, not just scores
+- If segments are within 0.3 points overall, recommend testing both in parallel
+
+Use the compareSegments tool to return your structured comparison.`,
 };
 
 const DEEP_DIVE_TOOL_MAP: Record<DeepDiveModule, string> = {
@@ -263,6 +312,8 @@ const DEEP_DIVE_TOOL_MAP: Record<DeepDiveModule, string> = {
   personas: 'generatePersonas',
   market_validation: 'validateMarketSize',
   competitive_landscape: 'analyzeCompetitors',
+  segment_scoring: 'scoreSegment',
+  segment_comparison: 'compareSegments',
 };
 
 export function getDeepDiveToolName(module: DeepDiveModule): string {
@@ -290,6 +341,12 @@ export function buildDeepDivePrompt(
     }
     if (module === 'competitive_landscape' && existingDeepDive.segmentation?.segments.length) {
       contextSection += `\nTarget segments to consider:\n${existingDeepDive.segmentation.segments.map((s) => s.name).join(', ')}`;
+    }
+    if (module === 'segment_scoring' && existingDeepDive.tamSamSom) {
+      contextSection += `\nExisting TAM/SAM/SOM data:\n${JSON.stringify(existingDeepDive.tamSamSom, null, 2)}`;
+    }
+    if (module === 'segment_comparison' && existingDeepDive.scorecards?.length) {
+      contextSection += `\nExisting scorecards:\n${JSON.stringify(existingDeepDive.scorecards, null, 2)}`;
     }
   }
 
@@ -330,10 +387,12 @@ Your goal: understand their startup idea well enough to generate a complete, spe
 - Ask at most 2 questions per message
 - Don't over-question — if the idea is clear enough, generate immediately
 - Never ask more than 2 rounds of follow-ups total
-- When you generate, be SPECIFIC — no generic placeholder text like "various channels" or "multiple revenue streams"
+- When you generate, you MUST call the generateCanvas tool. NEVER describe or summarize what you would generate — ALWAYS use the tool.
+- NEVER say "I've generated" or "I've created" without actually calling the generateCanvas tool in the same response. The tool call is what creates the canvas — text alone does nothing.
+- Be SPECIFIC — no generic placeholder text like "various channels" or "multiple revenue streams"
 - Each block should have at least 2-3 specific bullet points
 - Use the founder's own language and terminology where possible
-- Title should be the product/company name, not a description
+- Title should be the product/company name or a short catchy name for the startup, not a generic description
 
 ## Block Content Guidelines
 

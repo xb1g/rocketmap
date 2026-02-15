@@ -117,6 +117,69 @@ export const analyzeCompetitors = tool({
   execute: async (params) => params,
 });
 
+// ─── Segment Evaluation Tools ────────────────────────────────────────────────
+
+const decisionCriterionSchema = z.object({
+  id: z.string().describe('Unique criterion identifier'),
+  category: z.enum(['demand', 'market', 'execution']).describe('Category: demand (~30%), market (~40%), execution (~30%)'),
+  name: z.string().describe('Criterion name'),
+  weight: z.number().min(0).max(1).describe('Weight within category (0-1)'),
+  score: z.number().min(1).max(5).describe('Score (1-5)'),
+  reasoning: z.string().describe('Justification for this score'),
+  confidence: z.enum(['low', 'medium', 'high']).describe('Confidence in this score'),
+});
+
+export const scoreSegment = tool({
+  description: 'Score a customer segment across 10 decision criteria in 3 categories (Demand, Market, Execution) to evaluate whether to pursue it.',
+  inputSchema: z.object({
+    criteria: z.array(decisionCriterionSchema).length(10).describe('Exactly 10 decision criteria scores'),
+    overallScore: z.number().min(1).max(5).describe('Weighted overall score (1-5)'),
+    recommendation: z.enum(['pursue', 'test', 'defer']).describe('Overall recommendation'),
+    reasoning: z.string().describe('Overall rationale for the recommendation'),
+    keyRisks: z.array(z.string()).min(3).max(5).describe('3-5 key risks for this segment'),
+    requiredExperiments: z.array(z.string()).min(2).max(4).describe('2-4 experiments to validate assumptions'),
+  }),
+  execute: async (params) => params,
+});
+
+export const compareSegments = tool({
+  description: 'Compare two customer segments to determine which to prioritize as beachhead.',
+  inputSchema: z.object({
+    segmentAName: z.string().describe('Name of segment A'),
+    segmentBName: z.string().describe('Name of segment B'),
+    scoreDifference: z.number().describe('Score delta (A - B)'),
+    betterSegment: z.enum(['A', 'B', 'tie']).describe('Which segment scores higher'),
+    keyDifferences: z.array(z.object({
+      criterion: z.string().describe('Criterion name'),
+      scoreA: z.number().min(1).max(5),
+      scoreB: z.number().min(1).max(5),
+      delta: z.number(),
+      explanation: z.string(),
+    })).describe('Key differences between the segments'),
+    recommendation: z.string().describe('Which segment to prioritize and why'),
+  }),
+  execute: async (params) => params,
+});
+
+// ─── Segment Creation Tool (Block Chat Copilot) ─────────────────────────────
+
+export const createSegments = tool({
+  description: 'Create customer segments as structured records. Use this when the user asks to define, suggest, or create customer segments. Each segment becomes a real record that can be linked to blocks and evaluated.',
+  inputSchema: z.object({
+    segments: z.array(z.object({
+      name: z.string().describe('Segment name'),
+      description: z.string().describe('Segment description'),
+      demographics: z.string().describe('Demographic characteristics'),
+      psychographics: z.string().describe('Psychographic characteristics'),
+      behavioral: z.string().describe('Behavioral patterns'),
+      geographic: z.string().describe('Geographic scope'),
+      estimatedSize: z.string().describe('Estimated segment size (e.g. "50,000 SMBs in US")'),
+      priority: z.enum(['high', 'medium', 'low']).describe('Segment priority'),
+    })).min(1).describe('Customer segments to create'),
+  }),
+  execute: async (params) => params,
+});
+
 // ─── Canvas Generation Tool ──────────────────────────────────────────────────
 
 export const generateCanvas = tool({
@@ -163,12 +226,15 @@ const allTools: Record<string, ReturnType<typeof tool<any, any>>> = {
   analyzeBlock,
   checkConsistency,
   proposeBlockEdit,
+  createSegments,
   generateCanvas,
   estimateMarketSize,
   generateSegments,
   generatePersonas,
   validateMarketSize,
   analyzeCompetitors,
+  scoreSegment,
+  compareSegments,
 };
 
 export function getToolsForAgent(toolNames: string[]) {

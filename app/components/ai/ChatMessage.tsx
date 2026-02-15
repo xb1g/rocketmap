@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
-import type { BlockEditProposal } from "@/lib/types/canvas";
+import type { BlockEditProposal, SegmentProposal } from "@/lib/types/canvas";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -16,10 +16,14 @@ interface ChatMessageWithPartsProps {
   onAcceptEdit?: (proposalId: string, edit: BlockEditProposal) => void;
   onRejectEdit?: (proposalId: string, editIndex: number) => void;
   onRevertEdit?: (proposalId: string, editIndex: number) => void;
+  onAcceptSegment?: (segKey: string, segment: SegmentProposal) => void;
+  onRejectSegment?: (segKey: string) => void;
   onEditMessage?: (messageId: string, newText: string) => void;
   onRegenerate?: () => void;
   acceptedEdits?: Set<string>;
   rejectedEdits?: Set<string>;
+  acceptedSegments?: Set<string>;
+  rejectedSegments?: Set<string>;
 }
 
 /**
@@ -73,10 +77,14 @@ export function ChatMessageWithParts({
   onAcceptEdit,
   onRejectEdit,
   onRevertEdit,
+  onAcceptSegment,
+  onRejectSegment,
   onEditMessage,
   onRegenerate,
   acceptedEdits,
   rejectedEdits,
+  acceptedSegments,
+  rejectedSegments,
 }: ChatMessageWithPartsProps) {
   const isUser = role === "user";
   const [isEditing, setIsEditing] = useState(false);
@@ -169,7 +177,16 @@ export function ChatMessageWithParts({
                     className="absolute -left-7 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-md text-foreground-muted/30 hover:text-foreground-muted/70 hover:bg-white/5 transition-all"
                     aria-label="Edit message"
                   >
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
@@ -227,7 +244,49 @@ export function ChatMessageWithParts({
                         isRejected={isRejected}
                         onAccept={() => onAcceptEdit?.(proposalId, edit)}
                         onReject={() => onRejectEdit?.(proposalId, editIdx)}
-                        onRevert={isAccepted && onRevertEdit ? () => onRevertEdit(proposalId, editIdx) : undefined}
+                        onRevert={
+                          isAccepted && onRevertEdit
+                            ? () => onRevertEdit(proposalId, editIdx)
+                            : undefined
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              );
+            }
+
+            if (toolName === "createSegments") {
+              const output = part.output as Record<string, unknown> | undefined;
+              const input = part.input as Record<string, unknown> | undefined;
+              let rawSegments = output?.segments ?? input?.segments;
+              if (!rawSegments && Array.isArray(output)) rawSegments = output;
+              if (!rawSegments && Array.isArray(input)) rawSegments = input;
+
+              const proposedSegments = (
+                Array.isArray(rawSegments) ? rawSegments : []
+              ) as SegmentProposal[];
+              if (!proposedSegments.length || !proposedSegments[0]?.name) return null;
+
+              const proposalId = part.toolCallId as string;
+              const isPending = part.state !== "output-available";
+
+              return (
+                <div key={idx} className="flex flex-col gap-2">
+                  {proposedSegments.map((seg, segIdx) => {
+                    const segKey = `${proposalId}-seg-${segIdx}`;
+                    const isAccepted = acceptedSegments?.has(segKey) ?? false;
+                    const isRejected = rejectedSegments?.has(segKey) ?? false;
+
+                    return (
+                      <SegmentProposalCard
+                        key={segKey}
+                        segment={seg}
+                        isPending={isPending}
+                        isAccepted={isAccepted}
+                        isRejected={isRejected}
+                        onAccept={() => onAcceptSegment?.(segKey, seg)}
+                        onReject={() => onRejectSegment?.(segKey)}
                       />
                     );
                   })}
@@ -265,7 +324,16 @@ export function ChatMessageWithParts({
               className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded-md text-foreground-muted/30 hover:text-foreground-muted/70 hover:bg-white/5 transition-all"
               aria-label="Regenerate response"
             >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <polyline points="1 4 1 10 7 10" />
                 <polyline points="23 20 23 14 17 14" />
                 <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
@@ -332,7 +400,7 @@ function SingleEditCard({
           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
         </svg>
         <span className="font-display-small text-[11px] uppercase tracking-wider text-(--chroma-amber)">
-          {edit?.blockType.replace(/_/g, " ")}
+          {edit?.blockType?.replace(/_/g, " ")}
         </span>
         {edit.mode !== "both" && (
           <span className="text-[9px] font-mono text-foreground-muted/40 uppercase">
@@ -444,6 +512,145 @@ function SingleEditCard({
       {isRejected && (
         <div className="px-3 pb-2.5 text-foreground-muted/40 text-[10px] text-center font-display-small uppercase tracking-wider line-through">
           Changes rejected
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Segment Proposal Card ──────────────────────────────────────────────────
+
+const PRIORITY_BADGE: Record<string, { bg: string; text: string }> = {
+  high: { bg: "bg-red-500/15", text: "text-red-400/90" },
+  medium: { bg: "bg-(--chroma-amber)/15", text: "text-(--chroma-amber)" },
+  low: { bg: "bg-blue-500/15", text: "text-blue-400/90" },
+};
+
+function SegmentProposalCard({
+  segment,
+  isPending,
+  isAccepted,
+  isRejected,
+  onAccept,
+  onReject,
+}: {
+  segment: SegmentProposal;
+  isPending: boolean;
+  isAccepted: boolean;
+  isRejected: boolean;
+  onAccept: () => void;
+  onReject: () => void;
+}) {
+  const badge = PRIORITY_BADGE[segment.priority] ?? PRIORITY_BADGE.medium;
+
+  return (
+    <div className="rounded-xl border border-(--chroma-indigo)/25 bg-(--chroma-indigo)/4 overflow-hidden">
+      {/* Header */}
+      <div className="px-3 py-2 border-b border-white/5 flex items-center gap-2">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-(--chroma-indigo)"
+        >
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+        <span className="font-display-small text-[11px] uppercase tracking-wider text-(--chroma-indigo) flex-1">
+          {segment.name}
+        </span>
+        <span
+          className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-full ${badge.bg} ${badge.text}`}
+        >
+          {segment.priority}
+        </span>
+      </div>
+
+      {/* Body */}
+      <div className="px-3 py-2.5 space-y-1.5">
+        <p className="text-[11px] text-foreground/70 leading-relaxed">
+          {segment.description}
+        </p>
+
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] text-foreground-muted/50">
+          {segment.demographics && (
+            <div>
+              <span className="text-foreground-muted/30 uppercase tracking-wider">Demo:</span>{" "}
+              {segment.demographics}
+            </div>
+          )}
+          {segment.psychographics && (
+            <div>
+              <span className="text-foreground-muted/30 uppercase tracking-wider">Psycho:</span>{" "}
+              {segment.psychographics}
+            </div>
+          )}
+          {segment.behavioral && (
+            <div>
+              <span className="text-foreground-muted/30 uppercase tracking-wider">Behavior:</span>{" "}
+              {segment.behavioral}
+            </div>
+          )}
+          {segment.geographic && (
+            <div>
+              <span className="text-foreground-muted/30 uppercase tracking-wider">Geo:</span>{" "}
+              {segment.geographic}
+            </div>
+          )}
+        </div>
+
+        {segment.estimatedSize && (
+          <div className="text-[10px] text-foreground-muted/60">
+            <span className="text-foreground-muted/30 uppercase tracking-wider">Est. size:</span>{" "}
+            {segment.estimatedSize}
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      {isPending && (
+        <div className="px-3 pb-3">
+          <div className="text-[10px] text-foreground-muted/40 text-center">
+            Generating...
+          </div>
+        </div>
+      )}
+
+      {!isPending && !isAccepted && !isRejected && (
+        <div className="flex gap-2 px-3 pb-3">
+          <button
+            onClick={onAccept}
+            className="flex-1 px-3 py-1.5 rounded-lg bg-green-500/15 hover:bg-green-500/25 text-green-400/90 text-[11px] font-display-small uppercase tracking-wider transition-colors"
+          >
+            Create
+          </button>
+          <button
+            onClick={onReject}
+            className="flex-1 px-3 py-1.5 rounded-lg bg-white/4 hover:bg-red-500/15 text-foreground-muted/50 hover:text-red-400/80 text-[11px] font-display-small uppercase tracking-wider transition-colors"
+          >
+            Skip
+          </button>
+        </div>
+      )}
+
+      {isAccepted && (
+        <div className="px-3 pb-2.5 text-center">
+          <span className="text-green-400/70 text-[10px] font-display-small uppercase tracking-wider">
+            Segment created
+          </span>
+        </div>
+      )}
+
+      {isRejected && (
+        <div className="px-3 pb-2.5 text-foreground-muted/40 text-[10px] text-center font-display-small uppercase tracking-wider line-through">
+          Skipped
         </div>
       )}
     </div>

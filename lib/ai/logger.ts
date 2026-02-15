@@ -9,6 +9,10 @@ export interface AIUsageInfo {
 type GenerateTextParams = Parameters<typeof generateText>[0];
 type StreamTextParams = Parameters<typeof streamText>[0];
 
+interface UsageHookOptions {
+  onUsage?: (usage: AIUsageInfo) => void | Promise<void>;
+}
+
 function logParams(label: string, params: GenerateTextParams | StreamTextParams) {
   const systemPreview = typeof params.system === 'string'
     ? params.system.slice(0, 200) + (params.system.length > 200 ? '…' : '')
@@ -47,7 +51,11 @@ function logUsage(label: string, usage: AIUsageInfo) {
   );
 }
 
-export async function generateTextWithLogging(label: string, params: GenerateTextParams) {
+export async function generateTextWithLogging(
+  label: string,
+  params: GenerateTextParams,
+  options: UsageHookOptions = {},
+) {
   logParams(label, params);
   const result = await generateText(params);
   const usage: AIUsageInfo = {
@@ -56,20 +64,37 @@ export async function generateTextWithLogging(label: string, params: GenerateTex
     totalTokens: result.usage.totalTokens ?? 0,
   };
   logUsage(label, usage);
+  if (options.onUsage) {
+    try {
+      await options.onUsage(usage);
+    } catch (error) {
+      console.error(`[AI] ${label} | failed to run usage hook:`, error);
+    }
+  }
   return { result, usage };
 }
 
-export function streamTextWithLogging(label: string, params: StreamTextParams) {
+export function streamTextWithLogging(
+  label: string,
+  params: StreamTextParams,
+  options: UsageHookOptions = {},
+) {
   logParams(label, params);
   const result = streamText(params);
 
   // Log usage when the stream completes
   Promise.resolve(result.usage).then((u) => {
-    logUsage(label, {
+    const usage: AIUsageInfo = {
       inputTokens: u.inputTokens ?? 0,
       outputTokens: u.outputTokens ?? 0,
       totalTokens: u.totalTokens ?? 0,
-    });
+    };
+    logUsage(label, usage);
+    if (options.onUsage) {
+      Promise.resolve(options.onUsage(usage)).catch((error) => {
+        console.error(`[AI] ${label} | failed to run usage hook:`, error);
+      });
+    }
   }).catch(() => {
     console.log(`[AI] ${label} | usage: unavailable`);
   });

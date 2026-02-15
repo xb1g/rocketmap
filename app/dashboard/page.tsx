@@ -9,6 +9,7 @@ import {
 } from "@/lib/appwrite";
 import { Query } from "node-appwrite";
 import { DashboardClient } from "./DashboardClient";
+import { getAnthropicUsageStatsFromUser } from "@/lib/ai/user-preferences";
 
 export default async function DashboardPage() {
   const user = await getSessionUser();
@@ -98,6 +99,7 @@ export default async function DashboardPage() {
 
   const totalCanvases = canvases.length;
   const lastUpdated = canvases.length > 0 ? canvases[0].$updatedAt : null;
+  const aiUsage = getAnthropicUsageStatsFromUser(user);
   const avgCompletion =
     totalCanvases > 0
       ? Math.round(
@@ -115,7 +117,12 @@ export default async function DashboardPage() {
       }}
       onboardingCompleted={userDoc.onboardingCompleted || false}
       canvases={canvases}
-      stats={{ totalCanvases, lastUpdated, avgCompletion }}
+      stats={{
+        totalCanvases,
+        lastUpdated,
+        avgCompletion,
+        aiApiCalls: aiUsage.calls,
+      }}
     />
   );
 }

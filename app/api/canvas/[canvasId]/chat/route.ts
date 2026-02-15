@@ -1,11 +1,14 @@
 import { stepCountIs, convertToModelMessages } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
 import { streamTextWithLogging } from '@/lib/ai/logger';
 import { requireAuth } from '@/lib/appwrite-server';
 import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { getAgentConfig } from '@/lib/ai/agents';
 import { getToolsForAgent } from '@/lib/ai/tools';
 import { saveChatMessage } from '@/lib/ai/chat-persistence';
+import {
+  getAnthropicModelForUser,
+  recordAnthropicUsageForUser,
+} from '@/lib/ai/user-preferences';
 
 interface RouteContext {
   params: Promise<{ canvasId: string }>;
@@ -24,11 +27,13 @@ export async function POST(request: Request, context: RouteContext) {
     const modelMessages = await convertToModelMessages(messages);
 
     const result = streamTextWithLogging('canvas-chat', {
-      model: anthropic('claude-sonnet-4-5-20250929'),
+      model: getAnthropicModelForUser(user, 'claude-sonnet-4-5-20250929'),
       system: config.systemPrompt,
       messages: modelMessages,
       tools,
       stopWhen: stepCountIs(3),
+    }, {
+      onUsage: (usage) => recordAnthropicUsageForUser(user.$id, usage),
     });
 
     // Save assistant response after stream completes (fire-and-forget)

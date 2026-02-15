@@ -609,6 +609,7 @@ export function BlockFocusPanel({
                     Deep Dive
                   </button>
                 )}
+
             </div>
 
             {/* Deep dive gate message */}

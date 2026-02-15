@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { stepCountIs } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
 import { generateTextWithLogging } from '@/lib/ai/logger';
 import { Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
@@ -14,6 +13,10 @@ import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { getToolsForAgent } from '@/lib/ai/tools';
 import { buildDeepDivePrompt, getDeepDiveToolName } from '@/lib/ai/prompts';
 import type { DeepDiveModule, MarketResearchData } from '@/lib/types/canvas';
+import {
+  getAnthropicModelForUser,
+  recordAnthropicUsageForUser,
+} from '@/lib/ai/user-preferences';
 
 interface RouteContext {
   params: Promise<{ canvasId: string; blockType: string }>;
@@ -25,6 +28,8 @@ const VALID_MODULES: DeepDiveModule[] = [
   'personas',
   'market_validation',
   'competitive_landscape',
+  'segment_scoring',
+  'segment_comparison',
 ];
 
 // POST — AI generation for a specific deep-dive module
@@ -53,18 +58,43 @@ export async function POST(request: Request, context: RouteContext) {
       ? `${targetBlock.content.bmc}\n${targetBlock.content.lean}`.trim()
       : '';
 
-    const { result, usage } = await generateTextWithLogging(`deep-dive:${module}`, {
-      model: anthropic('claude-sonnet-4-5-20250929'),
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: `Perform a deep-dive analysis for the "${blockType}" block. Current content: "${content || '(empty)'}". Use the ${toolName} tool to return your structured analysis.`,
-        },
-      ],
-      tools,
-      stopWhen: stepCountIs(3),
-    });
+    // Build module-specific user message
+    let userMessage: string;
+    if (module === 'segment_scoring') {
+      const name = inputs?.segmentName || '(unnamed)';
+      const desc = inputs?.segmentDescription || '';
+      const demo = inputs?.demographics || '';
+      const psych = inputs?.psychographics || '';
+      const behav = inputs?.behavioral || '';
+      const geo = inputs?.geographic || '';
+      const segDetail = [
+        `Segment: "${name}"`,
+        desc && `Description: ${desc}`,
+        demo && `Demographics: ${demo}`,
+        psych && `Psychographics: ${psych}`,
+        behav && `Behavioral: ${behav}`,
+        geo && `Geographic: ${geo}`,
+      ].filter(Boolean).join('\n');
+      userMessage = `Score the following customer segment using the scoreSegment tool.\n\n${segDetail}\n\nBlock content for context: "${content || '(empty)'}"`;
+    } else if (module === 'segment_comparison') {
+      userMessage = `Compare these two customer segments using the compareSegments tool.\n\nSegment A: "${inputs?.segmentAName || '(unnamed)'}" — ${inputs?.segmentADescription || '(no description)'}\nSegment B: "${inputs?.segmentBName || '(unnamed)'}" — ${inputs?.segmentBDescription || '(no description)'}\n\nBlock content for context: "${content || '(empty)'}"`;
+    } else {
+      userMessage = `Perform a deep-dive analysis for the "${blockType}" block. Current content: "${content || '(empty)'}". Use the ${toolName} tool to return your structured analysis.`;
+    }
+
+    const { result, usage } = await generateTextWithLogging(
+      `deep-dive:${module}`,
+      {
+        model: getAnthropicModelForUser(user, 'claude-sonnet-4-5-20250929'),
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMessage }],
+        tools,
+        stopWhen: stepCountIs(3),
+      },
+      {
+        onUsage: (usageData) => recordAnthropicUsageForUser(user.$id, usageData),
+      },
+    );
 
     // Extract tool result
     let toolResult: unknown = null;
@@ -87,6 +117,7 @@ export async function POST(request: Request, context: RouteContext) {
       personas: existingDeepDive?.personas ?? null,
       marketValidation: existingDeepDive?.marketValidation ?? null,
       competitiveLandscape: existingDeepDive?.competitiveLandscape ?? null,
+      scorecards: existingDeepDive?.scorecards,
     };
 
     // Map module to the correct field
@@ -116,6 +147,50 @@ export async function POST(request: Request, context: RouteContext) {
       case 'competitive_landscape':
         updatedDeepDive.competitiveLandscape = toolResult as MarketResearchData['competitiveLandscape'];
         break;
+      case 'segment_scoring': {
+        const scoreResult = toolResult as {
+          criteria: MarketResearchData extends { scorecards?: Array<infer S> } ? S extends { criteria: infer C } ? C : never : never;
+          overallScore: number;
+          recommendation: 'pursue' | 'test' | 'defer';
+          reasoning: string;
+          keyRisks: string[];
+          requiredExperiments: string[];
+        };
+        const segmentId = inputs?.segmentId ? Number(inputs.segmentId) : 0;
+        // Compute data confidence from deep-dive completeness
+        let dataConfidence = 20; // base
+        if (updatedDeepDive.tamSamSom?.tam) dataConfidence += 20;
+        if (updatedDeepDive.segmentation?.segments.length) dataConfidence += 20;
+        if (updatedDeepDive.competitiveLandscape?.competitors.length) dataConfidence += 20;
+        if (updatedDeepDive.marketValidation?.validations.length) dataConfidence += 20;
+
+        const newScorecard = {
+          segmentId,
+          beachheadStatus: (scoreResult.recommendation === 'pursue' ? 'primary' : scoreResult.recommendation === 'test' ? 'secondary' : 'later') as 'primary' | 'secondary' | 'later',
+          arpu: inputs?.arpu ? Number(inputs.arpu) : null,
+          revenuePotential: null,
+          criteria: scoreResult.criteria,
+          overallScore: scoreResult.overallScore,
+          aiRecommendation: scoreResult.recommendation,
+          aiReasoning: scoreResult.reasoning,
+          keyRisks: scoreResult.keyRisks,
+          requiredExperiments: scoreResult.requiredExperiments,
+          dataConfidence,
+          lastUpdated: new Date().toISOString(),
+        };
+        // Upsert: replace existing scorecard for this segment or append
+        const existing = updatedDeepDive.scorecards ?? [];
+        updatedDeepDive.scorecards = [
+          ...existing.filter((s) => s.segmentId !== segmentId),
+          newScorecard,
+        ];
+        break;
+      }
+      case 'segment_comparison': {
+        // Comparison results returned directly, no persistence needed
+        // But we still persist the deep-dive to ensure consistency
+        break;
+      }
     }
 
     // Persist to Appwrite

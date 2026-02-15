@@ -53,9 +53,10 @@ export function CanvasCard({ canvas, onDuplicate, onDelete }: CanvasCardProps) {
           justifyContent: "space-between",
           alignItems: "flex-start",
           marginBottom: "0.75rem",
+          paddingRight: "2rem", // Add space for the absolute menu
         }}
       >
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, paddingRight: "1rem" }}>
           <div className="canvas-card-title">{canvas.title}</div>
           <div
             style={{
@@ -71,16 +72,72 @@ export function CanvasCard({ canvas, onDuplicate, onDelete }: CanvasCardProps) {
             </span>
           </div>
         </div>
-        <div className="canvas-blocks-mini">
-          {Array.from({ length: 9 }).map((_, i) => (
-            <div
-              key={i}
-              className={`canvas-blocks-mini-cell ${i < filledBlocks ? "filled" : ""}`}
-            />
-          ))}
+        <div
+          className="canvas-blocks-mini"
+          style={{
+            marginTop: "1.25rem",
+            display: "grid",
+            gridTemplateColumns: "repeat(10, 1fr)",
+            gridTemplateRows: "repeat(2, 1fr) 0.65fr",
+            gap: "2px",
+            width: "70px",
+            height: "45px",
+            flexShrink: 0,
+            alignSelf: "flex-start",
+          }}
+        >
+          {/* Key Partners (Tall Left) */}
+          <div
+            className={`canvas-blocks-mini-cell ${0 < filledBlocks ? "filled" : ""}`}
+            style={{ gridColumn: "span 2", gridRow: "span 2 " }}
+          />
+          {/* Key Activities (Top Left-Mid) */}
+          <div
+            className={`canvas-blocks-mini-cell ${1 < filledBlocks ? "filled" : ""}`}
+            style={{ gridColumn: "span 2" }}
+          />
+          {/* Key Resources (Bottom Left-Mid) */}
+          <div
+            className={`canvas-blocks-mini-cell ${2 < filledBlocks ? "filled" : ""}`}
+            style={{ gridColumn: "span 2", gridRow: "2" }}
+          />
+          {/* Value Propositions (Tall Center) */}
+          <div
+            className={`canvas-blocks-mini-cell ${3 < filledBlocks ? "filled" : ""}`}
+            style={{ gridColumn: "span 2", gridRow: "span 2" }}
+          />
+          {/* Customer Relationships (Top Right-Mid) */}
+          <div
+            className={`canvas-blocks-mini-cell ${4 < filledBlocks ? "filled" : ""}`}
+            style={{ gridColumn: "span 2" }}
+          />
+          {/* Channels (Bottom Right-Mid) */}
+          <div
+            className={`canvas-blocks-mini-cell ${5 < filledBlocks ? "filled" : ""}`}
+            style={{ gridColumn: "span 2", gridRow: "2" }}
+          />
+          {/* Customer Segments (Tall Right) */}
+          <div
+            className={`canvas-blocks-mini-cell ${6 < filledBlocks ? "filled" : ""}`}
+            style={{ gridColumn: "span 2", gridRow: "span 2" }}
+          />
+
+          {/* Cost Structure (Bottom Left) */}
+          <div
+            className={`canvas-blocks-mini-cell ${7 < filledBlocks ? "filled" : ""}`}
+            style={{ gridColumn: "span 5", gridRow: "3" }}
+          />
+          {/* Revenue Streams (Bottom Right) */}
+          <div
+            className={`canvas-blocks-mini-cell ${8 < filledBlocks ? "filled" : ""}`}
+            style={{ gridColumn: "span 5", gridRow: "3" }}
+          />
         </div>
       </div>
-      <div className="canvas-progress">
+      <div 
+        className="canvas-progress"
+        style={{ marginTop: "1rem" }}
+      >
         <div
           className="canvas-progress-bar"
           style={{ width: `${progressPct}%` }}

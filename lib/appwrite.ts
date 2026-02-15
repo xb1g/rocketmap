@@ -3,6 +3,7 @@ import {
   Client as ServerClient,
   Account as ServerAccount,
   Databases as ServerDatabases,
+  Users as ServerUsers,
 } from "node-appwrite";
 
 // Client-side SDK (browser)
@@ -21,6 +22,7 @@ export const serverClient = new ServerClient()
 
 export const serverAccount = new ServerAccount(serverClient);
 export const serverDatabases = new ServerDatabases(serverClient);
+export const serverUsers = new ServerUsers(serverClient);
 
 // Constants for database
 export const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
