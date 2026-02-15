@@ -1,111 +1,209 @@
-'use client';
+"use client";
 
-import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { signInWithGoogle } from '@/lib/oauth';
-import { ErrorBanner } from './components/ErrorBanner';
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { signInWithGoogle } from "@/lib/oauth";
+import { ErrorBanner } from "./components/ErrorBanner";
+import styles from "./landing-github.module.css";
 
-/*
- * Standard BMC layout on a 10-col × 3-row grid.
- * Top 2 rows are taller (main blocks), bottom row is shorter (finances).
- * Columns: KP(2) | KA/KR(2) | VP(2) | CR/CH(2) | CS(2)
- */
-const BMC_BLOCKS = [
-  { label: 'Key Partners',       abbr: 'KP', row: '1 / 3', col: '1 / 3' },
-  { label: 'Key Activities',     abbr: 'KA', row: '1 / 2', col: '3 / 5' },
-  { label: 'Key Resources',      abbr: 'KR', row: '2 / 3', col: '3 / 5' },
-  { label: 'Value Propositions', abbr: 'VP', row: '1 / 3', col: '5 / 7' },
-  { label: 'Customer Relations', abbr: 'CR', row: '1 / 2', col: '7 / 9' },
-  { label: 'Channels',           abbr: 'CH', row: '2 / 3', col: '7 / 9' },
-  { label: 'Customer Segments',  abbr: 'CS', row: '1 / 3', col: '9 / 11' },
-  { label: 'Cost Structure',     abbr: 'C$', row: '3 / 4', col: '1 / 6' },
-  { label: 'Revenue Streams',    abbr: 'R$', row: '3 / 4', col: '6 / 11' },
+type BmcTone =
+  | "indigo"
+  | "cyan"
+  | "amber"
+  | "pink"
+  | "blue"
+  | "fuchsia"
+  | "emerald";
+
+type BmcBlock = {
+  label: string;
+  example: string;
+  row: string;
+  col: string;
+  tone: BmcTone;
+};
+
+const BMC_BLOCKS: BmcBlock[] = [
+  {
+    label: "Key Partners",
+    example: "Host networks, payment rails, insurance partners",
+    row: "1 / 3",
+    col: "1 / 3",
+    tone: "emerald",
+  },
+  {
+    label: "Key Activities",
+    example: "Discovery, onboarding, dynamic pricing",
+    row: "1 / 2",
+    col: "3 / 5",
+    tone: "cyan",
+  },
+  {
+    label: "Key Resources",
+    example: "Trust graph, reputation system",
+    row: "2 / 3",
+    col: "3 / 5",
+    tone: "amber",
+  },
+  {
+    label: "Value Propositions",
+    example: "Verified stays with trusted hosts",
+    row: "1 / 3",
+    col: "5 / 7",
+    tone: "indigo",
+  },
+  {
+    label: "Customer Relations",
+    example: "24/7 support, incident handling",
+    row: "1 / 2",
+    col: "7 / 9",
+    tone: "pink",
+  },
+  {
+    label: "Channels",
+    example: "App and web marketplace",
+    row: "2 / 3",
+    col: "7 / 9",
+    tone: "blue",
+  },
+  {
+    label: "Customer Segments",
+    example: "Travelers, hosts, corporate bookers",
+    row: "1 / 3",
+    col: "9 / 11",
+    tone: "fuchsia",
+  },
+  {
+    label: "Cost Structure",
+    example: "Cloud, moderation, trust systems",
+    row: "3 / 4",
+    col: "1 / 6",
+    tone: "amber",
+  },
+  {
+    label: "Revenue Streams",
+    example: "Service fees, commissions",
+    row: "3 / 4",
+    col: "6 / 11",
+    tone: "emerald",
+  },
 ];
 
-/*
- * SVG connection lines showing cross-block relationships.
- * Each path goes from one block's edge to another, drawn at percentage
- * coordinates so they scale with the container.
- */
-function ConnectionLines() {
-  return (
-    <svg
-      className="absolute inset-0 w-full h-full pointer-events-none"
-      preserveAspectRatio="none"
-      viewBox="0 0 100 100"
-      fill="none"
-    >
-      <defs>
-        <linearGradient id="conn-indigo" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="rgba(99,102,241,0)" />
-          <stop offset="50%" stopColor="rgba(99,102,241,0.18)" />
-          <stop offset="100%" stopColor="rgba(99,102,241,0)" />
-        </linearGradient>
-        <linearGradient id="conn-cyan" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="rgba(6,182,212,0)" />
-          <stop offset="50%" stopColor="rgba(6,182,212,0.14)" />
-          <stop offset="100%" stopColor="rgba(6,182,212,0)" />
-        </linearGradient>
-        <linearGradient id="conn-pink" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="rgba(236,72,153,0)" />
-          <stop offset="50%" stopColor="rgba(236,72,153,0.12)" />
-          <stop offset="100%" stopColor="rgba(236,72,153,0)" />
-        </linearGradient>
-        <linearGradient id="conn-vert" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="rgba(99,102,241,0)" />
-          <stop offset="50%" stopColor="rgba(99,102,241,0.12)" />
-          <stop offset="100%" stopColor="rgba(99,102,241,0)" />
-        </linearGradient>
-      </defs>
-
-      {/* KA → VP  (Key Activities feeds Value Propositions) */}
-      <line x1="40" y1="18" x2="50" y2="33" stroke="url(#conn-indigo)" strokeWidth="0.3" />
-
-      {/* VP → CR  (Value Props reach customers through Relations) */}
-      <line x1="60" y1="25" x2="70" y2="18" stroke="url(#conn-cyan)" strokeWidth="0.3" />
-
-      {/* CR → CS  (Customer Relations connect to Customer Segments) */}
-      <line x1="80" y1="18" x2="90" y2="25" stroke="url(#conn-indigo)" strokeWidth="0.3" />
-
-      {/* KP → KA  (Partners enable Activities) */}
-      <line x1="20" y1="25" x2="30" y2="18" stroke="url(#conn-cyan)" strokeWidth="0.3" />
-
-      {/* KR → VP  (Resources power Value Propositions) */}
-      <line x1="40" y1="50" x2="50" y2="40" stroke="url(#conn-pink)" strokeWidth="0.3" />
-
-      {/* CH → CS  (Channels reach Customer Segments) */}
-      <line x1="80" y1="50" x2="90" y2="40" stroke="url(#conn-pink)" strokeWidth="0.3" />
-
-      {/* VP → C$  (Value Propositions drive Cost Structure) */}
-      <line x1="45" y1="62" x2="30" y2="78" stroke="url(#conn-vert)" strokeWidth="0.3" />
-
-      {/* VP → R$  (Value Propositions generate Revenue) */}
-      <line x1="55" y1="62" x2="70" y2="78" stroke="url(#conn-vert)" strokeWidth="0.3" />
-
-      {/* Connection dots at intersections */}
-      <circle cx="50" cy="33" r="0.5" fill="rgba(99,102,241,0.25)" />
-      <circle cx="70" cy="18" r="0.5" fill="rgba(6,182,212,0.2)" />
-      <circle cx="30" cy="18" r="0.5" fill="rgba(6,182,212,0.2)" />
-      <circle cx="45" cy="62" r="0.5" fill="rgba(99,102,241,0.2)" />
-      <circle cx="55" cy="62" r="0.5" fill="rgba(99,102,241,0.2)" />
-    </svg>
-  );
-}
+const TONE_CLASS: Record<BmcTone, string> = {
+  indigo: styles.toneIndigo,
+  cyan: styles.toneCyan,
+  amber: styles.toneAmber,
+  pink: styles.tonePink,
+  blue: styles.toneBlue,
+  fuchsia: styles.toneFuchsia,
+  emerald: styles.toneEmerald,
+};
 
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      <path
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+        fill="#4285F4"
+      />
+      <path
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+        fill="#34A853"
+      />
+      <path
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+        fill="#FBBC05"
+      />
+      <path
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+        fill="#EA4335"
+      />
+    </svg>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M4 2.5v11l9-5.5-9-5.5z" />
+    </svg>
+  );
+}
+
+function ArrowRightIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path d="M3 8h10M9 4l4 4-4 4" />
+    </svg>
+  );
+}
+
+function CrossValidateIcon() {
+  return (
+    <svg
+      width="32"
+      height="32"
+      viewBox="0 0 32 32"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <rect x="4" y="4" width="10" height="10" rx="2" />
+      <rect x="18" y="4" width="10" height="10" rx="2" />
+      <rect x="18" y="18" width="10" height="10" rx="2" />
+      <rect x="4" y="18" width="10" height="10" rx="2" />
+      <line x1="14" y1="9" x2="18" y2="9" />
+      <line x1="23" y1="14" x2="23" y2="18" />
+      <line x1="14" y1="23" x2="18" y2="23" />
+      <line x1="9" y1="14" x2="9" y2="18" />
+    </svg>
+  );
+}
+
+function AssumptionIcon() {
+  return (
+    <svg
+      width="32"
+      height="32"
+      viewBox="0 0 32 32"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path d="M28 20v5a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-5" />
+      <polyline points="10 13 16 19 22 13" />
+      <line x1="16" y1="19" x2="16" y2="4" />
+    </svg>
+  );
+}
+
+function RiskIcon() {
+  return (
+    <svg
+      width="32"
+      height="32"
+      viewBox="0 0 32 32"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path d="M16 3l12 6v9c0 7-4.5 13-12 16-7.5-3-12-9-12-16V9l12-6z" />
+      <path d="M16 11v5" />
+      <path d="M16 21h.01" />
     </svg>
   );
 }
 
 function LandingContent() {
   const searchParams = useSearchParams();
-  const error = searchParams.get('error');
+  const error = searchParams.get("error");
 
   const handleSignIn = () => {
     signInWithGoogle();
@@ -115,140 +213,385 @@ function LandingContent() {
     <>
       <ErrorBanner error={error} />
 
-      {/* Atmosphere layers */}
-      <div className="landing-glow" />
-      <div className="landing-noise" />
+      {/* Grid pattern background */}
+      <div className={styles.gridPattern} />
 
-      <div className="relative z-10 min-h-screen landing-grid flex flex-col items-center justify-center px-6 overflow-hidden">
+      {/* Radial glow effects */}
+      <div className={styles.glowTop} />
+      <div className={styles.glowBottom} />
 
-        {/* Hero section */}
-        <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
+      <main className={styles.main}>
+        {/* Asymmetric Hero Section */}
+        <section className={styles.heroSection}>
+          <div className={styles.heroContainer}>
+            {/* Left side: Content (60%) */}
+            <div className={`${styles.heroContent} ${styles.fadeUp}`}>
+              <div className={styles.badge}>
+                <span className={styles.badgeDot} />
+                AI Analysis Engine
+              </div>
 
-          {/* Status tag */}
-          <div className="fade-up" style={{ animationDelay: '0.1s' }}>
-            <span className="tag-pill font-mono">
-              <span className="tag-pill-dot" />
-              AI-Powered Validation Engine
-            </span>
-          </div>
+              <h1 className={styles.heroTitle}>
+                Your startup idea,
+                <br />
+                <span className={styles.gradientText}>stress-tested by AI</span>
+              </h1>
 
-          {/* Title */}
-          <div className="relative mt-8 mb-6 fade-up" style={{ animationDelay: '0.25s' }}>
-            <div className="landing-title-glow" />
-            <h1 className="landing-title font-display text-7xl sm:text-8xl md:text-9xl font-light tracking-tight leading-none select-none">
-              RocketMap
-            </h1>
-          </div>
+              <p className={styles.heroSubtitle}>
+                AI-powered validation for Business Model Canvas. Detect
+                contradictions, extract assumptions, identify fragility—before
+                launch.
+              </p>
 
-          {/* Tagline */}
-          <p
-            className="fade-up font-body text-base sm:text-lg text-[#7a7a8a] max-w-md leading-relaxed tracking-wide"
-            style={{ animationDelay: '0.4s' }}
-          >
-            Stress-test your startup before the market does.
-            <br />
-            <span className="text-[#9595a8]">A playable business model engine.</span>
-          </p>
+              <div className={styles.ctaGroup}>
+                <button onClick={handleSignIn} className={styles.btnPrimary}>
+                  <GoogleIcon />
+                  <span>Start validating</span>
+                  <ArrowRightIcon />
+                </button>
+                <button className={styles.btnSecondary}>
+                  <PlayIcon />
+                  <span>See it work</span>
+                </button>
+              </div>
 
-          {/* CTA */}
-          <div className="fade-up mt-10" style={{ animationDelay: '0.55s' }}>
-            <button
-              onClick={handleSignIn}
-              className="cta-glow group relative inline-flex items-center gap-3 px-7 py-3.5 rounded-xl
-                         bg-white/[0.06] border border-white/[0.08] backdrop-blur-sm
-                         text-sm font-body font-medium tracking-wide text-white/80
-                         hover:bg-white/[0.1] hover:border-white/[0.14] hover:text-white
-                         transition-all duration-300 cursor-pointer"
+              {/* Trust indicators */}
+              <div className={styles.trustBadges}>
+                <span className={styles.trustItem}>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="currentColor"
+                  >
+                    <path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z" />
+                  </svg>
+                  No credit card required
+                </span>
+                <span className={styles.trustItem}>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="currentColor"
+                  >
+                    <path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z" />
+                  </svg>
+                  Free forever plan
+                </span>
+              </div>
+            </div>
+
+            {/* Right side: Floating BMC visual (40%) */}
+            <div
+              className={`${styles.heroVisual} ${styles.fadeUp} ${styles.delay1}`}
             >
-              <GoogleIcon />
-              <span>Continue with Google</span>
-              <svg
-                width="14" height="14" viewBox="0 0 16 16" fill="none"
-                className="ml-1 opacity-40 group-hover:opacity-70 group-hover:translate-x-0.5 transition-all duration-300"
-              >
-                <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+              <div className={styles.floatingCard}>
+                <div className={styles.cardHeader}>
+                  <span className={styles.cardTitle}>
+                    Business Model Canvas
+                  </span>
+                  <span className={styles.cardBadge}>
+                    <span className={styles.pulsingDot} />
+                    Analyzing
+                  </span>
+                </div>
+                <div className={styles.miniGrid}>
+                  {BMC_BLOCKS.slice(0, 4).map((block, index) => (
+                    <div
+                      key={block.label}
+                      className={`${styles.miniBlock} ${TONE_CLASS[block.tone]}`}
+                    >
+                      <span className={styles.miniLabel}>{block.label}</span>
+                      <div className={styles.miniSpark} />
+                    </div>
+                  ))}
+                </div>
+                <div className={styles.scanLine} />
+              </div>
+            </div>
           </div>
-        </div>
+        </section>
 
-        {/* Divider */}
-        <hr
-          className="landing-rule fade-up w-full max-w-2xl mt-20 mb-14"
-          style={{ animationDelay: '0.65s' }}
-        />
+        {/* Alternating Features Section */}
+        {/* Feature 1: Left text, Right visual */}
+        <section className={`${styles.featureSection} ${styles.layoutLeft}`}>
+          <div className={`${styles.featureContent} ${styles.fadeLeft}`}>
+            <div className={styles.featureIcon}>
+              <CrossValidateIcon />
+            </div>
+            <h2 className={styles.featureTitle}>
+              Every block
+              <br />
+              cross-validated
+            </h2>
+            <p className={styles.featureDescription}>
+              AI analyzes relationships across all 9 canvas blocks. If your
+              channels dont reach your segments, or revenue doesn't cover
+              costs—we catch it.
+            </p>
+            <ul className={styles.featureList}>
+              <li>Detects logical inconsistencies</li>
+              <li>Validates cross-block dependencies</li>
+              <li>Flags missing connections</li>
+            </ul>
+          </div>
+          <div className={`${styles.featureVisual} ${styles.fadeRight}`}>
+            <div className={styles.visualCard}>
+              <div className={styles.visualHeader}>
+                <span className={styles.monoLabel}>
+                  consistency_check.run()
+                </span>
+              </div>
+              <div className={styles.visualContent}>
+                {[
+                  "Customer Segments ↔ Channels",
+                  "Value Props ↔ Revenue",
+                  "Resources ↔ Activities",
+                ].map((item, i) => (
+                  <div
+                    key={item}
+                    className={styles.validationRow}
+                    style={{ animationDelay: `${i * 150}ms` }}
+                  >
+                    <span className={styles.checkIcon}>✓</span>
+                    <span className={styles.validationText}>{item}</span>
+                    <span className={styles.validationScore}>
+                      {["92%", "87%", "94%"][i]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
 
-        {/* BMC Preview Grid */}
-        <div
-          className="fade-up relative w-full max-w-2xl"
-          style={{ animationDelay: '0.75s' }}
-        >
-          {/* Section label */}
-          <div className="flex items-center gap-3 mb-5">
-            <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#555566]">
-              Business Model Canvas
-            </span>
-            <div className="flex-1 h-px bg-white/[0.04]" />
-            <span className="font-mono text-[10px] text-[#444455]">9 blocks</span>
+        {/* Feature 2: Left visual, Right text */}
+        <section className={`${styles.featureSection} ${styles.layoutRight}`}>
+          <div className={`${styles.featureVisual} ${styles.fadeLeft}`}>
+            <div className={styles.visualCard}>
+              <div className={styles.visualHeader}>
+                <span className={styles.monoLabel}>assumptions.extract()</span>
+              </div>
+              <div className={styles.visualContent}>
+                {[
+                  { text: "Users want peer hosting", risk: "High" },
+                  { text: "Trust badges drive bookings", risk: "Med" },
+                  { text: "Hosts accept 15% fee", risk: "High" },
+                ].map((item, i) => (
+                  <div
+                    key={item.text}
+                    className={styles.assumptionRow}
+                    style={{ animationDelay: `${i * 150}ms` }}
+                  >
+                    <span className={styles.assumptionText}>{item.text}</span>
+                    <span
+                      className={`${styles.riskBadge} ${item.risk === "High" ? styles.riskHigh : styles.riskMed}`}
+                    >
+                      {item.risk}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className={`${styles.featureContent} ${styles.fadeRight}`}>
+            <div className={styles.featureIcon}>
+              <AssumptionIcon />
+            </div>
+            <h2 className={styles.featureTitle}>
+              Hidden assumptions,
+              <br />
+              surfaced
+            </h2>
+            <p className={styles.featureDescription}>
+              Your strategy runs on assumptions. We extract them, structure test
+              plans, and flag the riskiest ones for validation.
+            </p>
+            <ul className={styles.featureList}>
+              <li>AI identifies implicit assumptions</li>
+              <li>Risk scoring for each assumption</li>
+              <li>Structured validation tests</li>
+            </ul>
+          </div>
+        </section>
+
+        {/* Feature 3: Left text, Right visual */}
+        <section className={`${styles.featureSection} ${styles.layoutLeft}`}>
+          <div className={`${styles.featureContent} ${styles.fadeLeft}`}>
+            <div className={styles.featureIcon}>
+              <RiskIcon />
+            </div>
+            <h2 className={styles.featureTitle}>
+              Stress-test before
+              <br />
+              the market does
+            </h2>
+            <p className={styles.featureDescription}>
+              Shock scenarios reveal fragility. What breaks if your CAC doubles?
+              Your supplier disappears? We show you before reality does.
+            </p>
+            <ul className={styles.featureList}>
+              <li>Simulates market shock scenarios</li>
+              <li>Identifies fragile components</li>
+              <li>Provides mitigation strategies</li>
+            </ul>
+          </div>
+          <div className={`${styles.featureVisual} ${styles.fadeRight}`}>
+            <div className={styles.visualCard}>
+              <div className={styles.visualHeader}>
+                <span className={styles.monoLabel}>stress_test.simulate()</span>
+              </div>
+              <div className={styles.visualContent}>
+                {[
+                  { scenario: "CAC +100%", impact: "87" },
+                  { scenario: "Churn +50%", impact: "74" },
+                  { scenario: "Supplier exit", impact: "92" },
+                ].map((item, i) => (
+                  <div
+                    key={item.scenario}
+                    className={styles.stressRow}
+                    style={{ animationDelay: `${i * 150}ms` }}
+                  >
+                    <span className={styles.stressScenario}>
+                      {item.scenario}
+                    </span>
+                    <div className={styles.stressBar}>
+                      <div
+                        className={styles.stressBarFill}
+                        style={{ width: `${item.impact}%` }}
+                      />
+                    </div>
+                    <span className={styles.stressImpact}>{item.impact}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Full BMC Grid Section */}
+        <section className={styles.bmcSection}>
+          <div className={styles.bmcHeader}>
+            <h2 className={`${styles.sectionTitle} ${styles.fadeUp}`}>
+              Your entire model, validated
+            </h2>
+            <p
+              className={`${styles.sectionSubtitle} ${styles.fadeUp} ${styles.delay1}`}
+            >
+              Interactive Business Model Canvas with AI analysis at every layer
+            </p>
           </div>
 
-          {/* Grid — 10 columns, proper BMC proportions */}
           <div
-            className="relative grid gap-1.5"
-            style={{
-              gridTemplateColumns: 'repeat(10, 1fr)',
-              gridTemplateRows: '64px 64px 48px',
-            }}
+            className={`${styles.bmcContainer} ${styles.fadeUp} ${styles.delay2}`}
           >
-            {/* Connection lines between blocks */}
-            <ConnectionLines />
+            <div className={styles.bmcShell}>
+              {/* BMC Grid */}
+              <div className={styles.bmcGrid}>
+                {BMC_BLOCKS.map((block, index) => (
+                  <div
+                    key={block.label}
+                    className={`${styles.bmcBlock} ${TONE_CLASS[block.tone]}`}
+                    style={{
+                      gridRow: block.row,
+                      gridColumn: block.col,
+                    }}
+                  >
+                    <span className={styles.lineNumber}>
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className={styles.blockLabel}>{block.label}</span>
+                    <span className={styles.blockExample}>{block.example}</span>
+                    <div className={styles.blockMetrics}>
+                      <span className={styles.metricItem}>
+                        confidence:{" "}
+                        {[87, 92, 78, 95, 84, 89, 91, 76, 88][index]}%
+                      </span>
+                      <span className={styles.metricItem}>
+                        risks: {[2, 1, 3, 0, 2, 1, 2, 4, 1][index]}
+                      </span>
+                    </div>
+                    <span className={styles.blockSpark} />
+                  </div>
+                ))}
+              </div>
 
-            {/* Scanline effect */}
-            <div className="bmc-scanline" />
+              {/* Scan line animation */}
+              <div className={styles.scanLine} />
+            </div>
+          </div>
+        </section>
 
-            {BMC_BLOCKS.map((block, i) => (
+        {/* How It Works Timeline */}
+        <section className={styles.howSection}>
+          <div className={styles.howHeader}>
+            <h2 className={`${styles.sectionTitle} ${styles.fadeUp}`}>
+              How it works
+            </h2>
+            <p
+              className={`${styles.sectionSubtitle} ${styles.fadeUp} ${styles.delay1}`}
+            >
+              Three steps to a validated business model
+            </p>
+          </div>
+
+          <div
+            className={`${styles.timelineContainer} ${styles.fadeUp} ${styles.delay2}`}
+          >
+            <div className={styles.timelineLine} />
+            {[
+              {
+                number: "01",
+                title: "Map",
+                description:
+                  "Build your Business Model Canvas with AI-assisted content generation",
+              },
+              {
+                number: "02",
+                title: "Analyze",
+                description:
+                  "AI validates coherence, surfaces assumptions, identifies risk areas",
+              },
+              {
+                number: "03",
+                title: "Refine",
+                description:
+                  "Strengthen weak points and stress-test against shock scenarios",
+              },
+            ].map((step, i) => (
               <div
-                key={block.label}
-                className="bmc-block px-3 py-2.5 fade-up flex flex-col justify-between"
-                style={{
-                  gridRow: block.row,
-                  gridColumn: block.col,
-                  animationDelay: `${0.85 + i * 0.06}s`,
-                }}
+                key={step.number}
+                className={styles.timelineStep}
+                style={{ animationDelay: `${i * 150}ms` }}
               >
-                <span className="relative z-10 font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.12em] text-white/25 leading-tight">
-                  {block.label}
-                </span>
-                <span className="relative z-10 font-mono text-[8px] text-white/10 self-end">
-                  {block.abbr}
-                </span>
+                <div className={styles.stepNumber}>{step.number}</div>
+                <h3 className={styles.stepTitle}>{step.title}</h3>
+                <p className={styles.stepDescription}>{step.description}</p>
               </div>
             ))}
           </div>
+        </section>
 
-          {/* Bottom caption */}
-          <div className="flex items-center justify-between mt-4 px-1">
-            <span className="font-mono text-[10px] text-[#444455]">
-              AI cross-validates every block
-            </span>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#6366f1]/30" />
-              <span className="w-1.5 h-1.5 rounded-full bg-[#06b6d4]/30" />
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ec4899]/30" />
-            </div>
+        {/* Final CTA Section */}
+        <section className={styles.finalCtaSection}>
+          <div className={`${styles.finalCtaContainer} ${styles.fadeUp}`}>
+            <h2 className={styles.finalCtaTitle}>
+              Start validating
+              <br />
+              your startup today
+            </h2>
+            <p className={styles.finalCtaSubtitle}>
+              Join founders who stress-test their ideas before launch
+            </p>
+            <button onClick={handleSignIn} className={styles.btnPrimary}>
+              <GoogleIcon />
+              <span>Start for free</span>
+              <ArrowRightIcon />
+            </button>
           </div>
-        </div>
-
-        {/* Footer */}
-        <footer
-          className="fade-up mt-20 mb-8 text-center"
-          style={{ animationDelay: '1.4s' }}
-        >
-          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-white/15">
-            Not a template filler — a judgment amplifier
-          </p>
-        </footer>
-      </div>
+        </section>
+      </main>
     </>
   );
 }

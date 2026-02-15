@@ -1,25 +1,35 @@
 'use client';
 
-import type { BlockData, BlockType } from '@/lib/types/canvas';
+import type { BlockData, BlockType, CanvasMode } from '@/lib/types/canvas';
 import { BLOCK_DEFINITIONS } from './constants';
 import { ConsistencyReport, type ConsistencyData } from './ConsistencyReport';
+import { BlockTooltip } from './BlockTooltip';
 
 interface AnalysisViewProps {
   blocks: Map<BlockType, BlockData>;
+  mode: CanvasMode;
   consistencyData: ConsistencyData | null;
   isCheckingConsistency: boolean;
   onRunConsistencyCheck: () => void;
 }
 
-function BlockSummary({ block }: { block: BlockData }) {
+function BlockSummary({ block, mode }: { block: BlockData; mode: CanvasMode }) {
   const def = BLOCK_DEFINITIONS.find((d) => d.type === block.blockType);
-  const label = def?.bmcLabel ?? block.blockType;
+  const label = mode === 'lean' && def?.leanLabel ? def.leanLabel : def?.bmcLabel ?? block.blockType;
   const hasAnalysis = !!block.aiAnalysis;
 
   return (
     <div className="p-3 rounded-lg bg-white/5 flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium">{label}</span>
+        {def ? (
+          <BlockTooltip definition={def} mode={mode}>
+            <span className="text-xs font-medium cursor-help hover:text-foreground transition-colors">
+              {label}
+            </span>
+          </BlockTooltip>
+        ) : (
+          <span className="text-xs font-medium">{label}</span>
+        )}
         <div className="flex items-center gap-2">
           {hasAnalysis && (
             <span
@@ -41,7 +51,7 @@ function BlockSummary({ block }: { block: BlockData }) {
       {hasAnalysis && block.aiAnalysis && (
         <div className="flex gap-3 text-[10px] text-foreground-muted">
           <span>{block.aiAnalysis.assumptions.length} assumptions</span>
-          <span className="text-[var(--state-critical)]">{block.aiAnalysis.risks.length} risks</span>
+          <span className="text-(--state-critical)">{block.aiAnalysis.risks.length} risks</span>
           <span>{block.aiAnalysis.questions.length} questions</span>
         </div>
       )}
@@ -51,6 +61,7 @@ function BlockSummary({ block }: { block: BlockData }) {
 
 export function AnalysisView({
   blocks,
+  mode,
   consistencyData,
   isCheckingConsistency,
   onRunConsistencyCheck,
@@ -72,7 +83,7 @@ export function AnalysisView({
           disabled={isCheckingConsistency || analyzedCount < 2}
           className={`px-4 py-2 text-xs font-medium rounded-lg transition-all ${
             isCheckingConsistency
-              ? 'glow-ai text-[var(--state-ai)]'
+              ? 'glow-ai text-(--state-ai)'
               : analyzedCount < 2
                 ? 'glass-morphism text-foreground-muted opacity-50 cursor-not-allowed'
                 : 'glass-morphism hover:bg-white/10 text-foreground-muted hover:text-foreground'
@@ -92,7 +103,7 @@ export function AnalysisView({
           {BLOCK_DEFINITIONS.map((def) => {
             const block = blocks.get(def.type);
             if (!block) return null;
-            return <BlockSummary key={def.type} block={block} />;
+            return <BlockSummary key={def.type} block={block} mode={mode} />;
           })}
         </div>
       </div>

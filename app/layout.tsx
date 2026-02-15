@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Lexend_Deca, Crimson_Text, Geist_Mono } from "next/font/google";
+import { Inter, Crimson_Text, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "@radix-ui/themes/styles.css";
 import { Theme } from "@radix-ui/themes";
 
-const lexendDeca = Lexend_Deca({
+const inter = Inter({
   variable: "--font-body",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "900"],
 });
 
 const crimsonText = Crimson_Text({
@@ -34,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${lexendDeca.variable} ${crimsonText.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} ${crimsonText.variable} ${geistMono.variable} antialiased`}
       >
         <Theme
           appearance="dark"

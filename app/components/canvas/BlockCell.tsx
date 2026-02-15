@@ -1,6 +1,7 @@
 'use client';
 
 import type { BlockDefinition, BlockState, CanvasMode } from '@/lib/types/canvas';
+import { BlockTooltip } from './BlockTooltip';
 
 interface BlockCellProps {
   definition: BlockDefinition;
@@ -40,7 +41,7 @@ export function BlockCell({
   return (
     <div
       className={`bmc-cell glass-morphism state-transition glow-${state} ${
-        isFocused ? 'ring-1 ring-[var(--chroma-indigo)]/30' : ''
+        isFocused ? 'ring-1 ring-(--chroma-indigo)/30' : ''
       }`}
       style={{
         gridColumn: definition.gridCol,
@@ -48,11 +49,13 @@ export function BlockCell({
       }}
     >
       <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1">
-        <span className="text-[10px] font-medium uppercase tracking-wider text-foreground-muted">
-          {label}
-        </span>
+        <BlockTooltip definition={definition} mode={mode}>
+          <span className="font-display-small uppercase tracking-wider text-foreground-muted cursor-help decoration-dotted underline-offset-4 hover:decoration-solid hover:text-foreground transition-all">
+            {label}
+          </span>
+        </BlockTooltip>
         {showLeanChip && (
-          <span className="text-[8px] uppercase tracking-wider px-1 py-px rounded-full bg-[var(--chroma-indigo)]/10 text-[var(--chroma-indigo)]">
+          <span className="text-[8px] font-mono uppercase tracking-wider px-1.5 py-px rounded-full bg-(--chroma-indigo)/10 text-(--chroma-indigo) border border-(--chroma-indigo)/20">
             Lean
           </span>
         )}

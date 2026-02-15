@@ -3,6 +3,7 @@ import { Client, Databases, Permission, Role, IndexType } from 'node-appwrite';
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const USERS_COLLECTION_ID = 'users';
 const CANVASES_COLLECTION_ID = 'canvases';
+const MESSAGES_COLLECTION_ID = 'messages';
 
 async function setup() {
   const client = new Client()
@@ -106,6 +107,71 @@ async function setup() {
   } catch (e: any) {
     if (e.code === 409) {
       console.log('Canvases collection already exists, skipping...');
+    } else {
+      throw e;
+    }
+  }
+
+  // 3. Create messages collection (chat persistence)
+  try {
+    await databases.createCollection({
+      databaseId: DATABASE_ID,
+      collectionId: MESSAGES_COLLECTION_ID,
+      name: 'Messages',
+      permissions: [
+        Permission.read(Role.users()),
+        Permission.create(Role.users()),
+        Permission.update(Role.users()),
+        Permission.delete(Role.users()),
+      ],
+    });
+    console.log('Created collection: messages');
+
+    await databases.createStringAttribute({
+      databaseId: DATABASE_ID, collectionId: MESSAGES_COLLECTION_ID,
+      key: 'canvasId', size: 32, required: true,
+    });
+    await databases.createStringAttribute({
+      databaseId: DATABASE_ID, collectionId: MESSAGES_COLLECTION_ID,
+      key: 'chatKey', size: 64, required: true,
+    });
+    await databases.createStringAttribute({
+      databaseId: DATABASE_ID, collectionId: MESSAGES_COLLECTION_ID,
+      key: 'role', size: 16, required: true,
+    });
+    await databases.createStringAttribute({
+      databaseId: DATABASE_ID, collectionId: MESSAGES_COLLECTION_ID,
+      key: 'content', size: 100000, required: true,
+    });
+    await databases.createStringAttribute({
+      databaseId: DATABASE_ID, collectionId: MESSAGES_COLLECTION_ID,
+      key: 'messageId', size: 64, required: true,
+    });
+    await databases.createStringAttribute({
+      databaseId: DATABASE_ID, collectionId: MESSAGES_COLLECTION_ID,
+      key: 'createdAt', size: 30, required: true,
+    });
+    await databases.createStringAttribute({
+      databaseId: DATABASE_ID, collectionId: MESSAGES_COLLECTION_ID,
+      key: 'userId', size: 36, required: true,
+    });
+    console.log('Created messages attributes');
+
+    // Wait for attributes to be ready
+    await new Promise((r) => setTimeout(r, 2000));
+
+    await databases.createIndex({
+      databaseId: DATABASE_ID, collectionId: MESSAGES_COLLECTION_ID,
+      key: 'canvas_chat_idx', type: IndexType.Key, attributes: ['canvasId', 'chatKey'],
+    });
+    await databases.createIndex({
+      databaseId: DATABASE_ID, collectionId: MESSAGES_COLLECTION_ID,
+      key: 'userId_idx', type: IndexType.Key, attributes: ['userId'],
+    });
+    console.log('Created messages indexes');
+  } catch (e: any) {
+    if (e.code === 409) {
+      console.log('Messages collection already exists, skipping...');
     } else {
       throw e;
     }

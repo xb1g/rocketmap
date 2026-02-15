@@ -46,7 +46,7 @@ npm run lint
 - **Framework:** Next.js 16.1.6 (App Router)
 - **UI Library:** Radix UI Themes 3.3.0
 - **Styling:** Tailwind CSS v4 + custom CSS variables
-- **Fonts:** Lexend Deca (sans), Crimson Text (display/serif), Geist Mono (mono)
+- **Fonts:** Lexend Deca (sans), Crimson Text (display/serif, weights 400/600/700 only), Geist Mono (mono)
 - **TypeScript:** Strict mode enabled
 
 ## Architecture & Key Concepts
@@ -132,17 +132,25 @@ app/
 │   ├── canvas/             # BMC grid, block cells, toolbar, connection lines
 │   │   ├── BMCGrid.tsx     # 9-block grid layout
 │   │   ├── BlockCell.tsx   # Individual block with state variants
+│   │   ├── BlockFocusPanel.tsx # Resizable sidebar (Layer 1), AI analysis + chat
 │   │   ├── CanvasToolbar.tsx # Mode toggle, actions
 │   │   └── constants.ts    # Block definitions and grid positions
-│   ├── blocks/             # (Planned) Expanded block views with deep-dive layers
-│   │   └── market-research/ # Customer Segments deep-dive (TAM, segmentation, etc.)
+│   ├── blocks/             # Expanded block views with deep-dive layers
+│   │   ├── DeepDiveOverlay.tsx  # Full-screen overlay (Layer 2)
+│   │   └── market-research/    # 5 sub-modules + tab container
+│   ├── ai/                 # ChatMessage, ChatMessages, ChatInput, ChatBar, BlockChatSection
 │   └── ui/                 # Control panel, AI analysis panel
 ├── api/
-│   ├── canvas/             # Canvas CRUD endpoints
+│   ├── canvas/             # Canvas CRUD, block analyze, block chat, deep-dive endpoints
 │   └── complete-onboarding/ # Onboarding flow
 lib/
+├── ai/
+│   ├── tools.ts            # AI tool definitions (analyzeBlock, 5 deep-dive tools, etc.)
+│   ├── prompts.ts          # System prompts, deep-dive prompts, canvas serialization
+│   ├── agents.ts           # Agent config (tool selection per block type)
+│   └── canvas-state.ts     # Load blocks from Appwrite for AI context
 ├── types/
-│   └── canvas.ts           # BlockType, BlockState, CanvasMode, BlockData types
+│   └── canvas.ts           # BlockType, BlockState, CanvasMode, BlockData, MarketResearchData, deep-dive types
 ├── appwrite.ts             # Appwrite client SDK
 ├── appwrite-server.ts      # Appwrite server SDK
 └── utils.ts                # Shared utilities
@@ -251,7 +259,7 @@ The codebase currently has:
 
 - ✅ Radix UI + Tailwind setup complete
 - ✅ Dark theme with chromatic effects system implemented
-- ✅ Typography system (Lexend Deca, Crimson Text w/ bold for small sizes, Geist Mono)
+- ✅ Typography system (Lexend Deca, Crimson Text [weights 400/600/700 only], Geist Mono)
 - ✅ State-based glow and animation utilities
 - ✅ Landing page with auth flow
 - ✅ Appwrite integration (auth, database)
@@ -260,16 +268,25 @@ The codebase currently has:
 - ✅ Canvas view with BMC/Lean mode toggle
 - ✅ Block definitions with grid positioning
 - ✅ Type system for canvas data (BlockType, BlockState, CanvasMode, BlockData)
+- ✅ Block Focus Panel (Layer 1) with resizable sidebar, AI analysis, collapsible content
+- ✅ Per-block AI Copilot chat (markdown rendering via react-markdown)
+- ✅ System-level Consistency Checker (cross-block reasoning)
+- ✅ Market Research deep-dive (Layer 2) for Customer Segments — 5 sub-modules:
+  - TAM/SAM/SOM estimation with nested circles visualization
+  - Customer segmentation with editable segment cards
+  - Persona generation linked to segments
+  - Market validation (cross-checks TAM estimates)
+  - Competitive landscape mapping
+- ✅ Deep-dive AI gated behind all 9 blocks filled (≥10 chars each)
+- ✅ Deep-dive data persisted via `deepDiveJson` column on blocks collection
+- ✅ Consistency checker receives deep-dive summaries in canvas state
 
 Next implementation steps:
 
-1. Add block expand/detail view (Layer 1 - structured AI outputs per block)
-2. Build Market Research deep-dive layer for Customer Segments (Layer 2 - TAM, segmentation, personas)
-3. Integrate LLM for per-block AI copilot (content drafting, analysis)
-4. Integrate LLM for system-level Consistency Checker (cross-block reasoning)
-5. Add AI analysis panel UI (assumptions, risks, questions display)
-6. Persist deep-dive layer data to Appwrite
-7. Build additional deep-dive layers for other blocks
+1. Build deep-dive layers for remaining 8 blocks (Value Props, Revenue, etc.)
+2. Streaming AI responses (currently uses generateText, not streamText)
+3. Shock scenario simulation
+4. Canvas export / sharing
 
 ## Design Documentation
 
@@ -311,6 +328,15 @@ See [docs/plans/2026-02-13-radix-chromatic-theme-design.md](docs/plans/2026-02-1
 - Animation keyframes and timing functions
 - Technical implementation approach
 - Accessibility requirements
+
+## Gotchas
+
+- **Crimson Text font**: Only weights 400, 600, 700 — weight 500 does NOT exist (build will fail)
+- **Shared blocks**: channels, customer_segments, cost_structure, revenue_streams share content across BMC/Lean modes — use `isSharedBlock()` from constants.ts
+- **useRef initial value**: Must pass explicit `undefined` — `useRef<T>(undefined)` not `useRef<T>()`
+- **Appwrite `deepDiveJson` column**: Must be added manually in Appwrite console (longtext, not required)
+- **AI tool pattern**: `tool({ inputSchema: z.object({...}), execute: async (params) => params })` — tool acts as structured output extractor, result via `step.toolResults[].result` with `unknown` cast
+- **Deep-dive AI gating**: All 9 blocks must have ≥10 chars content before deep-dive AI buttons are enabled
 
 ## Demo Flow (3-minute pitch)
 

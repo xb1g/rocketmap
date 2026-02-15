@@ -1,21 +1,36 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { UIMessage } from 'ai';
-import { ChatMessage } from './ChatMessage';
+import type { BlockEditProposal } from '@/lib/types/canvas';
+import { ChatMessage, ChatMessageWithParts } from './ChatMessage';
 
 interface ChatMessagesProps {
   messages: UIMessage[];
+  onAcceptEdit?: (proposalId: string, edits: BlockEditProposal[]) => void;
+  onRejectEdit?: (proposalId: string) => void;
 }
 
-export function ChatMessages({ messages }: ChatMessagesProps) {
+export function ChatMessages({ messages, onAcceptEdit, onRejectEdit }: ChatMessagesProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [acceptedProposals, setAcceptedProposals] = useState<Set<string>>(new Set());
+  const [rejectedProposals, setRejectedProposals] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const visible = messages.filter((m) => m.role === 'user' || m.role === 'assistant');
+
+  const handleAccept = (proposalId: string, edits: BlockEditProposal[]) => {
+    setAcceptedProposals((prev) => new Set(prev).add(proposalId));
+    onAcceptEdit?.(proposalId, edits);
+  };
+
+  const handleReject = (proposalId: string) => {
+    setRejectedProposals((prev) => new Set(prev).add(proposalId));
+    onRejectEdit?.(proposalId);
+  };
 
   if (visible.length === 0) {
     return (
@@ -35,6 +50,24 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
   return (
     <div className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-2.5 p-3 scroll-smooth">
       {visible.map((m) => {
+        const hasToolParts = m.parts?.some((p) => p.type === 'tool-invocation');
+
+        // Use multi-part rendering for assistant messages that may have tool invocations
+        if (m.role === 'assistant' && hasToolParts) {
+          return (
+            <ChatMessageWithParts
+              key={m.id}
+              role="assistant"
+              parts={m.parts as Array<{ type: string; text?: string; [key: string]: unknown }>}
+              onAcceptEdit={handleAccept}
+              onRejectEdit={handleReject}
+              acceptedProposals={acceptedProposals}
+              rejectedProposals={rejectedProposals}
+            />
+          );
+        }
+
+        // Simple text rendering for user messages and text-only assistant messages
         const textPart = m.parts?.find((p) => p.type === 'text');
         const content = textPart && 'text' in textPart ? textPart.text : '';
         if (!content) return null;

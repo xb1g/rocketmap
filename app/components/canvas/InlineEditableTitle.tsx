@@ -38,7 +38,7 @@ export function InlineEditableTitle({ value, onSave }: InlineEditableTitleProps)
     return (
       <input
         ref={inputRef}
-        className="text-sm font-medium bg-transparent border-b border-white/20 outline-none px-0.5 py-0 max-w-[240px]"
+        className="font-display text-lg font-semibold bg-transparent border-b border-[var(--chroma-indigo)]/50 outline-none px-0.5 py-0 max-w-[320px] transition-all"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={save}
@@ -53,7 +53,7 @@ export function InlineEditableTitle({ value, onSave }: InlineEditableTitleProps)
   return (
     <button
       onClick={() => setEditing(true)}
-      className="text-sm font-medium truncate max-w-[240px] hover:text-[var(--chroma-indigo)] transition-colors cursor-text text-left"
+      className="font-display text-lg font-semibold truncate max-w-[320px] hover:text-[var(--chroma-indigo)] transition-colors cursor-text text-left"
       title="Click to edit title"
     >
       {value}

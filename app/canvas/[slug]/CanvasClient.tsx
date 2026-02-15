@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type {
   BlockData,
   BlockType,
+  BlockEditProposal,
   CanvasMode,
   CanvasTab,
   CanvasData,
@@ -13,6 +14,7 @@ import type {
   MarketResearchData,
 } from "@/lib/types/canvas";
 import type { ConsistencyData } from "@/app/components/canvas/ConsistencyReport";
+import { isSharedBlock } from "@/app/components/canvas/constants";
 import { BMCGrid } from "@/app/components/canvas/BMCGrid";
 import { CanvasToolbar } from "@/app/components/canvas/CanvasToolbar";
 import { CanvasTabs } from "@/app/components/canvas/CanvasTabs";
@@ -130,10 +132,16 @@ export function CanvasClient({
         const next = new Map(prev);
         const existing = next.get(blockType);
         const content = existing?.content ?? { bmc: "", lean: "" };
-        updatedContent =
-          mode === "lean"
-            ? { ...content, lean: value }
-            : { ...content, bmc: value };
+        // Shared blocks (channels, customer_segments, cost_structure, revenue_streams)
+        // always write to both bmc and lean so content stays in sync across modes
+        if (isSharedBlock(blockType)) {
+          updatedContent = { bmc: value, lean: value };
+        } else {
+          updatedContent =
+            mode === "lean"
+              ? { ...content, lean: value }
+              : { ...content, bmc: value };
+        }
         next.set(blockType, {
           ...existing!,
           blockType,
@@ -295,10 +303,55 @@ export function CanvasClient({
     [],
   );
 
+  // Handle accepted block edits from AI chat
+  const handleAcceptEdit = useCallback(
+    async (_proposalId: string, edits: BlockEditProposal[]) => {
+      // Build content updates for all edits
+      const updates: { blockType: BlockType; newContent: { bmc: string; lean: string } }[] = [];
+
+      for (const edit of edits) {
+        const existing = blocks.get(edit.blockType);
+        if (!existing) continue;
+
+        let newContent = { ...existing.content };
+
+        if (edit.mode === "both" || isSharedBlock(edit.blockType)) {
+          newContent = { bmc: edit.newContent, lean: edit.newContent };
+        } else if (edit.mode === "lean") {
+          newContent = { ...newContent, lean: edit.newContent };
+        } else {
+          newContent = { ...newContent, bmc: edit.newContent };
+        }
+
+        // Update local state immediately (optimistic)
+        setBlocks((prev) => {
+          const next = new Map(prev);
+          next.set(edit.blockType, { ...existing, content: newContent });
+          return next;
+        });
+
+        updates.push({ blockType: edit.blockType, newContent });
+      }
+
+      // Persist all edits to server in parallel, then re-analyze
+      await Promise.all(
+        updates.map((u) => saveBlock(u.blockType, u.newContent)),
+      );
+
+      // Re-analyze all edited blocks in parallel (after saves complete)
+      updates.forEach((u) => handleAnalyze(u.blockType));
+    },
+    [blocks, saveBlock, handleAnalyze],
+  );
+
+  const handleRejectEdit = useCallback((_proposalId: string) => {
+    // No-op — UI handles the visual feedback
+  }, []);
+
   // Check if all blocks have meaningful content (gate for deep-dive AI)
   const allBlocksFilled = (() => {
-    for (const [, b] of blocks) {
-      const content = (mode === "lean" ? b.content.lean : b.content.bmc).trim();
+    for (const [type, b] of blocks) {
+      const content = (isSharedBlock(type) ? b.content.bmc : mode === "lean" ? b.content.lean : b.content.bmc).trim();
       if (content.length < 10) return false;
     }
     return blocks.size >= 9;
@@ -306,8 +359,8 @@ export function CanvasClient({
 
   const filledCount = (() => {
     let count = 0;
-    for (const [, b] of blocks) {
-      const content = (mode === "lean" ? b.content.lean : b.content.bmc).trim();
+    for (const [type, b] of blocks) {
+      const content = (isSharedBlock(type) ? b.content.bmc : mode === "lean" ? b.content.lean : b.content.bmc).trim();
       if (content.length >= 10) count++;
     }
     return count;
@@ -351,6 +404,7 @@ export function CanvasClient({
       {activeTab === "analysis" && (
         <AnalysisView
           blocks={blocks}
+          mode={mode}
           consistencyData={consistencyData}
           isCheckingConsistency={isCheckingConsistency}
           onRunConsistencyCheck={handleConsistencyCheck}
@@ -376,13 +430,23 @@ export function CanvasClient({
           onAnalyze={() => handleAnalyze(expandedBlock)}
           onDeepDive={() => setDeepDiveBlock(expandedBlock)}
           chatSection={
-            <BlockChatSection canvasId={canvasId} blockType={expandedBlock} />
+            <BlockChatSection
+              canvasId={canvasId}
+              blockType={expandedBlock}
+              onAcceptEdit={handleAcceptEdit}
+              onRejectEdit={handleRejectEdit}
+            />
           }
         />
       )}
 
       {/* Chat Bar */}
-      <ChatBar canvasId={canvasId} expandedBlock={expandedBlock} />
+      <ChatBar
+        canvasId={canvasId}
+        expandedBlock={expandedBlock}
+        onAcceptEdit={handleAcceptEdit}
+        onRejectEdit={handleRejectEdit}
+      />
 
       {/* Deep Dive Overlay */}
       {deepDiveBlock && deepDiveBlockData && (

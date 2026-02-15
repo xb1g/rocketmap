@@ -1,7 +1,7 @@
 'use client';
 
 import type { BlockData, BlockType, CanvasMode } from '@/lib/types/canvas';
-import { BLOCK_DEFINITIONS } from './constants';
+import { BLOCK_DEFINITIONS, getBlockValue } from './constants';
 import { BlockCell } from './BlockCell';
 
 interface BMCGridProps {
@@ -30,9 +30,7 @@ export function BMCGrid({
       {BLOCK_DEFINITIONS.map((def) => {
         const block = blocks.get(def.type);
         const value = block
-          ? mode === 'lean'
-            ? block.content.lean
-            : block.content.bmc
+          ? getBlockValue(block.content, def.type, mode)
           : '';
 
         return (

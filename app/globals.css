@@ -154,6 +154,15 @@ body {
   animation: breathe 6s ease-in-out infinite;
 }
 
+.landing-hero-title {
+  margin-top: clamp(1.75rem, 2.5vw, 2rem);
+  margin-bottom: 1.5rem;
+}
+
+.landing-hero-cta {
+  margin-top: clamp(1.75rem, 3vw, 2.5rem);
+}
+
 @keyframes breathe {
   0%,
   100% {
@@ -177,75 +186,6 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-/* BMC preview grid block */
-.bmc-block {
-  position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.015);
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  overflow: hidden;
-}
-
-.bmc-block::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 6px;
-  background: linear-gradient(
-    135deg,
-    transparent 40%,
-    rgba(99, 102, 241, 0.03) 100%
-  );
-  opacity: 0;
-  transition: opacity 0.5s ease;
-}
-
-.bmc-block:hover {
-  border-color: rgba(99, 102, 241, 0.15);
-  background: rgba(255, 255, 255, 0.025);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.06);
-}
-
-.bmc-block:hover::before {
-  opacity: 1;
-}
-
-/* Scan line across BMC grid */
-.bmc-scanline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(99, 102, 241, 0.3),
-    rgba(6, 182, 212, 0.2),
-    transparent
-  );
-  animation: scanline 8s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes scanline {
-  0% {
-    top: -2px;
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
-  }
-  100% {
-    top: calc(100% + 2px);
-    opacity: 0;
   }
 }
 
@@ -289,7 +229,6 @@ body {
     transparent
   );
 }
-
 /* Tag pill */
 .tag-pill {
   display: inline-flex;
@@ -524,7 +463,8 @@ body {
   right: 0;
   bottom: 0;
   width: 420px;
-  max-width: 90vw;
+  max-width: 85vw;
+  min-width: 320px;
   z-index: 50;
   display: flex;
   flex-direction: column;
@@ -563,6 +503,84 @@ body {
   right: 0;
   z-index: 30;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* =============================================
+   CHAT MARKDOWN
+   ============================================= */
+
+.chat-markdown p {
+  margin: 0.25em 0;
+}
+.chat-markdown p:first-child {
+  margin-top: 0;
+}
+.chat-markdown p:last-child {
+  margin-bottom: 0;
+}
+.chat-markdown strong {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+.chat-markdown em {
+  font-style: italic;
+}
+.chat-markdown ul,
+.chat-markdown ol {
+  margin: 0.35em 0;
+  padding-left: 1.2em;
+}
+.chat-markdown li {
+  margin: 0.15em 0;
+}
+.chat-markdown li::marker {
+  color: rgba(255, 255, 255, 0.25);
+}
+.chat-markdown code {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.9em;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+.chat-markdown pre {
+  margin: 0.4em 0;
+  padding: 0.5em 0.6em;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+.chat-markdown pre code {
+  background: none;
+  padding: 0;
+}
+.chat-markdown h1,
+.chat-markdown h2,
+.chat-markdown h3,
+.chat-markdown h4 {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0.5em 0 0.25em;
+}
+.chat-markdown h1 { font-size: 1.1em; }
+.chat-markdown h2 { font-size: 1.05em; }
+.chat-markdown h3,
+.chat-markdown h4 { font-size: 1em; }
+.chat-markdown blockquote {
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
+  padding-left: 0.6em;
+  margin: 0.35em 0;
+  color: rgba(255, 255, 255, 0.5);
+}
+.chat-markdown hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin: 0.5em 0;
+}
+.chat-markdown a {
+  color: var(--chroma-indigo, #818cf8);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* =============================================

@@ -26,7 +26,24 @@ When analyzing a block, always produce structured output with:
 - draft: An improved version of the block content
 - assumptions: Hidden assumptions the user is making
 - risks: Potential failure points or weaknesses
-- questions: Critical questions the user should answer`;
+- questions: Critical questions the user should answer
+
+## Editing Block Content
+
+You can propose edits to block content using the proposeBlockEdit tool. Use it when:
+- The user asks to change, improve, fix, or update block content
+- You detect contradictions or issues that should be fixed
+- After analysis reveals the content should be more specific
+
+When proposing edits:
+- Always include the current content as oldContent (copy it exactly from the canvas state above)
+- Explain WHY the change improves the business model in the reason field
+- For shared blocks (channels, customer_segments, cost_structure, revenue_streams), use mode="both"
+- For non-shared blocks, use the appropriate mode ("bmc" or "lean") based on the user's current context
+- For multi-block fixes (e.g., resolving contradictions), propose all changes in one tool call
+- Keep edits concise but specific — avoid vague language
+
+The user will see an inline diff and can accept or reject your proposed changes.`;
 
 function summarizeDeepDive(data: MarketResearchData): string {
   const lines: string[] = [];
@@ -50,13 +67,36 @@ function summarizeDeepDive(data: MarketResearchData): string {
   return lines.join('\n');
 }
 
+/**
+ * Serialize canvas state for AI context.
+ * Shared blocks (channels, customer_segments, cost_structure, revenue_streams)
+ * have the same content in both modes. Non-shared blocks include both BMC and
+ * Lean content so the AI can reason across both canvases.
+ */
 export function serializeCanvasState(blocks: BlockData[], mode: 'bmc' | 'lean' = 'bmc'): string {
   return blocks
     .map((b) => {
       const def = BLOCK_DEFINITIONS.find((d) => d.type === b.blockType);
-      const label = mode === 'lean' && def?.leanLabel ? def.leanLabel : def?.bmcLabel ?? b.blockType;
-      const content = mode === 'lean' ? b.content.lean : b.content.bmc;
-      let line = `[${label}]: ${content || '(empty)'}`;
+      const isShared = def?.leanLabel === null;
+      const bmcLabel = def?.bmcLabel ?? b.blockType;
+
+      let line: string;
+      if (isShared) {
+        // Shared block — same content in both modes
+        line = `[${bmcLabel}]: ${b.content.bmc || '(empty)'}`;
+      } else {
+        // Non-shared block — include both BMC and Lean content
+        const leanLabel = def?.leanLabel ?? b.blockType;
+        const bmcContent = b.content.bmc || '(empty)';
+        const leanContent = b.content.lean || '(empty)';
+        if (bmcContent === leanContent) {
+          // Same content, show once with both labels
+          line = `[${bmcLabel} / ${leanLabel}]: ${bmcContent}`;
+        } else {
+          line = `[${bmcLabel}]: ${bmcContent}\n  [Lean: ${leanLabel}]: ${leanContent}`;
+        }
+      }
+
       if (b.deepDiveData) {
         const summary = summarizeDeepDive(b.deepDiveData);
         if (summary) line += '\n' + summary;
@@ -132,6 +172,8 @@ export function buildSystemPrompt(agentType: AgentType, blocks: BlockData[]): st
   return `${BASE_SYSTEM_PROMPT}
 
 ${focusInstruction}
+
+The canvas supports two modes: BMC (Business Model Canvas) and Lean Canvas. Some blocks are shared between both modes (Channels, Customer Segments, Cost Structure, Revenue Streams). Non-shared blocks may have different content in each mode — both are shown below.
 
 Current canvas state:
 ${canvasState}`;

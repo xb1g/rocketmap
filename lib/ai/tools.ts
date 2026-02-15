@@ -117,12 +117,33 @@ export const analyzeCompetitors = tool({
   execute: async (params) => params,
 });
 
+// ─── Block Editing Tool ──────────────────────────────────────────────────────
+
+export const proposeBlockEdit = tool({
+  description: 'Propose an edit to one or more business model canvas blocks. Use this when the user asks to change, improve, fix, or update block content, or when you detect issues that should be fixed. Always include the current content as oldContent for diff display.',
+  inputSchema: z.object({
+    edits: z.array(z.object({
+      blockType: z.enum([
+        'key_partnerships', 'key_activities', 'key_resources',
+        'value_prop', 'customer_relationships', 'channels',
+        'customer_segments', 'cost_structure', 'revenue_streams',
+      ]).describe('Which block to edit'),
+      mode: z.enum(['bmc', 'lean', 'both']).describe('Which canvas mode to edit. Use "both" for shared blocks (channels, customer_segments, cost_structure, revenue_streams)'),
+      oldContent: z.string().describe('The current content of the block (for diff display)'),
+      newContent: z.string().describe('The proposed new content'),
+      reason: z.string().describe('Brief explanation of why this change improves the business model'),
+    })).min(1).describe('One or more block edits to propose'),
+  }),
+  execute: async (params) => params,
+});
+
 // ─── Tool Registry ───────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const allTools: Record<string, ReturnType<typeof tool<any, any>>> = {
   analyzeBlock,
   checkConsistency,
+  proposeBlockEdit,
   estimateMarketSize,
   generateSegments,
   generatePersonas,

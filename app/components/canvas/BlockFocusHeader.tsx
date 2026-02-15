@@ -2,6 +2,7 @@
 
 import type { BlockState, BlockType, CanvasMode } from '@/lib/types/canvas';
 import { BLOCK_DEFINITIONS } from './constants';
+import { BlockTooltip } from './BlockTooltip';
 
 interface BlockFocusHeaderProps {
   blockType: BlockType;
@@ -27,15 +28,23 @@ export function BlockFocusHeader({ blockType, mode, state, confidenceScore, onCl
   return (
     <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
       <div className="flex items-center gap-3">
-        <h2 className="text-sm font-medium">{label}</h2>
+        {def ? (
+          <BlockTooltip definition={def} mode={mode}>
+            <h2 className="font-display font-semibold text-[15px] cursor-help decoration-dotted underline-offset-4 hover:decoration-solid hover:text-(--chroma-indigo) transition-all">
+              {label}
+            </h2>
+          </BlockTooltip>
+        ) : (
+          <h2 className="font-display font-semibold text-[15px]">{label}</h2>
+        )}
         <span
-          className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full"
-          style={{ background: `${stateInfo.color}20`, color: stateInfo.color }}
+          className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border"
+          style={{ background: `${stateInfo.color}15`, color: stateInfo.color, borderColor: `${stateInfo.color}30` }}
         >
           {stateInfo.label}
         </span>
         {confidenceScore > 0 && (
-          <span className="text-[10px] text-foreground-muted">
+          <span className="text-[10px] font-mono text-foreground-muted">
             {Math.round(confidenceScore * 100)}% confidence
           </span>
         )}

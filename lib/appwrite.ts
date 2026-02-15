@@ -27,3 +27,4 @@ export const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 export const USERS_COLLECTION_ID = "users";
 export const CANVASES_COLLECTION_ID = "canvases";
 export const BLOCKS_COLLECTION_ID = "blocks";
+export const MESSAGES_COLLECTION_ID = "messages";

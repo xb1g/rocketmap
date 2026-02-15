@@ -20,9 +20,9 @@ export function CanvasTabs({ activeTab, onTabChange }: CanvasTabsProps) {
         <button
           key={tab.value}
           onClick={() => onTabChange(tab.value)}
-          className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+          className={`px-3 py-1.5 font-display-small text-[10px] uppercase tracking-wider rounded-lg transition-all ${
             activeTab === tab.value
-              ? 'glass-morphism text-foreground'
+              ? 'glass-morphism text-foreground border border-white/10 shadow-sm'
               : 'text-foreground-muted hover:text-foreground'
           }`}
         >

@@ -61,6 +61,11 @@ export interface BlockDefinition {
   leanLabel: string | null;
   gridCol: string;
   gridRow: string;
+  tooltip: {
+    bmc: string;
+    lean: string;
+    ai: string;
+  };
 }
 
 // ─── Deep Dive Types (Market Research) ───────────────────────────────────────
@@ -153,4 +158,14 @@ export interface MarketResearchData {
   personas: PersonasData | null;
   marketValidation: MarketValidationData | null;
   competitiveLandscape: CompetitiveLandscapeData | null;
+}
+
+// ─── Block Edit Proposals (AI Agent Editing) ─────────────────────────────────
+
+export interface BlockEditProposal {
+  blockType: BlockType;
+  mode: 'bmc' | 'lean' | 'both';
+  oldContent: string;
+  newContent: string;
+  reason: string;
 }

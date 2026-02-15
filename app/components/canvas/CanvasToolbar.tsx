@@ -49,12 +49,12 @@ export function CanvasToolbar({
       </div>
 
       {/* Center: mode toggle */}
-      <div className="flex items-center rounded-lg border border-white/10 p-0.5">
+      <div className="flex items-center rounded-lg border border-white/10 p-0.5 bg-white/[0.02]">
         <button
           onClick={() => onModeChange('bmc')}
-          className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+          className={`px-3 py-1 font-display-small text-[10px] rounded-md transition-all ${
             mode === 'bmc'
-              ? 'glass-morphism text-foreground'
+              ? 'glass-morphism text-foreground border border-white/10 shadow-sm'
               : 'text-foreground-muted hover:text-foreground'
           }`}
         >
@@ -62,9 +62,9 @@ export function CanvasToolbar({
         </button>
         <button
           onClick={() => onModeChange('lean')}
-          className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+          className={`px-3 py-1 font-display-small text-[10px] rounded-md transition-all ${
             mode === 'lean'
-              ? 'glass-morphism text-foreground'
+              ? 'glass-morphism text-foreground border border-white/10 shadow-sm'
               : 'text-foreground-muted hover:text-foreground'
           }`}
         >
@@ -73,23 +73,23 @@ export function CanvasToolbar({
       </div>
 
       {/* Right: save status */}
-      <div className="flex items-center gap-1.5 text-xs text-foreground-muted min-w-[70px] justify-end">
+      <div className="flex items-center gap-1.5 font-mono text-[10px] text-foreground-muted min-w-[80px] justify-end">
         {saveStatus === 'saved' && (
           <>
             <span className="text-[var(--state-healthy)]">&#10003;</span>
-            <span>Saved</span>
+            <span className="uppercase tracking-wider">Saved</span>
           </>
         )}
         {saveStatus === 'saving' && (
           <>
-            <span className="animate-spin inline-block w-3 h-3 border border-foreground-muted border-t-transparent rounded-full" />
-            <span>Saving</span>
+            <span className="animate-spin inline-block w-2.5 h-2.5 border border-foreground-muted border-t-transparent rounded-full" />
+            <span className="uppercase tracking-wider">Saving</span>
           </>
         )}
         {saveStatus === 'unsaved' && (
           <>
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--state-warning)]" />
-            <span>Unsaved</span>
+            <span className="uppercase tracking-wider">Unsaved</span>
           </>
         )}
       </div>
