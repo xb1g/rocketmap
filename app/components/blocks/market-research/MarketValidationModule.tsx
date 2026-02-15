@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useCallback, useRef } from 'react';
-import type { MarketValidationData, ValidationItem } from '@/lib/types/canvas';
+import { useCallback, useRef } from "react";
+import type { MarketValidationData, ValidationItem } from "@/lib/types/canvas";
 
 interface MarketValidationModuleProps {
   data: MarketValidationData | null;
@@ -12,9 +12,9 @@ interface MarketValidationModuleProps {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  confirmed: 'text-emerald-400 bg-emerald-400/10',
-  questioned: 'text-amber-400 bg-amber-400/10',
-  contradicted: 'text-red-400 bg-red-400/10',
+  confirmed: "text-emerald-400 bg-emerald-400/10",
+  questioned: "text-amber-400 bg-amber-400/10",
+  contradicted: "text-red-400 bg-red-400/10",
 };
 
 function ValidationItemCard({
@@ -34,7 +34,9 @@ function ValidationItemCard({
           rows={1}
           placeholder="Claim..."
         />
-        <span className={`text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap ${STATUS_STYLES[item.status]}`}>
+        <span
+          className={`text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap ${STATUS_STYLES[item.status]}`}
+        >
           {item.status}
         </span>
       </div>
@@ -46,14 +48,20 @@ function ValidationItemCard({
         placeholder="Evidence..."
       />
       <div className="text-[10px] text-foreground-muted/50">
-        Source: {item.source || '—'}
+        Source: {item.source || "—"}
       </div>
     </div>
   );
 }
 
-export function MarketValidationModule({ data, isGenerating, aiEnabled = true, onGenerate, onSave }: MarketValidationModuleProps) {
-  const current = data ?? { validations: [], overallAssessment: '' };
+export function MarketValidationModule({
+  data,
+  isGenerating,
+  aiEnabled = true,
+  onGenerate,
+  onSave,
+}: MarketValidationModuleProps) {
+  const current = data ?? { validations: [], overallAssessment: "" };
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const debouncedSave = useCallback(
@@ -104,10 +112,14 @@ export function MarketValidationModule({ data, isGenerating, aiEnabled = true, o
 
       {current.overallAssessment && (
         <div className="p-3 rounded-lg bg-white/3 space-y-1">
-          <span className="text-[10px] text-foreground-muted uppercase tracking-wider">Overall Assessment</span>
+          <span className="text-[10px] text-foreground-muted uppercase tracking-wider">
+            Overall Assessment
+          </span>
           <textarea
             value={current.overallAssessment}
-            onChange={(e) => debouncedSave({ ...current, overallAssessment: e.target.value })}
+            onChange={(e) =>
+              debouncedSave({ ...current, overallAssessment: e.target.value })
+            }
             className="w-full bg-transparent text-xs text-foreground-muted resize-none outline-none"
             rows={3}
           />

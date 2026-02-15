@@ -13,6 +13,7 @@ interface BlockChatSectionProps {
   blockType: BlockType;
   onAcceptEdit?: (proposalId: string, edit: BlockEditProposal) => void;
   onRejectEdit?: (proposalId: string, editIndex: number) => void;
+  onRevertEdit?: (proposalId: string, editIndex: number) => void;
 }
 
 function toUIMessages(msgs: { id: string; role: string; content: string; createdAt: string }[]): UIMessage[] {
@@ -24,7 +25,7 @@ function toUIMessages(msgs: { id: string; role: string; content: string; created
   }));
 }
 
-function BlockChatLoader({ canvasId, blockType, onAcceptEdit, onRejectEdit }: BlockChatSectionProps) {
+function BlockChatLoader({ canvasId, blockType, onAcceptEdit, onRejectEdit, onRevertEdit }: BlockChatSectionProps) {
   const [persistedMessages, setPersistedMessages] = useState<UIMessage[] | null>(null);
 
   useEffect(() => {
@@ -49,6 +50,7 @@ function BlockChatLoader({ canvasId, blockType, onAcceptEdit, onRejectEdit }: Bl
       persistedMessages={persistedMessages}
       onAcceptEdit={onAcceptEdit}
       onRejectEdit={onRejectEdit}
+      onRevertEdit={onRevertEdit}
     />
   );
 }
@@ -59,6 +61,7 @@ function BlockChat({
   persistedMessages,
   onAcceptEdit,
   onRejectEdit,
+  onRevertEdit,
 }: BlockChatSectionProps & { persistedMessages: UIMessage[] }) {
   const [input, setInput] = useState('');
   const chatKey = blockType;
@@ -68,13 +71,24 @@ function BlockChat({
     [canvasId, blockType],
   );
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, stop, regenerate, status } = useChat({
     id: `block-${blockType}`,
     transport,
     messages: persistedMessages,
   });
 
   const isLoading = status === 'streaming' || status === 'submitted';
+
+  const handleEditMessage = useCallback(
+    (messageId: string, newText: string) => {
+      sendMessage({ text: newText, messageId });
+    },
+    [sendMessage],
+  );
+
+  const handleRegenerate = useCallback(() => {
+    regenerate();
+  }, [regenerate]);
 
   const saveUserMessage = useCallback(
     (text: string, messageId: string) => {
@@ -100,13 +114,18 @@ function BlockChat({
     <div className="flex flex-col flex-1 min-h-0">
       <ChatMessages
         messages={messages}
+        isLoading={isLoading}
         onAcceptEdit={onAcceptEdit}
         onRejectEdit={onRejectEdit}
+        onRevertEdit={onRevertEdit}
+        onEditMessage={handleEditMessage}
+        onRegenerate={handleRegenerate}
       />
       <ChatInput
         value={input}
         onChange={setInput}
         onSubmit={onSubmit}
+        onStop={stop}
         isLoading={isLoading}
         placeholder={`Ask about ${blockType.replace(/_/g, ' ')}...`}
       />
@@ -114,7 +133,7 @@ function BlockChat({
   );
 }
 
-export function BlockChatSection({ canvasId, blockType, onAcceptEdit, onRejectEdit }: BlockChatSectionProps) {
+export function BlockChatSection({ canvasId, blockType, onAcceptEdit, onRejectEdit, onRevertEdit }: BlockChatSectionProps) {
   // Key forces full remount when blockType changes, avoiding stale state
   return (
     <BlockChatLoader
@@ -123,6 +142,7 @@ export function BlockChatSection({ canvasId, blockType, onAcceptEdit, onRejectEd
       blockType={blockType}
       onAcceptEdit={onAcceptEdit}
       onRejectEdit={onRejectEdit}
+      onRevertEdit={onRevertEdit}
     />
   );
 }

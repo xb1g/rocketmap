@@ -101,6 +101,15 @@ export function serializeCanvasState(blocks: BlockData[], mode: 'bmc' | 'lean' =
         }
       }
 
+      if (b.linkedSegments?.length) {
+        for (const seg of b.linkedSegments) {
+          const parts = [`"${seg.name}" (priority: ${seg.priorityScore}`];
+          if (seg.earlyAdopterFlag) parts.push('Early Adopter');
+          parts.push(')');
+          const desc = seg.description ? ` — ${seg.description}` : '';
+          line += `\n  → Segment: ${parts.join(', ')}${desc}`;
+        }
+      }
       if (b.deepDiveData) {
         const summary = summarizeDeepDive(b.deepDiveData);
         if (summary) line += '\n' + summary;

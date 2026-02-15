@@ -236,8 +236,7 @@ body {
 
 .canvas-page-bg {
   min-height: 100vh;
-  background:
-    radial-gradient(
+  background: radial-gradient(
       1200px 600px at 20% -10%,
       rgba(34, 197, 94, 0.08),
       transparent 60%
@@ -249,6 +248,29 @@ body {
     ),
     linear-gradient(180deg, #0a0c10 0%, #0f1319 100%);
 }
+
+/* Canvas UI uses many hard-coded tiny text utilities; scale them up locally. */
+.canvas-page-bg .text-xs {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.canvas-page-bg .text-sm {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.canvas-page-bg .font-display-small {
+  font-size: 1rem;
+}
+
+.canvas-page-bg [class*="text-[7px]"] { font-size: 9px; }
+.canvas-page-bg [class*="text-[8px]"] { font-size: 10px; }
+.canvas-page-bg [class*="text-[9px]"] { font-size: 11px; }
+.canvas-page-bg [class*="text-[10px]"] { font-size: 12px; }
+.canvas-page-bg [class*="text-[11px]"] { font-size: 13px; }
+.canvas-page-bg [class*="text-[13px]"] { font-size: 15px; }
+.canvas-page-bg [class*="text-[15px]"] { font-size: 17px; }
 
 .input-soft {
   background: linear-gradient(
@@ -478,6 +500,64 @@ body {
   min-height: 0;
 }
 
+.bmc-cell-panel {
+  border: 1px solid rgba(240, 246, 252, 0.12);
+  border-top-width: 2px;
+  border-top-color: rgba(240, 246, 252, 0.16);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      rgba(255, 255, 255, 0.02) 100%
+    ),
+    linear-gradient(180deg, rgba(9, 12, 16, 0.95) 0%, rgba(9, 12, 16, 0.95) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.03),
+    0 8px 18px rgba(0, 0, 0, 0.2);
+  transition:
+    border-color 220ms ease,
+    border-top-color 220ms ease,
+    background 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.bmc-cell-panel:hover,
+.bmc-cell-panel:focus-within {
+  border-color: rgba(240, 246, 252, 0.18);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.07) 0%,
+      rgba(255, 255, 255, 0.03) 100%
+    ),
+    linear-gradient(180deg, rgba(11, 14, 19, 0.96) 0%, rgba(11, 14, 19, 0.96) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 20px rgba(0, 0, 0, 0.24);
+}
+
+.bmc-cell-state-calm {
+  border-top-color: rgba(240, 246, 252, 0.2);
+}
+
+.bmc-cell-state-healthy {
+  border-top-color: rgba(34, 197, 94, 0.6);
+}
+
+.bmc-cell-state-warning {
+  border-top-color: rgba(245, 158, 11, 0.62);
+}
+
+.bmc-cell-state-critical {
+  border-top-color: rgba(239, 68, 68, 0.66);
+}
+
+.bmc-cell-state-ai {
+  border-top-color: rgba(99, 102, 241, 0.68);
+}
+
 .block-cell-actions {
   position: absolute;
   top: -0.85rem;
@@ -566,19 +646,19 @@ body {
   flex: 1;
   width: 100%;
   min-height: 0;
-  padding: 6px 10px;
+  padding: 7px 10px;
   background: transparent;
   border: none;
   outline: none;
   resize: none;
-  color: var(--foreground);
+  color: rgba(240, 246, 252, 0.92);
   font-size: 12px;
   line-height: 1.5;
   font-family: inherit;
 }
 
 .bmc-cell-textarea::placeholder {
-  color: rgba(161, 161, 161, 0.35);
+  color: rgba(161, 161, 161, 0.3);
 }
 
 /* =============================================
@@ -786,10 +866,16 @@ body {
   color: rgba(255, 255, 255, 0.85);
   margin: 0.5em 0 0.25em;
 }
-.chat-markdown h1 { font-size: 1.1em; }
-.chat-markdown h2 { font-size: 1.05em; }
+.chat-markdown h1 {
+  font-size: 1.1em;
+}
+.chat-markdown h2 {
+  font-size: 1.05em;
+}
 .chat-markdown h3,
-.chat-markdown h4 { font-size: 1em; }
+.chat-markdown h4 {
+  font-size: 1em;
+}
 .chat-markdown blockquote {
   border-left: 2px solid rgba(255, 255, 255, 0.1);
   padding-left: 0.6em;
@@ -1710,7 +1796,7 @@ body {
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 
+  box-shadow:
     0 8px 24px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(255, 255, 255, 0.05),
     inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;

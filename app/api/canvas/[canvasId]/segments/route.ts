@@ -28,13 +28,13 @@ export async function GET(_request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
     const { canvasId } = await context.params;
-    const businessModelId = await verifyCanvasOwnership(canvasId, user.$id);
+    const canvasIntId = await verifyCanvasOwnership(canvasId, user.$id);
 
     const result = await serverDatabases.listDocuments(
       DATABASE_ID,
       SEGMENTS_COLLECTION_ID,
       [
-        Query.equal('businessModelId', businessModelId),
+        Query.equal('canvasId', canvasIntId),
         Query.orderDesc('priorityScore'),
         Query.limit(100),
       ],
@@ -58,7 +58,7 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
     const { canvasId } = await context.params;
-    const businessModelId = await verifyCanvasOwnership(canvasId, user.$id);
+    const canvasIntId = await verifyCanvasOwnership(canvasId, user.$id);
     const body = await request.json();
 
     const { name, description, earlyAdopterFlag, priorityScore, demographics, psychographics, behavioral, geographic, estimatedSize } = body;
@@ -72,8 +72,8 @@ export async function POST(request: Request, context: RouteContext) {
       SEGMENTS_COLLECTION_ID,
       ID.unique(),
       {
-        id: Date.now(),
-        businessModelId,
+        id: Math.floor(Math.random() * 2_000_000_000),
+        canvasId: canvasIntId,
         name,
         description: description ?? '',
         earlyAdopterFlag: earlyAdopterFlag ?? false,

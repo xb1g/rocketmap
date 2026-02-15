@@ -25,13 +25,13 @@ async function verifyCanvasOwnership(canvasId: string, userId: string) {
   return canvas.id as number;
 }
 
-async function findSegmentDoc(segmentId: string, businessModelId: number) {
+async function findSegmentDoc(segmentId: string, canvasIntId: number) {
   const result = await serverDatabases.listDocuments(
     DATABASE_ID,
     SEGMENTS_COLLECTION_ID,
     [
       Query.equal('id', parseInt(segmentId, 10)),
-      Query.equal('businessModelId', businessModelId),
+      Query.equal('canvasId', canvasIntId),
       Query.limit(1),
     ],
   );
@@ -45,8 +45,8 @@ export async function PATCH(request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
     const { canvasId, segmentId } = await context.params;
-    const businessModelId = await verifyCanvasOwnership(canvasId, user.$id);
-    const doc = await findSegmentDoc(segmentId, businessModelId);
+    const canvasIntId = await verifyCanvasOwnership(canvasId, user.$id);
+    const doc = await findSegmentDoc(segmentId, canvasIntId);
     const body = await request.json();
 
     const allowedFields = [
@@ -82,8 +82,8 @@ export async function DELETE(_request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
     const { canvasId, segmentId } = await context.params;
-    const businessModelId = await verifyCanvasOwnership(canvasId, user.$id);
-    const doc = await findSegmentDoc(segmentId, businessModelId);
+    const canvasIntId = await verifyCanvasOwnership(canvasId, user.$id);
+    const doc = await findSegmentDoc(segmentId, canvasIntId);
     const segmentIntId = doc.id as number;
 
     // Cascade delete all block_segments links

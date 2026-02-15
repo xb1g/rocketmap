@@ -39,7 +39,7 @@ export interface AIUsage {
 export interface Segment {
   $id: string;
   id: number;
-  businessModelId: number;
+  canvasId: number;
   name: string;
   description: string;
   earlyAdopterFlag: boolean;
@@ -48,13 +48,14 @@ export interface Segment {
   psychographics: string;
   behavioral: string;
   geographic: string;
-  estimatedSize: string;
+  estimatedSize: string; // varchar(100) in DB, e.g. "10,000 startups worldwide" or "15% of TAM"
 }
 
 export interface BlockSegmentLink {
   $id: string;
   blockId: number;
   segmentId: number;
+  relationshipType: string; // e.g. "primary_segment", "secondary_segment", "unrelated"
 }
 
 export interface BlockData {

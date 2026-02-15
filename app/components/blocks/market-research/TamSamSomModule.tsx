@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useRef } from 'react';
-import type { TamSamSomData, MarketSizeEstimate } from '@/lib/types/canvas';
-import { TamSamSomVisual } from './TamSamSomVisual';
+import { useState, useCallback, useRef } from "react";
+import type { TamSamSomData, MarketSizeEstimate } from "@/lib/types/canvas";
+import { TamSamSomVisual } from "./TamSamSomVisual";
 
 interface TamSamSomModuleProps {
   data: TamSamSomData | null;
@@ -13,13 +13,13 @@ interface TamSamSomModuleProps {
 }
 
 const EMPTY_DATA: TamSamSomData = {
-  industry: '',
-  geography: '',
-  targetCustomerType: '',
+  industry: "",
+  geography: "",
+  targetCustomerType: "",
   tam: null,
   sam: null,
   som: null,
-  reasoning: '',
+  reasoning: "",
 };
 
 function formatCurrency(value: number): string {
@@ -31,12 +31,14 @@ function formatCurrency(value: number): string {
 
 function ConfidenceBadge({ level }: { level: string }) {
   const colors: Record<string, string> = {
-    high: 'text-emerald-400 bg-emerald-400/10',
-    medium: 'text-amber-400 bg-amber-400/10',
-    low: 'text-red-400 bg-red-400/10',
+    high: "text-emerald-400 bg-emerald-400/10",
+    medium: "text-amber-400 bg-amber-400/10",
+    low: "text-red-400 bg-red-400/10",
   };
   return (
-    <span className={`text-[10px] px-1.5 py-0.5 rounded ${colors[level] ?? colors.low}`}>
+    <span
+      className={`text-[10px] px-1.5 py-0.5 rounded ${colors[level] ?? colors.low}`}
+    >
       {level}
     </span>
   );
@@ -57,7 +59,9 @@ function EstimateSection({
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-foreground">{label}</span>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">{formatCurrency(estimate.value)}</span>
+          <span className="text-sm font-semibold text-foreground">
+            {formatCurrency(estimate.value)}
+          </span>
           <ConfidenceBadge level={estimate.confidence} />
         </div>
       </div>
@@ -70,18 +74,26 @@ function EstimateSection({
       />
       {estimate.sources.length > 0 && (
         <div className="text-[10px] text-foreground-muted/60">
-          Sources: {estimate.sources.join(', ')}
+          Sources: {estimate.sources.join(", ")}
         </div>
       )}
     </div>
   );
 }
 
-export function TamSamSomModule({ data, isGenerating, aiEnabled = true, onGenerate, onSave }: TamSamSomModuleProps) {
+export function TamSamSomModule({
+  data,
+  isGenerating,
+  aiEnabled = true,
+  onGenerate,
+  onSave,
+}: TamSamSomModuleProps) {
   const current = data ?? EMPTY_DATA;
   const [industry, setIndustry] = useState(current.industry);
   const [geography, setGeography] = useState(current.geography);
-  const [targetCustomerType, setTargetCustomerType] = useState(current.targetCustomerType);
+  const [targetCustomerType, setTargetCustomerType] = useState(
+    current.targetCustomerType,
+  );
 
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -93,7 +105,10 @@ export function TamSamSomModule({ data, isGenerating, aiEnabled = true, onGenera
     [onSave],
   );
 
-  const handleEstimateChange = (key: 'tam' | 'sam' | 'som', est: MarketSizeEstimate) => {
+  const handleEstimateChange = (
+    key: "tam" | "sam" | "som",
+    est: MarketSizeEstimate,
+  ) => {
     const updated = { ...current, [key]: est };
     debouncedSave(updated);
   };
@@ -103,12 +118,29 @@ export function TamSamSomModule({ data, isGenerating, aiEnabled = true, onGenera
       {/* Input fields */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Industry', value: industry, setter: setIndustry, field: 'industry' as const },
-          { label: 'Geography', value: geography, setter: setGeography, field: 'geography' as const },
-          { label: 'Target Customer Type', value: targetCustomerType, setter: setTargetCustomerType, field: 'targetCustomerType' as const },
+          {
+            label: "Industry",
+            value: industry,
+            setter: setIndustry,
+            field: "industry" as const,
+          },
+          {
+            label: "Geography",
+            value: geography,
+            setter: setGeography,
+            field: "geography" as const,
+          },
+          {
+            label: "Target Customer Type",
+            value: targetCustomerType,
+            setter: setTargetCustomerType,
+            field: "targetCustomerType" as const,
+          },
         ].map(({ label, value, setter, field }) => (
           <div key={field} className="space-y-1">
-            <label className="text-[10px] text-foreground-muted uppercase tracking-wider">{label}</label>
+            <label className="text-[10px] text-foreground-muted uppercase tracking-wider">
+              {label}
+            </label>
             <input
               type="text"
               value={value}
@@ -154,18 +186,34 @@ export function TamSamSomModule({ data, isGenerating, aiEnabled = true, onGenera
 
           {/* Estimates */}
           <div className="space-y-3">
-            <EstimateSection label="TAM — Total Addressable Market" estimate={current.tam} onChange={(e) => handleEstimateChange('tam', e)} />
-            <EstimateSection label="SAM — Serviceable Addressable Market" estimate={current.sam} onChange={(e) => handleEstimateChange('sam', e)} />
-            <EstimateSection label="SOM — Serviceable Obtainable Market" estimate={current.som} onChange={(e) => handleEstimateChange('som', e)} />
+            <EstimateSection
+              label="TAM — Total Addressable Market"
+              estimate={current.tam}
+              onChange={(e) => handleEstimateChange("tam", e)}
+            />
+            <EstimateSection
+              label="SAM — Serviceable Addressable Market"
+              estimate={current.sam}
+              onChange={(e) => handleEstimateChange("sam", e)}
+            />
+            <EstimateSection
+              label="SOM — Serviceable Obtainable Market"
+              estimate={current.som}
+              onChange={(e) => handleEstimateChange("som", e)}
+            />
           </div>
 
           {/* Reasoning */}
           {current.reasoning && (
             <div className="p-3 rounded-lg bg-white/3 space-y-1">
-              <span className="text-[10px] text-foreground-muted uppercase tracking-wider">Reasoning</span>
+              <span className="text-[10px] text-foreground-muted uppercase tracking-wider">
+                Reasoning
+              </span>
               <textarea
                 value={current.reasoning}
-                onChange={(e) => debouncedSave({ ...current, reasoning: e.target.value })}
+                onChange={(e) =>
+                  debouncedSave({ ...current, reasoning: e.target.value })
+                }
                 className="w-full bg-transparent text-xs text-foreground-muted resize-none outline-none"
                 rows={4}
               />

@@ -6,11 +6,12 @@ interface ChatInputProps {
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
+  onStop?: () => void;
   isLoading: boolean;
   placeholder?: string;
 }
 
-export function ChatInput({ value, onChange, onSubmit, isLoading, placeholder }: ChatInputProps) {
+export function ChatInput({ value, onChange, onSubmit, onStop, isLoading, placeholder }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const resize = useCallback(() => {
@@ -45,23 +46,29 @@ export function ChatInput({ value, onChange, onSubmit, isLoading, placeholder }:
           placeholder={placeholder ?? 'Ask about your business model...'}
           rows={1}
         />
-        <button
-          onClick={() => { if (value.trim() && !isLoading) onSubmit(); }}
-          disabled={!value.trim() || isLoading}
-          className="shrink-0 w-6 h-6 flex items-center justify-center rounded-lg text-foreground-muted/40 hover:text-foreground hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-transparent transition-all"
-          aria-label="Send message"
-        >
-          {isLoading ? (
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
-              <circle cx="12" cy="12" r="10" strokeDasharray="31.4" strokeDashoffset="10" />
+        {isLoading && onStop ? (
+          <button
+            onClick={onStop}
+            className="shrink-0 w-6 h-6 flex items-center justify-center rounded-lg text-foreground-muted/50 hover:text-red-400/80 hover:bg-red-500/10 transition-all"
+            aria-label="Stop generation"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="6" width="12" height="12" rx="2" />
             </svg>
-          ) : (
+          </button>
+        ) : (
+          <button
+            onClick={() => { if (value.trim() && !isLoading) onSubmit(); }}
+            disabled={!value.trim() || isLoading}
+            className="shrink-0 w-6 h-6 flex items-center justify-center rounded-lg text-foreground-muted/40 hover:text-foreground hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-transparent transition-all"
+            aria-label="Send message"
+          >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="19" x2="12" y2="5" />
               <polyline points="5 12 12 5 19 12" />
             </svg>
-          )}
-        </button>
+          </button>
+        )}
       </div>
     </div>
   );

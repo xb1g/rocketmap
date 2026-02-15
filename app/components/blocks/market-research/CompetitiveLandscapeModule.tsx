@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useCallback, useRef } from 'react';
-import type { CompetitiveLandscapeData, Competitor } from '@/lib/types/canvas';
+import { useCallback, useRef } from "react";
+import type { CompetitiveLandscapeData, Competitor } from "@/lib/types/canvas";
 
 interface CompetitiveLandscapeModuleProps {
   data: CompetitiveLandscapeData | null;
@@ -12,9 +12,9 @@ interface CompetitiveLandscapeModuleProps {
 }
 
 const THREAT_STYLES: Record<string, string> = {
-  high: 'text-red-400 bg-red-400/10',
-  medium: 'text-amber-400 bg-amber-400/10',
-  low: 'text-emerald-400 bg-emerald-400/10',
+  high: "text-red-400 bg-red-400/10",
+  medium: "text-amber-400 bg-amber-400/10",
+  low: "text-emerald-400 bg-emerald-400/10",
 };
 
 function CompetitorCard({
@@ -36,16 +36,25 @@ function CompetitorCard({
           placeholder="Competitor name"
         />
         <div className="flex items-center gap-2">
-          <span className={`text-[10px] px-1.5 py-0.5 rounded ${THREAT_STYLES[competitor.threatLevel]}`}>
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded ${THREAT_STYLES[competitor.threatLevel]}`}
+          >
             {competitor.threatLevel} threat
           </span>
-          <button onClick={onRemove} className="text-foreground-muted/40 hover:text-red-400 text-xs">×</button>
+          <button
+            onClick={onRemove}
+            className="text-foreground-muted/40 hover:text-red-400 text-xs"
+          >
+            ×
+          </button>
         </div>
       </div>
 
       <textarea
         value={competitor.positioning}
-        onChange={(e) => onChange({ ...competitor, positioning: e.target.value })}
+        onChange={(e) =>
+          onChange({ ...competitor, positioning: e.target.value })
+        }
         className="w-full bg-transparent text-xs text-foreground-muted resize-none outline-none"
         rows={2}
         placeholder="Market positioning..."
@@ -53,27 +62,41 @@ function CompetitorCard({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <span className="text-[9px] text-foreground-muted/60 uppercase tracking-wider">Strengths</span>
+          <span className="text-[9px] text-foreground-muted/60 uppercase tracking-wider">
+            Strengths
+          </span>
           {competitor.strengths.map((s, i) => (
-            <div key={i} className="text-xs text-emerald-400/80">+ {s}</div>
+            <div key={i} className="text-xs text-emerald-400/80">
+              + {s}
+            </div>
           ))}
         </div>
         <div className="space-y-1">
-          <span className="text-[9px] text-foreground-muted/60 uppercase tracking-wider">Weaknesses</span>
+          <span className="text-[9px] text-foreground-muted/60 uppercase tracking-wider">
+            Weaknesses
+          </span>
           {competitor.weaknesses.map((w, i) => (
-            <div key={i} className="text-xs text-red-400/80">- {w}</div>
+            <div key={i} className="text-xs text-red-400/80">
+              - {w}
+            </div>
           ))}
         </div>
       </div>
 
       <div className="text-[10px] text-foreground-muted/50">
-        Market share: {competitor.marketShareEstimate || '—'}
+        Market share: {competitor.marketShareEstimate || "—"}
       </div>
     </div>
   );
 }
 
-export function CompetitiveLandscapeModule({ data, isGenerating, aiEnabled = true, onGenerate, onSave }: CompetitiveLandscapeModuleProps) {
+export function CompetitiveLandscapeModule({
+  data,
+  isGenerating,
+  aiEnabled = true,
+  onGenerate,
+  onSave,
+}: CompetitiveLandscapeModuleProps) {
   const current = data ?? { competitors: [] };
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -101,12 +124,12 @@ export function CompetitiveLandscapeModule({ data, isGenerating, aiEnabled = tru
       ...current.competitors,
       {
         id: crypto.randomUUID(),
-        name: '',
-        positioning: '',
+        name: "",
+        positioning: "",
         strengths: [],
         weaknesses: [],
-        marketShareEstimate: '',
-        threatLevel: 'medium' as const,
+        marketShareEstimate: "",
+        threatLevel: "medium" as const,
       },
     ];
     onSave({ competitors });

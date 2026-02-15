@@ -15,6 +15,7 @@ interface ChatBarProps {
   onDockedChange?: (docked: boolean) => void;
   onAcceptEdit?: (proposalId: string, edit: BlockEditProposal) => void;
   onRejectEdit?: (proposalId: string, editIndex: number) => void;
+  onRevertEdit?: (proposalId: string, editIndex: number) => void;
 }
 
 function toUIMessages(msgs: { id: string; role: string; content: string; createdAt: string }[]): UIMessage[] {
@@ -34,6 +35,7 @@ function ChatBarLoader({
   onDockedChange,
   onAcceptEdit,
   onRejectEdit,
+  onRevertEdit,
 }: {
   canvasId: string;
   chatKey: string;
@@ -42,6 +44,7 @@ function ChatBarLoader({
   onDockedChange?: (docked: boolean) => void;
   onAcceptEdit?: (proposalId: string, edit: BlockEditProposal) => void;
   onRejectEdit?: (proposalId: string, editIndex: number) => void;
+  onRevertEdit?: (proposalId: string, editIndex: number) => void;
 }) {
   const [persistedMessages, setPersistedMessages] = useState<UIMessage[] | null>(null);
 
@@ -103,6 +106,7 @@ function ChatBarLoader({
       onDockedChange={onDockedChange}
       onAcceptEdit={onAcceptEdit}
       onRejectEdit={onRejectEdit}
+      onRevertEdit={onRevertEdit}
     />
   );
 }
@@ -116,6 +120,7 @@ function ChatBarInner({
   onDockedChange,
   onAcceptEdit,
   onRejectEdit,
+  onRevertEdit,
 }: {
   canvasId: string;
   chatKey: string;
@@ -125,6 +130,7 @@ function ChatBarInner({
   onDockedChange?: (docked: boolean) => void;
   onAcceptEdit?: (proposalId: string, edit: BlockEditProposal) => void;
   onRejectEdit?: (proposalId: string, editIndex: number) => void;
+  onRevertEdit?: (proposalId: string, editIndex: number) => void;
 }) {
   const [internalDocked, setInternalDocked] = useState(false);
   const [input, setInput] = useState('');
@@ -146,13 +152,24 @@ function ChatBarInner({
     [endpoint],
   );
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, stop, regenerate, status } = useChat({
     id: chatKey,
     transport,
     messages: persistedMessages,
   });
 
   const isLoading = status === 'streaming' || status === 'submitted';
+
+  const handleEditMessage = useCallback(
+    (messageId: string, newText: string) => {
+      sendMessage({ text: newText, messageId });
+    },
+    [sendMessage],
+  );
+
+  const handleRegenerate = useCallback(() => {
+    regenerate();
+  }, [regenerate]);
 
   const saveUserMessage = useCallback(
     (text: string, messageId: string) => {
@@ -210,6 +227,7 @@ function ChatBarInner({
             value={input}
             onChange={setInput}
             onSubmit={onSubmit}
+            onStop={stop}
             isLoading={isLoading}
             placeholder={isLoading ? 'Thinking...' : 'Ask AI and press enter...'}
           />
@@ -237,13 +255,18 @@ function ChatBarInner({
       <div className="chat-dock-body">
         <ChatMessages
           messages={messages}
+          isLoading={isLoading}
           onAcceptEdit={onAcceptEdit}
           onRejectEdit={onRejectEdit}
+          onRevertEdit={onRevertEdit}
+          onEditMessage={handleEditMessage}
+          onRegenerate={handleRegenerate}
         />
         <ChatInput
           value={input}
           onChange={setInput}
           onSubmit={onSubmit}
+          onStop={stop}
           isLoading={isLoading}
         />
       </div>
@@ -251,7 +274,7 @@ function ChatBarInner({
   );
 }
 
-export function ChatBar({ canvasId, chatBlock, docked, onDockedChange, onAcceptEdit, onRejectEdit }: ChatBarProps) {
+export function ChatBar({ canvasId, chatBlock, docked, onDockedChange, onAcceptEdit, onRejectEdit, onRevertEdit }: ChatBarProps) {
   const chatKey = chatBlock ?? 'general';
   const endpoint = chatBlock
     ? `/api/canvas/${canvasId}/blocks/${chatBlock}/chat`
@@ -268,6 +291,7 @@ export function ChatBar({ canvasId, chatBlock, docked, onDockedChange, onAcceptE
       onDockedChange={onDockedChange}
       onAcceptEdit={onAcceptEdit}
       onRejectEdit={onRejectEdit}
+      onRevertEdit={onRevertEdit}
     />
   );
 }

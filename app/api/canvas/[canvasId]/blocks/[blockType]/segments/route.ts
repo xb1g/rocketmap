@@ -76,7 +76,7 @@ export async function POST(request: Request, context: RouteContext) {
       DATABASE_ID,
       BLOCK_SEGMENTS_COLLECTION_ID,
       ID.unique(),
-      { blockId, segmentId },
+      { id: Math.floor(Math.random() * 2_000_000_000), blockId, segmentId },
     );
 
     return NextResponse.json({ link: doc }, { status: 201 });

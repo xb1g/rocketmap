@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
 interface Contradiction {
   blocks: string[];
   issue: string;
-  severity: 'minor' | 'major' | 'critical';
+  severity: "minor" | "major" | "critical";
   suggestion: string;
 }
 
@@ -25,9 +25,9 @@ interface ConsistencyReportProps {
 }
 
 const SEVERITY_COLORS: Record<string, string> = {
-  minor: 'var(--chroma-cyan)',
-  major: 'var(--chroma-amber)',
-  critical: 'var(--state-critical)',
+  minor: "var(--chroma-cyan)",
+  major: "var(--chroma-amber)",
+  critical: "var(--state-critical)",
 };
 
 export function ConsistencyReport({ data, isLoading }: ConsistencyReportProps) {
@@ -54,11 +54,12 @@ export function ConsistencyReport({ data, isLoading }: ConsistencyReportProps) {
         <div
           className="text-2xl font-display font-bold"
           style={{
-            color: data.overallScore >= 70
-              ? 'var(--state-healthy)'
-              : data.overallScore >= 40
-                ? 'var(--state-warning)'
-                : 'var(--state-critical)',
+            color:
+              data.overallScore >= 70
+                ? "var(--state-healthy)"
+                : data.overallScore >= 40
+                  ? "var(--state-warning)"
+                  : "var(--state-critical)",
           }}
         >
           {data.overallScore}
@@ -73,7 +74,10 @@ export function ConsistencyReport({ data, isLoading }: ConsistencyReportProps) {
             Contradictions ({data.contradictions.length})
           </span>
           {data.contradictions.map((c, i) => (
-            <div key={i} className="p-3 rounded-lg bg-white/5 flex flex-col gap-1.5">
+            <div
+              key={i}
+              className="p-3 rounded-lg bg-white/5 flex flex-col gap-1.5"
+            >
               <div className="flex items-center gap-2">
                 <span
                   className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full"
@@ -85,7 +89,7 @@ export function ConsistencyReport({ data, isLoading }: ConsistencyReportProps) {
                   {c.severity}
                 </span>
                 <span className="text-[10px] text-foreground-muted">
-                  {c.blocks.join(' / ')}
+                  {c.blocks.join(" / ")}
                 </span>
               </div>
               <p className="text-xs text-foreground/80">{c.issue}</p>
@@ -102,7 +106,10 @@ export function ConsistencyReport({ data, isLoading }: ConsistencyReportProps) {
             Missing Links ({data.missingLinks.length})
           </span>
           {data.missingLinks.map((ml, i) => (
-            <div key={i} className="p-3 rounded-lg bg-white/5 flex flex-col gap-1">
+            <div
+              key={i}
+              className="p-3 rounded-lg bg-white/5 flex flex-col gap-1"
+            >
               <span className="text-[10px] text-foreground-muted">
                 {ml.from} &rarr; {ml.to}
               </span>

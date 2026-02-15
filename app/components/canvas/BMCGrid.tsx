@@ -1,6 +1,6 @@
 'use client';
 
-import type { BlockData, BlockType, CanvasMode } from '@/lib/types/canvas';
+import type { BlockData, BlockType, CanvasMode, Segment } from '@/lib/types/canvas';
 import { BLOCK_DEFINITIONS, getBlockValue } from './constants';
 import { BlockCell } from './BlockCell';
 
@@ -17,6 +17,10 @@ interface BMCGridProps {
   onBlockExpand: (blockType: BlockType) => void;
   onBlockAddToChat: (blockType: BlockType) => void;
   onBlockAnalyze: (blockType: BlockType) => void;
+  onSegmentClick?: (segmentId: number) => void;
+  onAddSegment?: (name: string) => Promise<void>;
+  onSegmentUpdate?: (segmentId: number, updates: Partial<{ name: string; description: string }>) => Promise<void>;
+  onSegmentFocus?: (segmentId: number) => void;
 }
 
 export function BMCGrid({
@@ -32,6 +36,10 @@ export function BMCGrid({
   onBlockExpand,
   onBlockAddToChat,
   onBlockAnalyze,
+  onSegmentClick,
+  onAddSegment,
+  onSegmentUpdate,
+  onSegmentFocus,
 }: BMCGridProps) {
   return (
     <div className={`bmc-grid ${dimmed ? 'opacity-40 pointer-events-none' : ''}`} style={{ transition: 'opacity 300ms ease' }}>
@@ -53,12 +61,17 @@ export function BMCGrid({
             isChatTarget={chatTargetBlock === def.type}
             confidenceScore={block?.confidenceScore ?? 0}
             hasAnalysis={!!block?.aiAnalysis}
+            linkedSegments={block?.linkedSegments}
             onChange={(v) => onBlockChange(def.type, v)}
             onFocus={() => onBlockFocus(def.type)}
             onBlur={onBlockBlur}
             onExpand={() => onBlockExpand(def.type)}
             onAddToChat={() => onBlockAddToChat(def.type)}
             onAnalyze={() => onBlockAnalyze(def.type)}
+            onSegmentClick={onSegmentClick}
+            onAddSegment={def.type === 'customer_segments' ? onAddSegment : undefined}
+            onSegmentUpdate={def.type === 'customer_segments' ? onSegmentUpdate : undefined}
+            onSegmentFocus={def.type === 'customer_segments' ? onSegmentFocus : undefined}
           />
         );
       })}

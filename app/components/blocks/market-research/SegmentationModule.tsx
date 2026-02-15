@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useCallback, useRef } from 'react';
-import type { SegmentationData, CustomerSegment } from '@/lib/types/canvas';
+import { useCallback, useRef } from "react";
+import type { SegmentationData, CustomerSegment } from "@/lib/types/canvas";
 
 interface SegmentationModuleProps {
   data: SegmentationData | null;
@@ -12,9 +12,9 @@ interface SegmentationModuleProps {
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
-  high: 'text-emerald-400 bg-emerald-400/10',
-  medium: 'text-amber-400 bg-amber-400/10',
-  low: 'text-foreground-muted bg-white/5',
+  high: "text-emerald-400 bg-emerald-400/10",
+  medium: "text-amber-400 bg-amber-400/10",
+  low: "text-foreground-muted bg-white/5",
 };
 
 function SegmentCard({
@@ -36,10 +36,17 @@ function SegmentCard({
           placeholder="Segment name"
         />
         <div className="flex items-center gap-2">
-          <span className={`text-[10px] px-1.5 py-0.5 rounded ${PRIORITY_COLORS[segment.priority]}`}>
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded ${PRIORITY_COLORS[segment.priority]}`}
+          >
             {segment.priority}
           </span>
-          <button onClick={onRemove} className="text-foreground-muted/40 hover:text-red-400 text-xs">×</button>
+          <button
+            onClick={onRemove}
+            className="text-foreground-muted/40 hover:text-red-400 text-xs"
+          >
+            ×
+          </button>
         </div>
       </div>
       <textarea
@@ -50,9 +57,18 @@ function SegmentCard({
         placeholder="Description..."
       />
       <div className="grid grid-cols-2 gap-2">
-        {(['demographics', 'psychographics', 'behavioral', 'geographic'] as const).map((dim) => (
+        {(
+          [
+            "demographics",
+            "psychographics",
+            "behavioral",
+            "geographic",
+          ] as const
+        ).map((dim) => (
           <div key={dim} className="space-y-0.5">
-            <label className="text-[9px] text-foreground-muted/60 uppercase tracking-wider">{dim}</label>
+            <label className="text-[9px] text-foreground-muted/60 uppercase tracking-wider">
+              {dim}
+            </label>
             <input
               value={segment[dim]}
               onChange={(e) => onChange({ ...segment, [dim]: e.target.value })}
@@ -63,13 +79,19 @@ function SegmentCard({
         ))}
       </div>
       <div className="flex items-center gap-2 text-[10px] text-foreground-muted/60">
-        <span>Est. size: {segment.estimatedSize || '—'}</span>
+        <span>Est. size: {segment.estimatedSize || "—"}</span>
       </div>
     </div>
   );
 }
 
-export function SegmentationModule({ data, isGenerating, aiEnabled = true, onGenerate, onSave }: SegmentationModuleProps) {
+export function SegmentationModule({
+  data,
+  isGenerating,
+  aiEnabled = true,
+  onGenerate,
+  onSave,
+}: SegmentationModuleProps) {
   const current = data ?? { segments: [] };
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -97,14 +119,14 @@ export function SegmentationModule({ data, isGenerating, aiEnabled = true, onGen
       ...current.segments,
       {
         id: crypto.randomUUID(),
-        name: '',
-        description: '',
-        demographics: '',
-        psychographics: '',
-        behavioral: '',
-        geographic: '',
-        estimatedSize: '',
-        priority: 'medium' as const,
+        name: "",
+        description: "",
+        demographics: "",
+        psychographics: "",
+        behavioral: "",
+        geographic: "",
+        estimatedSize: "",
+        priority: "medium" as const,
       },
     ];
     onSave({ segments });

@@ -10,10 +10,14 @@ interface ChatMessageProps {
 }
 
 interface ChatMessageWithPartsProps {
+  messageId: string;
   role: "user" | "assistant";
   parts: Array<{ type: string; text?: string; [key: string]: unknown }>;
   onAcceptEdit?: (proposalId: string, edit: BlockEditProposal) => void;
   onRejectEdit?: (proposalId: string, editIndex: number) => void;
+  onRevertEdit?: (proposalId: string, editIndex: number) => void;
+  onEditMessage?: (messageId: string, newText: string) => void;
+  onRegenerate?: () => void;
   acceptedEdits?: Set<string>;
   rejectedEdits?: Set<string>;
 }
@@ -63,34 +67,113 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
  * Multi-part message that can render text + block edit proposals.
  */
 export function ChatMessageWithParts({
+  messageId,
   role,
   parts,
   onAcceptEdit,
   onRejectEdit,
+  onRevertEdit,
+  onEditMessage,
+  onRegenerate,
   acceptedEdits,
   rejectedEdits,
 }: ChatMessageWithPartsProps) {
   const isUser = role === "user";
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState("");
+  const [hovered, setHovered] = useState(false);
+
+  const startEdit = () => {
+    const textPart = parts.find((p) => p.type === "text" && p.text);
+    setEditText(textPart?.text ?? "");
+    setIsEditing(true);
+  };
+
+  const submitEdit = () => {
+    const trimmed = editText.trim();
+    if (!trimmed) return;
+    setIsEditing(false);
+    onEditMessage?.(messageId, trimmed);
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+  };
 
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+    <div
+      className={`group/msg flex ${isUser ? "justify-end" : "justify-start"}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       <div className="max-w-[85%] flex flex-col gap-2">
         {parts.map((part, idx) => {
           // Text parts
           if (part.type === "text" && part.text) {
+            // User message editing
+            if (isUser && isEditing) {
+              return (
+                <div key={idx} className="flex flex-col gap-1.5">
+                  <textarea
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        submitEdit();
+                      }
+                      if (e.key === "Escape") cancelEdit();
+                    }}
+                    className="px-3 py-2 text-xs leading-relaxed rounded-2xl rounded-br-md bg-(--chroma-indigo)/15 text-foreground/90 whitespace-pre-wrap border border-(--chroma-indigo)/30 outline-none resize-y min-h-[40px] font-sans"
+                    rows={Math.max(1, editText.split("\n").length)}
+                    autoFocus
+                  />
+                  <div className="flex gap-1.5 justify-end">
+                    <button
+                      onClick={cancelEdit}
+                      className="px-2 py-0.5 text-[10px] rounded-md text-foreground-muted/50 hover:text-foreground-muted/80 hover:bg-white/5 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={submitEdit}
+                      disabled={!editText.trim()}
+                      className="px-2 py-0.5 text-[10px] rounded-md bg-(--chroma-indigo)/20 text-(--chroma-indigo) hover:bg-(--chroma-indigo)/30 disabled:opacity-30 transition-colors"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
             return (
-              <div
-                key={idx}
-                className={`px-3 py-2 text-xs leading-relaxed ${
-                  isUser
-                    ? "rounded-2xl rounded-br-md bg-(--chroma-indigo)/15 text-foreground/90 whitespace-pre-wrap"
-                    : "rounded-2xl rounded-bl-md bg-white/4 text-foreground/75 border border-white/4 chat-markdown"
-                }`}
-              >
-                {isUser ? (
-                  part.text
-                ) : (
-                  <ReactMarkdown>{part.text}</ReactMarkdown>
+              <div key={idx} className="relative">
+                <div
+                  className={`px-3 py-2 text-xs leading-relaxed ${
+                    isUser
+                      ? "rounded-2xl rounded-br-md bg-(--chroma-indigo)/15 text-foreground/90 whitespace-pre-wrap"
+                      : "rounded-2xl rounded-bl-md bg-white/4 text-foreground/75 border border-white/4 chat-markdown"
+                  }`}
+                >
+                  {isUser ? (
+                    part.text
+                  ) : (
+                    <ReactMarkdown>{part.text}</ReactMarkdown>
+                  )}
+                </div>
+                {/* Edit button for user messages */}
+                {isUser && onEditMessage && hovered && !isEditing && (
+                  <button
+                    onClick={startEdit}
+                    className="absolute -left-7 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-md text-foreground-muted/30 hover:text-foreground-muted/70 hover:bg-white/5 transition-all"
+                    aria-label="Edit message"
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
                 )}
               </div>
             );
@@ -144,6 +227,7 @@ export function ChatMessageWithParts({
                         isRejected={isRejected}
                         onAccept={() => onAcceptEdit?.(proposalId, edit)}
                         onReject={() => onRejectEdit?.(proposalId, editIdx)}
+                        onRevert={isAccepted && onRevertEdit ? () => onRevertEdit(proposalId, editIdx) : undefined}
                       />
                     );
                   })}
@@ -172,6 +256,24 @@ export function ChatMessageWithParts({
           }
           return null;
         })}
+
+        {/* Regenerate button for last assistant message */}
+        {!isUser && onRegenerate && (
+          <div className="flex items-center gap-1 -mb-0.5">
+            <button
+              onClick={onRegenerate}
+              className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded-md text-foreground-muted/30 hover:text-foreground-muted/70 hover:bg-white/5 transition-all"
+              aria-label="Regenerate response"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="1 4 1 10 7 10" />
+                <polyline points="23 20 23 14 17 14" />
+                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+              </svg>
+              Regenerate
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -186,6 +288,7 @@ function SingleEditCard({
   isRejected,
   onAccept,
   onReject,
+  onRevert,
 }: {
   edit: BlockEditProposal;
   isPending: boolean;
@@ -193,6 +296,7 @@ function SingleEditCard({
   isRejected: boolean;
   onAccept: () => void;
   onReject: () => void;
+  onRevert?: () => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(edit.newContent);
@@ -322,8 +426,18 @@ function SingleEditCard({
       )}
 
       {isAccepted && (
-        <div className="px-3 pb-2.5 text-green-400/70 text-[10px] text-center font-display-small uppercase tracking-wider">
-          Changes applied
+        <div className="px-3 pb-2.5 flex items-center justify-center gap-2">
+          <span className="text-green-400/70 text-[10px] font-display-small uppercase tracking-wider">
+            Changes applied
+          </span>
+          {onRevert && (
+            <button
+              onClick={onRevert}
+              className="text-[10px] text-foreground-muted/30 hover:text-foreground-muted/70 underline underline-offset-2 transition-colors"
+            >
+              Undo
+            </button>
+          )}
         </div>
       )}
 

@@ -62,7 +62,9 @@ export function CanvasClient({
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [focusedBlock, setFocusedBlock] = useState<BlockType | null>(null);
   const [expandedBlock, setExpandedBlock] = useState<BlockType | null>(null);
-  const [chatTargetBlock, setChatTargetBlock] = useState<BlockType | null>(null);
+  const [chatTargetBlock, setChatTargetBlock] = useState<BlockType | null>(
+    null,
+  );
   const [chatDocked, setChatDocked] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [activeTab, setActiveTab] = useState<CanvasTab>("canvas");
@@ -330,11 +332,207 @@ export function CanvasClient({
     [],
   );
 
+  // ─── Segment Handlers ──────────────────────────────────────────────────────
+
+  const handleSegmentCreate = useCallback(
+    async (data: {
+      name: string;
+      description?: string;
+      earlyAdopterFlag?: boolean;
+      priorityScore?: number;
+    }) => {
+      try {
+        const res = await fetch(`/api/canvas/${canvasId}/segments`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        if (!res.ok) return null;
+        const { segment: doc } = await res.json();
+        const seg: Segment = {
+          $id: doc.$id,
+          id: doc.id,
+          canvasId: doc.canvasId,
+          name: doc.name,
+          description: doc.description ?? "",
+          earlyAdopterFlag: doc.earlyAdopterFlag ?? false,
+          priorityScore: doc.priorityScore ?? 50,
+          demographics: doc.demographics ?? "",
+          psychographics: doc.psychographics ?? "",
+          behavioral: doc.behavioral ?? "",
+          geographic: doc.geographic ?? "",
+          estimatedSize: doc.estimatedSize ?? "",
+        };
+        setSegments((prev) => new Map(prev).set(seg.id, seg));
+        return seg;
+      } catch {
+        return null;
+      }
+    },
+    [canvasId],
+  );
+
+  const handleSegmentUpdate = useCallback(
+    async (segmentId: number, updates: Partial<Segment>) => {
+      try {
+        const res = await fetch(
+          `/api/canvas/${canvasId}/segments/${segmentId}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updates),
+          },
+        );
+        if (!res.ok) return;
+        const { segment: doc } = await res.json();
+        const seg: Segment = {
+          $id: doc.$id,
+          id: doc.id,
+          canvasId: doc.canvasId,
+          name: doc.name,
+          description: doc.description ?? "",
+          earlyAdopterFlag: doc.earlyAdopterFlag ?? false,
+          priorityScore: doc.priorityScore ?? 50,
+          demographics: doc.demographics ?? "",
+          psychographics: doc.psychographics ?? "",
+          behavioral: doc.behavioral ?? "",
+          geographic: doc.geographic ?? "",
+          estimatedSize: doc.estimatedSize ?? "",
+        };
+        setSegments((prev) => new Map(prev).set(seg.id, seg));
+        setBlocks((prev) => {
+          const next = new Map(prev);
+          for (const [bt, block] of next) {
+            if (block.linkedSegments?.some((s) => s.id === seg.id)) {
+              next.set(bt, {
+                ...block,
+                linkedSegments: block.linkedSegments.map((s) =>
+                  s.id === seg.id ? seg : s,
+                ),
+              });
+            }
+          }
+          return next;
+        });
+      } catch {
+        // silently fail
+      }
+    },
+    [canvasId],
+  );
+
+  const handleSegmentDelete = useCallback(
+    async (segmentId: number) => {
+      try {
+        const res = await fetch(
+          `/api/canvas/${canvasId}/segments/${segmentId}`,
+          { method: "DELETE" },
+        );
+        if (!res.ok) return;
+        setSegments((prev) => {
+          const next = new Map(prev);
+          next.delete(segmentId);
+          return next;
+        });
+        setBlocks((prev) => {
+          const next = new Map(prev);
+          for (const [bt, block] of next) {
+            if (block.linkedSegments?.some((s) => s.id === segmentId)) {
+              next.set(bt, {
+                ...block,
+                linkedSegments: block.linkedSegments.filter(
+                  (s) => s.id !== segmentId,
+                ),
+              });
+            }
+          }
+          return next;
+        });
+      } catch {
+        // silently fail
+      }
+    },
+    [canvasId],
+  );
+
+  const handleSegmentLink = useCallback(
+    async (blockType: BlockType, segmentId: number, segmentOverride?: Segment) => {
+      try {
+        const res = await fetch(
+          `/api/canvas/${canvasId}/blocks/${blockType}/segments`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ segmentId }),
+          },
+        );
+        if (!res.ok) return;
+        const seg = segmentOverride ?? segments.get(segmentId);
+        if (!seg) return;
+        setBlocks((prev) => {
+          const next = new Map(prev);
+          const block = next.get(blockType);
+          if (block) {
+            const existing = block.linkedSegments ?? [];
+            if (!existing.some((s) => s.id === segmentId)) {
+              next.set(blockType, {
+                ...block,
+                linkedSegments: [...existing, seg],
+              });
+            }
+          }
+          return next;
+        });
+      } catch {
+        // silently fail
+      }
+    },
+    [canvasId, segments],
+  );
+
+  const handleSegmentUnlink = useCallback(
+    async (blockType: BlockType, segmentId: number) => {
+      try {
+        const res = await fetch(
+          `/api/canvas/${canvasId}/blocks/${blockType}/segments?segmentId=${segmentId}`,
+          { method: "DELETE" },
+        );
+        if (!res.ok) return;
+        setBlocks((prev) => {
+          const next = new Map(prev);
+          const block = next.get(blockType);
+          if (block) {
+            next.set(blockType, {
+              ...block,
+              linkedSegments: (block.linkedSegments ?? []).filter(
+                (s) => s.id !== segmentId,
+              ),
+            });
+          }
+          return next;
+        });
+      } catch {
+        // silently fail
+      }
+    },
+    [canvasId],
+  );
+
+  // Track old content for revert/undo of accepted edits
+  const revertMapRef = useRef<Map<string, { blockType: BlockType; oldContent: { bmc: string; lean: string } }>>(new Map());
+
   // Handle accepted block edit from AI chat (single edit at a time)
   const handleAcceptEdit = useCallback(
     async (_proposalId: string, edit: BlockEditProposal) => {
       const existing = blocks.get(edit.blockType);
       if (!existing) return;
+
+      // Store old content for potential revert
+      const revertKey = `${_proposalId}-${edit.blockType}`;
+      revertMapRef.current.set(revertKey, {
+        blockType: edit.blockType,
+        oldContent: { ...existing.content },
+      });
 
       let newContent = { ...existing.content };
 
@@ -363,6 +561,31 @@ export function CanvasClient({
   const handleRejectEdit = useCallback(() => {
     // No-op — UI handles the visual feedback
   }, []);
+
+  const handleRevertEdit = useCallback(
+    async (proposalId: string, _editIndex: number) => {
+      // Find stored old content for this proposal
+      for (const [key, entry] of revertMapRef.current) {
+        if (key.startsWith(proposalId)) {
+          const existing = blocks.get(entry.blockType);
+          if (!existing) continue;
+
+          // Restore old content
+          setBlocks((prev) => {
+            const next = new Map(prev);
+            next.set(entry.blockType, { ...existing, content: entry.oldContent });
+            return next;
+          });
+
+          await saveBlock(entry.blockType, entry.oldContent);
+          handleAnalyze(entry.blockType);
+          revertMapRef.current.delete(key);
+          break;
+        }
+      }
+    },
+    [blocks, saveBlock, handleAnalyze],
+  );
 
   // Check if all blocks have meaningful content (gate for deep-dive AI)
   const allBlocksFilled = (() => {
@@ -436,6 +659,27 @@ export function CanvasClient({
           onBlockExpand={setExpandedBlock}
           onBlockAddToChat={setChatTargetBlock}
           onBlockAnalyze={handleAnalyze}
+          onSegmentClick={(segmentId) => {
+            // Find which block owns this segment and expand it
+            for (const [bt, block] of blocks) {
+              if (block.linkedSegments?.some((s) => s.id === segmentId)) {
+                setExpandedBlock(bt);
+                break;
+              }
+            }
+          }}
+          onAddSegment={async (name) => {
+            const seg = await handleSegmentCreate({ name });
+            if (seg) {
+              await handleSegmentLink("customer_segments", seg.id, seg);
+            }
+          }}
+          onSegmentUpdate={async (segmentId, updates) => {
+            await handleSegmentUpdate(segmentId, updates);
+          }}
+          onSegmentFocus={(segmentId) => {
+            setExpandedBlock("customer_segments");
+          }}
         />
       )}
 
@@ -463,16 +707,27 @@ export function CanvasClient({
           isAnalyzing={analyzingBlock === expandedBlock}
           allBlocksFilled={allBlocksFilled}
           filledCount={filledCount}
+          allSegments={Array.from(segments.values())}
           onChange={(value) => handleBlockChange(expandedBlock, value)}
           onClose={() => setExpandedBlock(null)}
           onAnalyze={() => handleAnalyze(expandedBlock)}
           onDeepDive={() => setDeepDiveBlock(expandedBlock)}
+          onSegmentCreate={handleSegmentCreate}
+          onSegmentUpdate={handleSegmentUpdate}
+          onSegmentDelete={handleSegmentDelete}
+          onSegmentLink={(segmentId) =>
+            handleSegmentLink(expandedBlock, segmentId)
+          }
+          onSegmentUnlink={(segmentId) =>
+            handleSegmentUnlink(expandedBlock, segmentId)
+          }
           chatSection={
             <BlockChatSection
               canvasId={canvasId}
               blockType={expandedBlock}
               onAcceptEdit={handleAcceptEdit}
               onRejectEdit={handleRejectEdit}
+              onRevertEdit={handleRevertEdit}
             />
           }
         />
@@ -490,6 +745,7 @@ export function CanvasClient({
         }}
         onAcceptEdit={handleAcceptEdit}
         onRejectEdit={handleRejectEdit}
+        onRevertEdit={handleRevertEdit}
       />
 
       {/* Deep Dive Overlay */}

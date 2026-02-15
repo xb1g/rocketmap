@@ -1,11 +1,16 @@
-'use client';
+"use client";
 
-import { useCallback, useRef } from 'react';
-import type { PersonasData, Persona, CustomerSegment } from '@/lib/types/canvas';
+import { useCallback, useRef } from "react";
+import type {
+  PersonasData,
+  Persona,
+  CustomerSegment,
+  Segment,
+} from "@/lib/types/canvas";
 
 interface PersonaModuleProps {
   data: PersonasData | null;
-  segments: CustomerSegment[];
+  segments: CustomerSegment[] | Segment[];
   isGenerating: boolean;
   aiEnabled?: boolean;
   onGenerate: () => void;
@@ -19,15 +24,15 @@ function PersonaCard({
   onRemove,
 }: {
   persona: Persona;
-  segments: CustomerSegment[];
+  segments: CustomerSegment[] | Segment[];
   onChange: (updated: Persona) => void;
   onRemove: () => void;
 }) {
   const segment = segments.find((s) => s.id === persona.segmentId);
   const initials = persona.name
-    .split(' ')
+    .split(" ")
     .map((w) => w[0])
-    .join('')
+    .join("")
     .slice(0, 2)
     .toUpperCase();
 
@@ -36,7 +41,7 @@ function PersonaCard({
       <div className="flex items-start gap-3">
         {/* Avatar */}
         <div className="w-10 h-10 rounded-full bg-linear-to-br from-indigo-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center text-xs font-semibold text-foreground shrink-0">
-          {initials || '?'}
+          {initials || "?"}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -46,19 +51,28 @@ function PersonaCard({
               className="bg-transparent text-sm font-medium text-foreground outline-none flex-1"
               placeholder="Name"
             />
-            <button onClick={onRemove} className="text-foreground-muted/40 hover:text-red-400 text-xs">×</button>
+            <button
+              onClick={onRemove}
+              className="text-foreground-muted/40 hover:text-red-400 text-xs"
+            >
+              ×
+            </button>
           </div>
           <div className="flex gap-2 mt-0.5">
             <input
               value={String(persona.age)}
-              onChange={(e) => onChange({ ...persona, age: Number(e.target.value) || 0 })}
+              onChange={(e) =>
+                onChange({ ...persona, age: Number(e.target.value) || 0 })
+              }
               className="bg-transparent text-xs text-foreground-muted outline-none w-8"
               placeholder="Age"
             />
             <span className="text-foreground-muted/30">·</span>
             <input
               value={persona.occupation}
-              onChange={(e) => onChange({ ...persona, occupation: e.target.value })}
+              onChange={(e) =>
+                onChange({ ...persona, occupation: e.target.value })
+              }
               className="bg-transparent text-xs text-foreground-muted outline-none flex-1"
               placeholder="Occupation"
             />
@@ -80,15 +94,23 @@ function PersonaCard({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <span className="text-[9px] text-foreground-muted/60 uppercase tracking-wider">Goals</span>
+          <span className="text-[9px] text-foreground-muted/60 uppercase tracking-wider">
+            Goals
+          </span>
           {persona.goals.map((g, i) => (
-            <div key={i} className="text-xs text-foreground-muted">• {g}</div>
+            <div key={i} className="text-xs text-foreground-muted">
+              • {g}
+            </div>
           ))}
         </div>
         <div className="space-y-1">
-          <span className="text-[9px] text-foreground-muted/60 uppercase tracking-wider">Frustrations</span>
+          <span className="text-[9px] text-foreground-muted/60 uppercase tracking-wider">
+            Frustrations
+          </span>
           {persona.frustrations.map((f, i) => (
-            <div key={i} className="text-xs text-foreground-muted">• {f}</div>
+            <div key={i} className="text-xs text-foreground-muted">
+              • {f}
+            </div>
           ))}
         </div>
       </div>
@@ -96,7 +118,14 @@ function PersonaCard({
   );
 }
 
-export function PersonaModule({ data, segments, isGenerating, aiEnabled = true, onGenerate, onSave }: PersonaModuleProps) {
+export function PersonaModule({
+  data,
+  segments,
+  isGenerating,
+  aiEnabled = true,
+  onGenerate,
+  onSave,
+}: PersonaModuleProps) {
   const current = data ?? { personas: [] };
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 

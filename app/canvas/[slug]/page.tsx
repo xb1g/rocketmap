@@ -101,7 +101,7 @@ export default async function CanvasPage({ params }: PageProps) {
       serverDatabases.listDocuments(
         DATABASE_ID,
         SEGMENTS_COLLECTION_ID,
-        [Query.equal('businessModelId', canvasIntId), Query.orderDesc('priorityScore'), Query.limit(100)],
+        [Query.equal('canvasId', canvasIntId), Query.orderDesc('priorityScore'), Query.limit(100)],
       ),
       serverDatabases.listDocuments(
         DATABASE_ID,
@@ -121,7 +121,7 @@ export default async function CanvasPage({ params }: PageProps) {
     const seg: Segment = {
       $id: doc.$id as string,
       id: doc.id as number,
-      businessModelId: doc.businessModelId as number,
+      canvasId: doc.canvasId as number,
       name: doc.name as string,
       description: (doc.description as string) ?? '',
       earlyAdopterFlag: (doc.earlyAdopterFlag as boolean) ?? false,
@@ -181,7 +181,7 @@ export default async function CanvasPage({ params }: PageProps) {
   };
 
   return (
-    <div className="canvas-page-bg">
+    <div className="canvas-page-bg text-lg">
       <CanvasClient
         canvasId={canvas.$id}
         initialCanvasData={canvasData}
