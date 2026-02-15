@@ -31,13 +31,108 @@ export const checkConsistency = tool({
   execute: async (params) => params,
 });
 
-export function getToolsForAgent(toolNames: string[]) {
-  const allTools: Record<string, typeof analyzeBlock | typeof checkConsistency> = {
-    analyzeBlock,
-    checkConsistency,
-  };
+// ─── Deep Dive Tools (Market Research) ───────────────────────────────────────
 
-  const result: Record<string, typeof analyzeBlock | typeof checkConsistency> = {};
+const marketSizeEstimateSchema = z.object({
+  value: z.number().describe('Market size in USD'),
+  methodology: z.string().describe('How this estimate was derived'),
+  sources: z.array(z.string()).describe('Data sources or references'),
+  confidence: z.enum(['low', 'medium', 'high']).describe('Confidence level of the estimate'),
+});
+
+export const estimateMarketSize = tool({
+  description: 'Estimate TAM, SAM, and SOM market sizes for a startup based on industry, geography, and target customer type.',
+  inputSchema: z.object({
+    tam: marketSizeEstimateSchema.describe('Total Addressable Market'),
+    sam: marketSizeEstimateSchema.describe('Serviceable Addressable Market'),
+    som: marketSizeEstimateSchema.describe('Serviceable Obtainable Market'),
+    reasoning: z.string().describe('Overall reasoning connecting the three estimates'),
+  }),
+  execute: async (params) => params,
+});
+
+export const generateSegments = tool({
+  description: 'Generate customer segments based on the business model canvas content.',
+  inputSchema: z.object({
+    segments: z.array(z.object({
+      id: z.string().describe('Unique segment identifier'),
+      name: z.string().describe('Segment name'),
+      description: z.string().describe('Segment description'),
+      demographics: z.string().describe('Demographic characteristics'),
+      psychographics: z.string().describe('Psychographic characteristics'),
+      behavioral: z.string().describe('Behavioral patterns'),
+      geographic: z.string().describe('Geographic scope'),
+      estimatedSize: z.string().describe('Estimated segment size'),
+      priority: z.enum(['high', 'medium', 'low']).describe('Segment priority'),
+    })).describe('Customer segments'),
+  }),
+  execute: async (params) => params,
+});
+
+export const generatePersonas = tool({
+  description: 'Generate detailed customer personas linked to existing segments.',
+  inputSchema: z.object({
+    personas: z.array(z.object({
+      id: z.string().describe('Unique persona identifier'),
+      name: z.string().describe('Persona name'),
+      age: z.number().describe('Persona age'),
+      occupation: z.string().describe('Job title or role'),
+      segmentId: z.string().describe('ID of the segment this persona belongs to'),
+      goals: z.array(z.string()).describe('What this persona wants to achieve'),
+      frustrations: z.array(z.string()).describe('Pain points and frustrations'),
+      behaviors: z.array(z.string()).describe('Typical behaviors and habits'),
+      quote: z.string().describe('A representative quote from this persona'),
+    })).describe('Customer personas'),
+  }),
+  execute: async (params) => params,
+});
+
+export const validateMarketSize = tool({
+  description: 'Validate TAM/SAM/SOM estimates by cross-referencing with industry data and checking internal consistency.',
+  inputSchema: z.object({
+    validations: z.array(z.object({
+      claim: z.string().describe('The claim being validated'),
+      status: z.enum(['confirmed', 'questioned', 'contradicted']).describe('Validation status'),
+      evidence: z.string().describe('Evidence supporting the validation'),
+      source: z.string().describe('Source of the evidence'),
+    })).describe('Validation results'),
+    overallAssessment: z.string().describe('Summary assessment of the market size estimates'),
+  }),
+  execute: async (params) => params,
+});
+
+export const analyzeCompetitors = tool({
+  description: 'Analyze the competitive landscape for the target market segments.',
+  inputSchema: z.object({
+    competitors: z.array(z.object({
+      id: z.string().describe('Unique competitor identifier'),
+      name: z.string().describe('Competitor name'),
+      positioning: z.string().describe('Market positioning'),
+      strengths: z.array(z.string()).describe('Key strengths'),
+      weaknesses: z.array(z.string()).describe('Key weaknesses'),
+      marketShareEstimate: z.string().describe('Estimated market share'),
+      threatLevel: z.enum(['low', 'medium', 'high']).describe('Threat level to the startup'),
+    })).describe('Competitors in the landscape'),
+  }),
+  execute: async (params) => params,
+});
+
+// ─── Tool Registry ───────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const allTools: Record<string, ReturnType<typeof tool<any, any>>> = {
+  analyzeBlock,
+  checkConsistency,
+  estimateMarketSize,
+  generateSegments,
+  generatePersonas,
+  validateMarketSize,
+  analyzeCompetitors,
+};
+
+export function getToolsForAgent(toolNames: string[]) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result: Record<string, ReturnType<typeof tool<any, any>>> = {};
   for (const name of toolNames) {
     if (allTools[name]) {
       result[name] = allTools[name];

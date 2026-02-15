@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { generateText, stepCountIs } from 'ai';
+import { stepCountIs } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
+import { generateTextWithLogging } from '@/lib/ai/logger';
 import { Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
 import {
@@ -32,7 +33,7 @@ export async function POST(_request: Request, context: RouteContext) {
       ? `${targetBlock.content.bmc}\n${targetBlock.content.lean}`.trim()
       : '';
 
-    const result = await generateText({
+    const { result, usage } = await generateTextWithLogging(`analyze:${blockType}`, {
       model: anthropic('claude-sonnet-4-5-20250929'),
       system: config.systemPrompt,
       messages: [
@@ -97,6 +98,7 @@ export async function POST(_request: Request, context: RouteContext) {
       analysis: { ...analysis, generatedAt: new Date().toISOString() },
       confidenceScore,
       riskScore,
+      usage,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);

@@ -46,7 +46,7 @@ npm run lint
 - **Framework:** Next.js 16.1.6 (App Router)
 - **UI Library:** Radix UI Themes 3.3.0
 - **Styling:** Tailwind CSS v4 + custom CSS variables
-- **Fonts:** Lexend Deca (sans), Cormorant (display/serif), Geist Mono (mono)
+- **Fonts:** Lexend Deca (sans), Crimson Text (display/serif), Geist Mono (mono)
 - **TypeScript:** Strict mode enabled
 
 ## Architecture & Key Concepts
@@ -56,6 +56,7 @@ npm run lint
 The interface maintains a neutral, professional state during normal operation. Visual emphasis (chromatic effects, glows, animations) emerges only when blocks become fragile or require attention.
 
 **State-Based Visual Language:**
+
 - **Calm:** Muted gray, subtle holographic borders, allows focus
 - **Healthy/Validated:** Green-blue shimmer with subtle glow
 - **Warning/Fragile:** Amber-gold with rainbow edge highlights
@@ -67,6 +68,7 @@ The interface maintains a neutral, professional state during normal operation. V
 Each BMC block supports expanding into deeper analysis layers:
 
 **Customer Segments → Market Research Layer:**
+
 - TAM / SAM / SOM estimation (with AI-assisted sizing)
 - Market segmentation (demographic, psychographic, behavioral, geographic)
 - Customer personas generation
@@ -74,6 +76,7 @@ Each BMC block supports expanding into deeper analysis layers:
 - Market trends and growth drivers
 
 **Other blocks will have their own deep-dive layers** (planned):
+
 - Value Propositions → Feature-benefit mapping, competitive positioning matrix
 - Revenue Streams → Pricing strategy analysis, unit economics modeling
 - Channels → Channel effectiveness analysis, customer journey mapping
@@ -88,6 +91,7 @@ Each BMC block supports expanding into deeper analysis layers:
 **Two levels of LLM integration:**
 
 1. **Block-level AI Copilot** - Operates within a single block or its deep-dive layer:
+
    - Content drafting and refinement
    - Research assistance (e.g., market sizing calculations for Customer Segments)
    - Structured output generation (assumptions, risks, questions)
@@ -104,6 +108,7 @@ AI prompts receive the **entire canvas as context** but focus on the selected bl
 ### Data Structure
 
 Each BMC block is stored as structured JSON containing:
+
 - Block type (e.g., "Customer Segments", "Value Propositions")
 - User-entered content (per canvas mode: BMC / Lean)
 - AI-generated analysis (assumptions, risks, questions)
@@ -151,6 +156,7 @@ lib/
 - **Custom animations** for holographic effects, state transitions, and glows
 
 Key classes:
+
 - `.chromatic-border` - Multi-color gradient borders
 - `.glow-{state}` - State-based shadow effects (calm/healthy/warning/critical/ai)
 - `.holographic-bg` / `.holographic-strong` - Gradient backgrounds with shimmer
@@ -160,6 +166,7 @@ Key classes:
 ### Theme Configuration
 
 Radix Theme is configured in [app/layout.tsx](app/layout.tsx:37-43) with:
+
 - `appearance: "dark"`
 - `accentColor: "iris"` (purple-blue for holographic feel)
 - `grayColor: "gray"` (neutral surfaces)
@@ -169,15 +176,29 @@ Radix Theme is configured in [app/layout.tsx](app/layout.tsx:37-43) with:
 
 ### AI Prompt Engineering
 
+**CRITICAL:** All LLM integrations must include the System Prompt from [lib/ai/PROMPT_TEMPLATES.md](lib/ai/PROMPT_TEMPLATES.md).
+
 When implementing AI features, prompts must:
-1. Send the entire canvas state as context
-2. Instruct the model to focus on the selected block while cross-referencing others
-3. Return structured JSON output with all 4 required fields (draft, assumptions, risks, questions)
-4. Be versioned and stored in the repository (judges/evaluators value this)
+
+1. Include the System Prompt (enforces design constraints globally)
+2. Send the entire canvas state as context
+3. Instruct the model to focus on the selected block while cross-referencing others
+4. Return structured JSON output with all required fields
+5. Reference design variables in suggestions (var(--state-_), var(--font-_), .glow-\* classes)
+6. Never suggest fonts outside the three approved typefaces
+7. Be versioned and stored in the repository
+
+**Example LLM suggestion:**
+
+```
+❌ BAD: "Use Arial for labels and make it red"
+✅ GOOD: "Apply .font-display-small (Crimson Text, weight 600) with var(--state-warning) (#f59e0b) and .glow-warning class"
+```
 
 ### Consistency Checker (System-Level AI)
 
 The killer feature. After users fill 2-3 blocks, it should:
+
 - Compare customer segments with channels and value propositions
 - Validate revenue streams match cost structures
 - Flag vague or contradictory statements
@@ -185,6 +206,7 @@ The killer feature. After users fill 2-3 blocks, it should:
 - Cross-reference deep-dive layer data (e.g., does TAM support the revenue projections?)
 
 Output format:
+
 - List of contradictions with specific block references
 - Severity indicators (minor/major/critical)
 - Suggested fixes or validation questions
@@ -204,6 +226,7 @@ Each sub-module has its own LLM integration for research assistance, with result
 ### Visual Feedback Signals
 
 Two simple indicators make the system feel "alive":
+
 1. **Confidence meter per block** (Low/Med/High) - based on specificity of content and depth of research
 2. **Red flags count** - aggregated from AI-detected risks + contradictions
 3. **Depth indicator** - Shows how many layers have been explored per block
@@ -225,9 +248,10 @@ Two simple indicators make the system feel "alive":
 ## Current State (as of 2026-02-14)
 
 The codebase currently has:
+
 - ✅ Radix UI + Tailwind setup complete
 - ✅ Dark theme with chromatic effects system implemented
-- ✅ Typography system (Lexend Deca, Cormorant, Geist Mono)
+- ✅ Typography system (Lexend Deca, Crimson Text w/ bold for small sizes, Geist Mono)
 - ✅ State-based glow and animation utilities
 - ✅ Landing page with auth flow
 - ✅ Appwrite integration (auth, database)
@@ -238,6 +262,7 @@ The codebase currently has:
 - ✅ Type system for canvas data (BlockType, BlockState, CanvasMode, BlockData)
 
 Next implementation steps:
+
 1. Add block expand/detail view (Layer 1 - structured AI outputs per block)
 2. Build Market Research deep-dive layer for Customer Segments (Layer 2 - TAM, segmentation, personas)
 3. Integrate LLM for per-block AI copilot (content drafting, analysis)
@@ -248,7 +273,39 @@ Next implementation steps:
 
 ## Design Documentation
 
+### Primary Design Reference
+
+See **[docs/DESIGN_GUIDELINES.md](docs/DESIGN_GUIDELINES.md)** for the canonical source on:
+
+- **Typography System** (Lexend Deca / Crimson Text / Geist Mono with usage rules)
+- **Color System** (State-based palette, CSS variables)
+- **Component Architecture** (Block states, spacing, animations)
+- **AI Agent Requirements** (How to constrain LLM suggestions)
+- **Design Validation Checklist** (Pre-commit checks)
+
+### AI Integration
+
+See **[lib/ai/PROMPT_TEMPLATES.md](lib/ai/PROMPT_TEMPLATES.md)** for:
+
+- **System Prompt** (Include in every LLM API call - enforces design constraints)
+- **Block-Level Copilot** (Per-block analysis prompts)
+- **Consistency Checker** (Cross-block reasoning prompts)
+- **Market Research Deep-Dive** (TAM/SAM/SOM, personas, competitive analysis)
+
+### Quick Validation
+
+Use **[docs/VALIDATION_CHECKLIST.md](docs/VALIDATION_CHECKLIST.md)** for:
+
+- Pre-commit typography/color/component checks
+- Debug guide for common issues
+- Monthly audit commands to catch design drift
+
+---
+
+### Historical Design Reference
+
 See [docs/plans/2026-02-13-radix-chromatic-theme-design.md](docs/plans/2026-02-13-radix-chromatic-theme-design.md) for comprehensive design specifications including:
+
 - Complete color system and state definitions
 - Component architecture and layout details
 - Animation keyframes and timing functions

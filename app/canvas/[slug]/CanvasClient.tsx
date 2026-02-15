@@ -9,6 +9,8 @@ import type {
   CanvasTab,
   CanvasData,
   AIAnalysis,
+  AIUsage,
+  MarketResearchData,
 } from "@/lib/types/canvas";
 import type { ConsistencyData } from "@/app/components/canvas/ConsistencyReport";
 import { BMCGrid } from "@/app/components/canvas/BMCGrid";
@@ -20,6 +22,7 @@ import { BlockFocusPanel } from "@/app/components/canvas/BlockFocusPanel";
 import { AnalysisView } from "@/app/components/canvas/AnalysisView";
 import { ChatBar } from "@/app/components/ai/ChatBar";
 import { BlockChatSection } from "@/app/components/ai/BlockChatSection";
+import { DeepDiveOverlay } from "@/app/components/blocks/DeepDiveOverlay";
 
 interface CanvasClientProps {
   canvasId: string;
@@ -58,6 +61,7 @@ export function CanvasClient({
   const [canvasData, setCanvasData] = useState<CanvasData>(initialCanvasData);
   const [showSettings, setShowSettings] = useState(false);
   const [analyzingBlock, setAnalyzingBlock] = useState<BlockType | null>(null);
+  const [deepDiveBlock, setDeepDiveBlock] = useState<BlockType | null>(null);
   const [consistencyData, setConsistencyData] =
     useState<ConsistencyData | null>(null);
   const [isCheckingConsistency, setIsCheckingConsistency] = useState(false);
@@ -187,6 +191,7 @@ export function CanvasClient({
                 aiAnalysis: data.analysis as AIAnalysis,
                 confidenceScore: data.confidenceScore,
                 riskScore: data.riskScore,
+                lastUsage: (data.usage as AIUsage) ?? null,
               };
               updated.state = deriveBlockState(updated);
               next.set(blockType, updated);
@@ -278,8 +283,42 @@ export function CanvasClient({
     }
   }, [canvasId, router]);
 
+  const handleDeepDiveDataChange = useCallback(
+    (blockType: BlockType, data: MarketResearchData) => {
+      setBlocks((prev) => {
+        const next = new Map(prev);
+        const b = next.get(blockType);
+        if (b) next.set(blockType, { ...b, deepDiveData: data });
+        return next;
+      });
+    },
+    [],
+  );
+
+  // Check if all blocks have meaningful content (gate for deep-dive AI)
+  const allBlocksFilled = (() => {
+    for (const [, b] of blocks) {
+      const content = (mode === "lean" ? b.content.lean : b.content.bmc).trim();
+      if (content.length < 10) return false;
+    }
+    return blocks.size >= 9;
+  })();
+
+  const filledCount = (() => {
+    let count = 0;
+    for (const [, b] of blocks) {
+      const content = (mode === "lean" ? b.content.lean : b.content.bmc).trim();
+      if (content.length >= 10) count++;
+    }
+    return count;
+  })();
+
   const expandedBlockData = expandedBlock
     ? blocks.get(expandedBlock)
+    : undefined;
+
+  const deepDiveBlockData = deepDiveBlock
+    ? blocks.get(deepDiveBlock)
     : undefined;
 
   return (
@@ -330,9 +369,12 @@ export function CanvasClient({
           mode={mode}
           canvasId={canvasId}
           isAnalyzing={analyzingBlock === expandedBlock}
+          allBlocksFilled={allBlocksFilled}
+          filledCount={filledCount}
           onChange={(value) => handleBlockChange(expandedBlock, value)}
           onClose={() => setExpandedBlock(null)}
           onAnalyze={() => handleAnalyze(expandedBlock)}
+          onDeepDive={() => setDeepDiveBlock(expandedBlock)}
           chatSection={
             <BlockChatSection canvasId={canvasId} blockType={expandedBlock} />
           }
@@ -341,6 +383,19 @@ export function CanvasClient({
 
       {/* Chat Bar */}
       <ChatBar canvasId={canvasId} expandedBlock={expandedBlock} />
+
+      {/* Deep Dive Overlay */}
+      {deepDiveBlock && deepDiveBlockData && (
+        <DeepDiveOverlay
+          blockType={deepDiveBlock}
+          canvasId={canvasId}
+          deepDiveData={deepDiveBlockData.deepDiveData}
+          allBlocksFilled={allBlocksFilled}
+          filledCount={filledCount}
+          onDataChange={(data) => handleDeepDiveDataChange(deepDiveBlock, data)}
+          onClose={() => setDeepDiveBlock(null)}
+        />
+      )}
 
       {/* Settings Modal */}
       <CanvasSettingsModal

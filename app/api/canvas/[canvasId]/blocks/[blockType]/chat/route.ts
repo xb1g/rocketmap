@@ -1,5 +1,6 @@
-import { streamText, stepCountIs } from 'ai';
+import { stepCountIs } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
+import { streamTextWithLogging } from '@/lib/ai/logger';
 import { requireAuth } from '@/lib/appwrite-server';
 import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { getAgentConfig } from '@/lib/ai/agents';
@@ -20,7 +21,7 @@ export async function POST(request: Request, context: RouteContext) {
     const config = getAgentConfig(blockType as BlockType, blocks);
     const tools = getToolsForAgent(config.toolNames);
 
-    const result = streamText({
+    const result = streamTextWithLogging(`block-chat:${blockType}`, {
       model: anthropic('claude-sonnet-4-5-20250929'),
       system: config.systemPrompt,
       messages,

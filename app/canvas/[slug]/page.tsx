@@ -7,7 +7,7 @@ import {
   CANVASES_COLLECTION_ID,
   BLOCKS_COLLECTION_ID,
 } from '@/lib/appwrite';
-import type { BlockData, BlockType, BlockContent, CanvasData, AIAnalysis } from '@/lib/types/canvas';
+import type { BlockData, BlockType, BlockContent, CanvasData, AIAnalysis, MarketResearchData } from '@/lib/types/canvas';
 import { BLOCK_DEFINITIONS } from '@/app/components/canvas/constants';
 import { CanvasClient } from './CanvasClient';
 
@@ -39,6 +39,15 @@ function parseAiAnalysis(raw: string | undefined): AIAnalysis | null {
       questions: parsed.questions ?? [],
       generatedAt: parsed.generatedAt ?? '',
     };
+  } catch {
+    return null;
+  }
+}
+
+function parseDeepDiveJson(raw: string | undefined): MarketResearchData | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as MarketResearchData;
   } catch {
     return null;
   }
@@ -93,6 +102,7 @@ export default async function CanvasPage({ params }: PageProps) {
       aiAnalysis: parseAiAnalysis(doc?.aiAnalysisJson as string | undefined),
       confidenceScore: (doc?.confidenceScore as number) ?? 0,
       riskScore: (doc?.riskScore as number) ?? 0,
+      deepDiveData: parseDeepDiveJson(doc?.deepDiveJson as string | undefined),
     };
   });
 

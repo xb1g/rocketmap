@@ -1,4 +1,4 @@
-import type { BlockData, BlockType } from '@/lib/types/canvas';
+import type { BlockData, BlockType, DeepDiveModule, MarketResearchData } from '@/lib/types/canvas';
 import type { AgentType } from '@/lib/types/ai';
 import { BLOCK_DEFINITIONS } from '@/app/components/canvas/constants';
 
@@ -28,13 +28,40 @@ When analyzing a block, always produce structured output with:
 - risks: Potential failure points or weaknesses
 - questions: Critical questions the user should answer`;
 
+function summarizeDeepDive(data: MarketResearchData): string {
+  const lines: string[] = [];
+  if (data.tamSamSom?.tam) {
+    const fmt = (v: number) => v >= 1e9 ? `$${(v/1e9).toFixed(1)}B` : v >= 1e6 ? `$${(v/1e6).toFixed(0)}M` : `$${v}`;
+    lines.push(`  [Deep Dive - Market Size]: TAM ${fmt(data.tamSamSom.tam.value)}, SAM ${fmt(data.tamSamSom.sam?.value ?? 0)}, SOM ${fmt(data.tamSamSom.som?.value ?? 0)}`);
+  }
+  if (data.segmentation?.segments.length) {
+    const names = data.segmentation.segments.map((s) => s.name).join(', ');
+    lines.push(`  [Deep Dive - Segments]: ${data.segmentation.segments.length} segments (${names})`);
+  }
+  if (data.personas?.personas.length) {
+    lines.push(`  [Deep Dive - Personas]: ${data.personas.personas.length} personas defined`);
+  }
+  if (data.competitiveLandscape?.competitors.length) {
+    lines.push(`  [Deep Dive - Competitors]: ${data.competitiveLandscape.competitors.length} competitors mapped`);
+  }
+  if (data.marketValidation?.validations.length) {
+    lines.push(`  [Deep Dive - Validation]: ${data.marketValidation.validations.length} claims validated`);
+  }
+  return lines.join('\n');
+}
+
 export function serializeCanvasState(blocks: BlockData[], mode: 'bmc' | 'lean' = 'bmc'): string {
   return blocks
     .map((b) => {
       const def = BLOCK_DEFINITIONS.find((d) => d.type === b.blockType);
       const label = mode === 'lean' && def?.leanLabel ? def.leanLabel : def?.bmcLabel ?? b.blockType;
       const content = mode === 'lean' ? b.content.lean : b.content.bmc;
-      return `[${label}]: ${content || '(empty)'}`;
+      let line = `[${label}]: ${content || '(empty)'}`;
+      if (b.deepDiveData) {
+        const summary = summarizeDeepDive(b.deepDiveData);
+        if (summary) line += '\n' + summary;
+      }
+      return line;
     })
     .join('\n');
 }
@@ -108,4 +135,120 @@ ${focusInstruction}
 
 Current canvas state:
 ${canvasState}`;
+}
+
+// ─── Deep Dive Prompts ───────────────────────────────────────────────────────
+
+const DEEP_DIVE_PROMPTS: Record<DeepDiveModule, string> = {
+  tam_sam_som: `You are a market sizing specialist. Estimate TAM (Total Addressable Market), SAM (Serviceable Addressable Market), and SOM (Serviceable Obtainable Market) for this startup.
+
+Guidelines:
+- Use top-down and bottom-up approaches where possible
+- Cite specific industry reports, market research firms, or data sources
+- Be realistic — SOM should be achievable within 2-3 years for a startup
+- Explain the methodology clearly so the user can verify and adjust
+- Flag any assumptions that significantly affect the estimates
+- Consider the startup's specific geography and target customer type
+
+Use the estimateMarketSize tool to return your structured analysis.`,
+
+  segmentation: `You are a customer segmentation expert. Generate distinct customer segments for this startup based on the canvas content.
+
+Guidelines:
+- Define 3-5 meaningful segments with clear differentiation
+- Include all four dimensions: demographics, psychographics, behavioral, geographic
+- Estimate segment sizes relative to each other
+- Prioritize segments by accessibility, willingness to pay, and strategic fit
+- Each segment should be actionable — the startup can target it with a specific strategy
+- Reference the value proposition and channels blocks for segment-channel fit
+
+Use the generateSegments tool to return your structured segments.`,
+
+  personas: `You are a customer persona specialist. Create detailed, realistic personas linked to existing customer segments.
+
+Guidelines:
+- Create 1-2 personas per segment
+- Make personas specific and memorable — real names, ages, occupations, quotes
+- Goals and frustrations should directly relate to the startup's value proposition
+- Behaviors should suggest how this persona discovers and evaluates solutions
+- Each persona should feel like a real person the founder could interview
+- Link each persona to its segment via segmentId
+
+Use the generatePersonas tool to return your structured personas.`,
+
+  market_validation: `You are a market research validator. Cross-check the TAM/SAM/SOM estimates and market assumptions against available data and logic.
+
+Guidelines:
+- Check if TAM→SAM→SOM ratios are reasonable (SAM typically 10-40% of TAM, SOM 1-5% of SAM for a startup)
+- Validate methodology — are the assumptions sound?
+- Cross-reference with the revenue streams block — does the SOM support the projected revenue?
+- Flag any claims that seem too optimistic or too conservative
+- Provide specific evidence for each validation point
+- Give an overall assessment of the market sizing quality
+
+Use the validateMarketSize tool to return your structured validation.`,
+
+  competitive_landscape: `You are a competitive intelligence analyst. Map the competitive landscape for this startup's target market.
+
+Guidelines:
+- Identify 4-6 key competitors (direct and indirect)
+- Assess positioning — how does each competitor differentiate?
+- Be specific about strengths and weaknesses (not generic)
+- Estimate market share where possible
+- Assess threat level based on overlap with the startup's target segments and value proposition
+- Consider substitutes and potential new entrants, not just current competitors
+- Reference the value proposition block to identify differentiation opportunities
+
+Use the analyzeCompetitors tool to return your structured analysis.`,
+};
+
+const DEEP_DIVE_TOOL_MAP: Record<DeepDiveModule, string> = {
+  tam_sam_som: 'estimateMarketSize',
+  segmentation: 'generateSegments',
+  personas: 'generatePersonas',
+  market_validation: 'validateMarketSize',
+  competitive_landscape: 'analyzeCompetitors',
+};
+
+export function getDeepDiveToolName(module: DeepDiveModule): string {
+  return DEEP_DIVE_TOOL_MAP[module];
+}
+
+export function buildDeepDivePrompt(
+  module: DeepDiveModule,
+  blocks: BlockData[],
+  existingDeepDive: MarketResearchData | null,
+  inputs?: Record<string, string>,
+): string {
+  const canvasState = serializeCanvasState(blocks);
+  const modulePrompt = DEEP_DIVE_PROMPTS[module];
+
+  let contextSection = '';
+
+  // Include existing deep-dive data as context
+  if (existingDeepDive) {
+    if (module === 'personas' && existingDeepDive.segmentation?.segments.length) {
+      contextSection += `\nExisting segments (link personas to these):\n${JSON.stringify(existingDeepDive.segmentation.segments, null, 2)}`;
+    }
+    if (module === 'market_validation' && existingDeepDive.tamSamSom) {
+      contextSection += `\nExisting TAM/SAM/SOM to validate:\n${JSON.stringify(existingDeepDive.tamSamSom, null, 2)}`;
+    }
+    if (module === 'competitive_landscape' && existingDeepDive.segmentation?.segments.length) {
+      contextSection += `\nTarget segments to consider:\n${existingDeepDive.segmentation.segments.map((s) => s.name).join(', ')}`;
+    }
+  }
+
+  // Include user inputs
+  let inputSection = '';
+  if (inputs && Object.keys(inputs).length > 0) {
+    inputSection = `\nUser-provided inputs:\n${Object.entries(inputs).map(([k, v]) => `- ${k}: ${v}`).join('\n')}`;
+  }
+
+  return `${BASE_SYSTEM_PROMPT}
+
+${modulePrompt}
+
+Current canvas state:
+${canvasState}
+${contextSection}${inputSection}`;
 }

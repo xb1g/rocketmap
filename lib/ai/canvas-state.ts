@@ -6,7 +6,7 @@ import {
   BLOCKS_COLLECTION_ID,
 } from '@/lib/appwrite';
 import { BLOCK_DEFINITIONS } from '@/app/components/canvas/constants';
-import type { BlockData, BlockType, BlockContent } from '@/lib/types/canvas';
+import type { BlockData, BlockType, BlockContent, MarketResearchData } from '@/lib/types/canvas';
 
 function parseContentJson(raw: string | undefined): BlockContent {
   if (!raw) return { bmc: '', lean: '' };
@@ -42,6 +42,13 @@ export async function getCanvasBlocks(canvasId: string, userId: string): Promise
 
   return BLOCK_DEFINITIONS.map((def) => {
     const doc = blockMap.get(def.type);
+    let deepDiveData: MarketResearchData | null = null;
+    if (doc?.deepDiveJson) {
+      try {
+        deepDiveData = JSON.parse(doc.deepDiveJson as string) as MarketResearchData;
+      } catch { /* ignore parse errors */ }
+    }
+
     return {
       blockType: def.type as BlockType,
       content: parseContentJson(doc?.contentJson as string | undefined),
@@ -49,6 +56,7 @@ export async function getCanvasBlocks(canvasId: string, userId: string): Promise
       aiAnalysis: null,
       confidenceScore: (doc?.confidenceScore as number) ?? 0,
       riskScore: (doc?.riskScore as number) ?? 0,
+      deepDiveData,
     };
   });
 }

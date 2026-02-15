@@ -1,9 +1,10 @@
 'use client';
 
-import type { AIAnalysis } from '@/lib/types/canvas';
+import type { AIAnalysis, AIUsage } from '@/lib/types/canvas';
 
 interface BlockAIResultsProps {
   analysis: AIAnalysis | null;
+  usage?: AIUsage | null;
 }
 
 function ResultSection({ title, items, color }: { title: string; items: string[]; color: string }) {
@@ -25,7 +26,7 @@ function ResultSection({ title, items, color }: { title: string; items: string[]
   );
 }
 
-export function BlockAIResults({ analysis }: BlockAIResultsProps) {
+export function BlockAIResults({ analysis, usage }: BlockAIResultsProps) {
   if (!analysis) {
     return (
       <div className="px-4 py-3 text-xs text-foreground-muted text-center">
@@ -44,6 +45,12 @@ export function BlockAIResults({ analysis }: BlockAIResultsProps) {
       <ResultSection title="Assumptions" items={analysis.assumptions} color="var(--chroma-amber)" />
       <ResultSection title="Risks" items={analysis.risks} color="var(--state-critical)" />
       <ResultSection title="Questions" items={analysis.questions} color="var(--chroma-cyan)" />
+      {usage && (
+        <div className="text-[10px] text-foreground/30 pt-2 border-t border-white/5 flex gap-3">
+          <span>{usage.totalTokens} tokens</span>
+          <span>({usage.inputTokens} in / {usage.outputTokens} out)</span>
+        </div>
+      )}
     </div>
   );
 }
