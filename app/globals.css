@@ -251,26 +251,28 @@ body {
 
 /* Canvas UI uses many hard-coded tiny text utilities; scale them up locally. */
 .canvas-page-bg .text-xs {
-  font-size: 0.875rem;
+  font-size: calc(0.875rem * var(--canvas-font-zoom, 1));
   line-height: 1.25rem;
 }
 
 .canvas-page-bg .text-sm {
-  font-size: 1rem;
+  font-size: calc(1rem * var(--canvas-font-zoom, 1));
   line-height: 1.5rem;
 }
 
 .canvas-page-bg .font-display-small {
-  font-size: 1rem;
+  font-size: calc(1rem * var(--canvas-font-zoom, 1));
 }
 
-.canvas-page-bg [class*="text-[7px]"] { font-size: 9px; }
-.canvas-page-bg [class*="text-[8px]"] { font-size: 10px; }
-.canvas-page-bg [class*="text-[9px]"] { font-size: 11px; }
-.canvas-page-bg [class*="text-[10px]"] { font-size: 12px; }
-.canvas-page-bg [class*="text-[11px]"] { font-size: 13px; }
-.canvas-page-bg [class*="text-[13px]"] { font-size: 15px; }
-.canvas-page-bg [class*="text-[15px]"] { font-size: 17px; }
+.canvas-page-bg [class*="text-[7px]"] { font-size: calc(9px * var(--canvas-font-zoom, 1)); }
+.canvas-page-bg [class*="text-[8px]"] { font-size: calc(10px * var(--canvas-font-zoom, 1)); }
+.canvas-page-bg [class*="text-[9px]"] { font-size: calc(11px * var(--canvas-font-zoom, 1)); }
+.canvas-page-bg [class*="text-[10px]"] { font-size: calc(12px * var(--canvas-font-zoom, 1)); }
+.canvas-page-bg [class*="text-[11px]"] { font-size: calc(13px * var(--canvas-font-zoom, 1)); }
+.canvas-page-bg [class*="text-[13px]"] { font-size: calc(15px * var(--canvas-font-zoom, 1)); }
+.canvas-page-bg [class*="text-[15px]"] { font-size: calc(17px * var(--canvas-font-zoom, 1)); }
+.canvas-page-bg .block-action-btn { font-size: calc(9px * var(--canvas-font-zoom, 1)); }
+.canvas-page-bg .bmc-cell-textarea { font-size: calc(12px * var(--canvas-font-zoom, 1)); }
 
 .input-soft {
   background: linear-gradient(

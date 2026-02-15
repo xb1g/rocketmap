@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import type {
   BlockData,
@@ -15,7 +15,7 @@ import type {
   Segment,
 } from "@/lib/types/canvas";
 import type { ConsistencyData } from "@/app/components/canvas/ConsistencyReport";
-import { isSharedBlock } from "@/app/components/canvas/constants";
+import { isSharedBlock, BLOCK_DEFINITIONS } from "@/app/components/canvas/constants";
 import { BMCGrid } from "@/app/components/canvas/BMCGrid";
 import { CanvasToolbar } from "@/app/components/canvas/CanvasToolbar";
 import { CanvasTabs } from "@/app/components/canvas/CanvasTabs";
@@ -35,6 +35,13 @@ interface CanvasClientProps {
 }
 
 type SaveStatus = "saved" | "saving" | "unsaved";
+const MIN_TEXT_ZOOM = 0.85;
+const MAX_TEXT_ZOOM = 1.6;
+
+function clampTextZoom(value: number): number {
+  if (!Number.isFinite(value)) return 1;
+  return Math.min(MAX_TEXT_ZOOM, Math.max(MIN_TEXT_ZOOM, value));
+}
 
 function deriveBlockState(block: BlockData): BlockData["state"] {
   if (!block.aiAnalysis) return "calm";
@@ -70,6 +77,8 @@ export function CanvasClient({
   const [activeTab, setActiveTab] = useState<CanvasTab>("canvas");
   const [canvasData, setCanvasData] = useState<CanvasData>(initialCanvasData);
   const [showSettings, setShowSettings] = useState(false);
+  const [textZoom, setTextZoom] = useState(1);
+  const [isZoomStorageReady, setIsZoomStorageReady] = useState(false);
   const [analyzingBlock, setAnalyzingBlock] = useState<BlockType | null>(null);
   const [deepDiveBlock, setDeepDiveBlock] = useState<BlockType | null>(null);
   const [consistencyData, setConsistencyData] =
@@ -101,6 +110,28 @@ export function CanvasClient({
       setChatDocked(false);
     }
   }, [expandedBlock]);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(`canvas:textZoom:${canvasId}`);
+      if (!stored) return;
+      const parsed = Number.parseFloat(stored);
+      setTextZoom(clampTextZoom(parsed));
+    } catch {
+      // ignore storage errors
+    } finally {
+      setIsZoomStorageReady(true);
+    }
+  }, [canvasId]);
+
+  useEffect(() => {
+    if (!isZoomStorageReady) return;
+    try {
+      window.localStorage.setItem(`canvas:textZoom:${canvasId}`, String(textZoom));
+    } catch {
+      // ignore storage errors
+    }
+  }, [canvasId, isZoomStorageReady, textZoom]);
 
   // Save block content
   const saveBlock = useCallback(
@@ -587,6 +618,80 @@ export function CanvasClient({
     [blocks, saveBlock, handleAnalyze],
   );
 
+  // Check if any non-shared block has lean content (to show convert button)
+  const hasLeanContent = (() => {
+    for (const def of BLOCK_DEFINITIONS) {
+      if (isSharedBlock(def.type)) continue;
+      const b = blocks.get(def.type);
+      if (b && b.content.lean.trim().length > 0) return true;
+    }
+    return false;
+  })();
+
+  // Convert Lean content into BMC fields using AI
+  const [isConverting, setIsConverting] = useState(false);
+
+  const handleConvertLeanToBmc = useCallback(async () => {
+    // Check if any BMC content would be overwritten
+    const hasExistingBmc = BLOCK_DEFINITIONS.some((def) => {
+      if (isSharedBlock(def.type)) return false;
+      const b = blocks.get(def.type);
+      return b && b.content.bmc.trim().length > 0;
+    });
+
+    if (
+      hasExistingBmc &&
+      !window.confirm(
+        "AI will reinterpret your Lean Canvas content and overwrite existing BMC blocks. Continue?",
+      )
+    ) {
+      return;
+    }
+
+    setIsConverting(true);
+    try {
+      const res = await fetch(`/api/canvas/${canvasId}/convert-lean-to-bmc`, {
+        method: "POST",
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        console.error("Conversion failed:", data.error);
+        return;
+      }
+
+      const { updates } = (await res.json()) as {
+        updates: {
+          blockType: string;
+          bmc: string;
+          lean: string;
+          reasoning: string;
+        }[];
+      };
+
+      // Apply converted content to local state
+      setBlocks((prev) => {
+        const next = new Map(prev);
+        for (const u of updates) {
+          const existing = next.get(u.blockType as BlockType);
+          if (!existing) continue;
+          next.set(u.blockType as BlockType, {
+            ...existing,
+            content: { bmc: u.bmc, lean: u.lean },
+          });
+        }
+        return next;
+      });
+
+      setSaveStatus("saved");
+      setMode("bmc");
+    } catch (err) {
+      console.error("Conversion error:", err);
+    } finally {
+      setIsConverting(false);
+    }
+  }, [blocks, canvasId]);
+
   // Check if all blocks have meaningful content (gate for deep-dive AI)
   const allBlocksFilled = (() => {
     for (const [type, b] of blocks) {
@@ -630,8 +735,13 @@ export function CanvasClient({
 
   return (
     <div
-      className="flex flex-col h-screen p-5 gap-3 transition-[padding-right] duration-300 ease-out"
-      style={{ paddingRight: reservedRightSpace }}
+      className="canvas-zoom-root flex flex-col h-screen p-5 gap-3 transition-[padding-right] duration-300 ease-out"
+      style={
+        {
+          paddingRight: reservedRightSpace,
+          "--canvas-font-zoom": textZoom,
+        } as CSSProperties
+      }
     >
       <CanvasToolbar
         title={canvasData.title}
@@ -640,6 +750,9 @@ export function CanvasClient({
         onModeChange={setMode}
         onTitleChange={(title) => saveCanvas({ title })}
         onSettingsOpen={() => setShowSettings(true)}
+        onConvertLeanToBmc={handleConvertLeanToBmc}
+        hasLeanContent={hasLeanContent}
+        isConverting={isConverting}
       />
 
       <CanvasTabs activeTab={activeTab} onTabChange={setActiveTab} />
@@ -715,8 +828,8 @@ export function CanvasClient({
           onSegmentCreate={handleSegmentCreate}
           onSegmentUpdate={handleSegmentUpdate}
           onSegmentDelete={handleSegmentDelete}
-          onSegmentLink={(segmentId) =>
-            handleSegmentLink(expandedBlock, segmentId)
+          onSegmentLink={(segmentId, segmentOverride) =>
+            handleSegmentLink(expandedBlock, segmentId, segmentOverride)
           }
           onSegmentUnlink={(segmentId) =>
             handleSegmentUnlink(expandedBlock, segmentId)
@@ -762,15 +875,19 @@ export function CanvasClient({
       )}
 
       {/* Settings Modal */}
-      <CanvasSettingsModal
-        open={showSettings}
-        onOpenChange={setShowSettings}
-        canvasId={canvasId}
-        description={canvasData.description}
-        isPublic={canvasData.isPublic}
-        onSave={(updates) => saveCanvas(updates)}
-        onDelete={handleDelete}
-      />
+      {showSettings && (
+        <CanvasSettingsModal
+          open={showSettings}
+          onOpenChange={setShowSettings}
+          canvasId={canvasId}
+          description={canvasData.description}
+          isPublic={canvasData.isPublic}
+          textZoom={textZoom}
+          onTextZoomChange={(value) => setTextZoom(clampTextZoom(value))}
+          onSave={(updates) => saveCanvas(updates)}
+          onDelete={handleDelete}
+        />
+      )}
     </div>
   );
 }

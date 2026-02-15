@@ -9,6 +9,8 @@ interface CanvasSettingsModalProps {
   canvasId: string;
   description: string;
   isPublic: boolean;
+  textZoom: number;
+  onTextZoomChange: (zoom: number) => void;
   onSave: (updates: { description?: string; isPublic?: boolean }) => void;
   onDelete: () => void;
 }
@@ -18,6 +20,8 @@ export function CanvasSettingsModal({
   onOpenChange,
   description: initialDesc,
   isPublic: initialPublic,
+  textZoom,
+  onTextZoomChange,
   onSave,
   onDelete,
 }: CanvasSettingsModalProps) {
@@ -36,6 +40,38 @@ export function CanvasSettingsModal({
         <Dialog.Title size="4">Canvas Settings</Dialog.Title>
 
         <div className="flex flex-col gap-4 mt-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-foreground-muted uppercase tracking-wider">
+              Text Size
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="range"
+                min={85}
+                max={160}
+                step={5}
+                value={Math.round(textZoom * 100)}
+                onChange={(e) => {
+                  const next = Number.parseInt(e.target.value, 10) / 100;
+                  onTextZoomChange(next);
+                }}
+                className="w-full accent-[var(--chroma-indigo)]"
+              />
+              <span className="text-xs font-mono text-foreground-muted min-w-12 text-right">
+                {Math.round(textZoom * 100)}%
+              </span>
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => onTextZoomChange(1)}
+                className="ui-btn ui-btn-xs ui-btn-ghost"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <label className="text-xs text-foreground-muted uppercase tracking-wider">Description</label>
             <textarea

@@ -31,7 +31,7 @@ interface BlockFocusPanelProps {
   onSegmentCreate?: (data: { name: string; description?: string }) => Promise<Segment | null>;
   onSegmentUpdate?: (segmentId: number, updates: Partial<Segment>) => Promise<void>;
   onSegmentDelete?: (segmentId: number) => Promise<void>;
-  onSegmentLink?: (segmentId: number) => Promise<void>;
+  onSegmentLink?: (segmentId: number, segmentOverride?: Segment) => Promise<void>;
   onSegmentUnlink?: (segmentId: number) => Promise<void>;
   chatSection?: React.ReactNode;
 }
@@ -182,10 +182,12 @@ function LinkedSegmentsSection({
   newSegmentName,
   showLinkPicker,
   editingSegmentId,
+  pendingLinks,
   onSetCreating,
   onSetNewName,
   onSetShowLinkPicker,
   onSetEditingSegmentId,
+  onSetPendingLinks,
   onSegmentCreate,
   onSegmentUpdate,
   onSegmentDelete,
@@ -199,20 +201,38 @@ function LinkedSegmentsSection({
   newSegmentName: string;
   showLinkPicker: boolean;
   editingSegmentId: number | null;
+  pendingLinks: Set<number>;
   onSetCreating: (v: boolean) => void;
   onSetNewName: (v: string) => void;
   onSetShowLinkPicker: (v: boolean) => void;
   onSetEditingSegmentId: (v: number | null) => void;
+  onSetPendingLinks: (v: Set<number>) => void;
   onSegmentCreate: (data: { name: string; description?: string }) => Promise<Segment | null>;
   onSegmentUpdate?: (segmentId: number, updates: Partial<Segment>) => Promise<void>;
   onSegmentDelete?: (segmentId: number) => Promise<void>;
-  onSegmentLink?: (segmentId: number) => Promise<void>;
+  onSegmentLink?: (segmentId: number, segmentOverride?: Segment) => Promise<void>;
   onSegmentUnlink?: (segmentId: number) => Promise<void>;
 }) {
   const linked = block.linkedSegments ?? [];
   const unlinkable = allSegments?.filter(
     (s) => !linked.some((ls) => ls.id === s.id),
   ) ?? [];
+
+  const handleConfirmLinks = async () => {
+    if (!onSegmentLink || pendingLinks.size === 0) return;
+    for (const id of pendingLinks) {
+      await onSegmentLink(id);
+    }
+    onSetPendingLinks(new Set());
+    onSetShowLinkPicker(false);
+  };
+
+  const togglePendingLink = (id: number) => {
+    const next = new Set(pendingLinks);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    onSetPendingLinks(next);
+  };
 
   return (
     <div className="px-4 pb-3">
@@ -227,30 +247,33 @@ function LinkedSegmentsSection({
           )}
         </span>
         <div className="flex gap-2">
-          <button
-            onClick={() => {
-              onSetCreating(true);
-              onSetShowLinkPicker(false);
-            }}
-            className="text-[10px] text-foreground-muted/50 hover:text-foreground transition-colors"
-          >
-            + New
-          </button>
+          {blockType === "customer_segments" && (
+            <button
+              onClick={() => {
+                onSetCreating(true);
+                onSetShowLinkPicker(false);
+              }}
+              className="text-[10px] text-foreground-muted/50 hover:text-foreground transition-colors"
+            >
+              + New
+            </button>
+          )}
           {unlinkable.length > 0 && onSegmentLink && (
             <button
               onClick={() => {
                 onSetShowLinkPicker(!showLinkPicker);
                 onSetCreating(false);
+                onSetPendingLinks(new Set());
               }}
               className="text-[10px] text-foreground-muted/50 hover:text-foreground transition-colors"
             >
-              + Link
+              {showLinkPicker ? "Cancel" : "+ Link"}
             </button>
           )}
         </div>
       </div>
 
-      {/* Inline create */}
+      {/* Inline create (customer_segments only) */}
       {creatingSegment && (
         <div className="flex gap-1.5 mb-2">
           <input
@@ -262,7 +285,7 @@ function LinkedSegmentsSection({
             onKeyDown={async (e) => {
               if (e.key === "Enter" && newSegmentName.trim()) {
                 const seg = await onSegmentCreate({ name: newSegmentName.trim() });
-                if (seg && onSegmentLink) await onSegmentLink(seg.id);
+                if (seg && onSegmentLink) await onSegmentLink(seg.id, seg);
                 onSetNewName("");
                 onSetCreating(false);
               }
@@ -276,7 +299,7 @@ function LinkedSegmentsSection({
             onClick={async () => {
               if (!newSegmentName.trim()) return;
               const seg = await onSegmentCreate({ name: newSegmentName.trim() });
-              if (seg && onSegmentLink) await onSegmentLink(seg.id);
+              if (seg && onSegmentLink) await onSegmentLink(seg.id, seg);
               onSetNewName("");
               onSetCreating(false);
             }}
@@ -296,40 +319,69 @@ function LinkedSegmentsSection({
         </div>
       )}
 
-      {/* Link picker */}
+      {/* Multi-select link picker */}
       {showLinkPicker && onSegmentLink && (
-        <div className="mb-2 p-2 rounded-lg bg-white/3 border border-white/8 space-y-0.5 max-h-36 overflow-y-auto">
-          {unlinkable.length > 0 ? (
-            unlinkable.map((seg) => (
+        <div className="mb-2 rounded-lg bg-white/3 border border-white/8 overflow-hidden">
+          <div className="max-h-44 overflow-y-auto p-1 space-y-0.5">
+            {unlinkable.length > 0 ? (
+              unlinkable.map((seg) => {
+                const isSelected = pendingLinks.has(seg.id);
+                return (
+                  <button
+                    key={seg.id}
+                    onClick={() => togglePendingLink(seg.id)}
+                    className={`flex items-center gap-1.5 w-full text-left px-2 py-1.5 rounded transition-colors ${
+                      isSelected
+                        ? "bg-white/8 border border-white/15"
+                        : "hover:bg-white/5 border border-transparent"
+                    }`}
+                  >
+                    <span
+                      className={`w-3 h-3 rounded border shrink-0 flex items-center justify-center transition-colors ${
+                        isSelected
+                          ? "bg-[var(--chroma-indigo)] border-[var(--chroma-indigo)]"
+                          : "border-white/20"
+                      }`}
+                    >
+                      {isSelected && (
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </span>
+                    <span
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ background: priorityColor(seg.priorityScore) }}
+                    />
+                    <span className="text-xs text-foreground-muted truncate flex-1">
+                      {seg.name}
+                    </span>
+                    {seg.earlyAdopterFlag && (
+                      <span className="text-[8px] font-mono px-1 py-px rounded bg-emerald-400/10 text-emerald-400/70 shrink-0">
+                        EA
+                      </span>
+                    )}
+                  </button>
+                );
+              })
+            ) : (
+              <span className="text-[10px] text-foreground-muted/40 px-2 block py-1">
+                All segments are already linked
+              </span>
+            )}
+          </div>
+          {pendingLinks.size > 0 && (
+            <div className="px-2 py-1.5 border-t border-white/5 flex items-center justify-between">
+              <span className="text-[10px] text-foreground-muted/50">
+                {pendingLinks.size} selected
+              </span>
               <button
-                key={seg.id}
-                onClick={async () => {
-                  await onSegmentLink(seg.id);
-                  onSetShowLinkPicker(false);
-                }}
-                className="flex items-center gap-1.5 w-full text-left px-2 py-1 rounded hover:bg-white/5 transition-colors"
+                onClick={handleConfirmLinks}
+                className="text-[10px] px-2.5 py-1 rounded bg-[var(--chroma-indigo)]/20 text-[var(--chroma-indigo)] hover:bg-[var(--chroma-indigo)]/30 transition-colors font-medium"
               >
-                <span
-                  className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ background: priorityColor(seg.priorityScore) }}
-                />
-                <span className="text-xs text-foreground-muted truncate flex-1">
-                  {seg.name}
-                </span>
-                {seg.earlyAdopterFlag && (
-                  <span className="text-[8px] font-mono px-1 py-px rounded bg-emerald-400/10 text-emerald-400/70 shrink-0">
-                    EA
-                  </span>
-                )}
-                <span className="text-[9px] font-mono text-foreground-muted/40">
-                  {seg.priorityScore}
-                </span>
+                Link {pendingLinks.size} segment{pendingLinks.size > 1 ? "s" : ""}
               </button>
-            ))
-          ) : (
-            <span className="text-[10px] text-foreground-muted/40 px-2 block py-1">
-              All segments are already linked
-            </span>
+            </div>
           )}
         </div>
       )}
@@ -392,7 +444,7 @@ function LinkedSegmentsSection({
         </div>
       ) : !creatingSegment && !showLinkPicker ? (
         <div className="text-[11px] text-foreground-muted/40 py-2 text-center">
-          No segments linked yet. Create one or link existing.
+          No segments linked. Use "+ Link" to connect segments to this block.
         </div>
       ) : null}
     </div>
@@ -429,6 +481,7 @@ export function BlockFocusPanel({
   const [creatingSegment, setCreatingSegment] = useState(false);
   const [newSegmentName, setNewSegmentName] = useState("");
   const [editingSegmentId, setEditingSegmentId] = useState<number | null>(null);
+  const [pendingLinks, setPendingLinks] = useState<Set<number>>(new Set());
 
   // Resizable width
   const [width, setWidth] = useState(DEFAULT_WIDTH);
@@ -494,8 +547,8 @@ export function BlockFocusPanel({
 
         {/* Unified scrollable body — everything lives here */}
         <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
-          {/* For Customer Segments: show segments section first, outside collapse */}
-          {blockType === "customer_segments" && onSegmentCreate && (
+          {/* Segments section — shown for all blocks */}
+          {onSegmentCreate && (
             <LinkedSegmentsSection
               block={block}
               blockType={blockType}
@@ -504,10 +557,12 @@ export function BlockFocusPanel({
               newSegmentName={newSegmentName}
               showLinkPicker={showLinkPicker}
               editingSegmentId={editingSegmentId}
+              pendingLinks={pendingLinks}
               onSetCreating={setCreatingSegment}
               onSetNewName={setNewSegmentName}
               onSetShowLinkPicker={setShowLinkPicker}
               onSetEditingSegmentId={setEditingSegmentId}
+              onSetPendingLinks={setPendingLinks}
               onSegmentCreate={onSegmentCreate}
               onSegmentUpdate={onSegmentUpdate}
               onSegmentDelete={onSegmentDelete}
@@ -578,27 +633,6 @@ export function BlockFocusPanel({
               usage={block.lastUsage}
             />
 
-            {/* Segments Section for non-customer_segments blocks */}
-            {blockType !== "customer_segments" && onSegmentCreate && (
-              <LinkedSegmentsSection
-                block={block}
-                blockType={blockType}
-                allSegments={allSegments}
-                creatingSegment={creatingSegment}
-                newSegmentName={newSegmentName}
-                showLinkPicker={showLinkPicker}
-                editingSegmentId={editingSegmentId}
-                onSetCreating={setCreatingSegment}
-                onSetNewName={setNewSegmentName}
-                onSetShowLinkPicker={setShowLinkPicker}
-                onSetEditingSegmentId={setEditingSegmentId}
-                onSegmentCreate={onSegmentCreate}
-                onSegmentUpdate={onSegmentUpdate}
-                onSegmentDelete={onSegmentDelete}
-                onSegmentLink={onSegmentLink}
-                onSegmentUnlink={onSegmentUnlink}
-              />
-            )}
           </div>
 
           {/* Divider with collapse toggle */}

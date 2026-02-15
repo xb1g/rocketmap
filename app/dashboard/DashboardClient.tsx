@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { OnboardingModal } from "../components/OnboardingModal";
 import { QuickStats } from "../components/dashboard/QuickStats";
 import { CanvasCard } from "../components/dashboard/CanvasCard";
+import { AIGuidedModal } from "../components/dashboard/AIGuidedModal";
 import { Heading, Text } from "@radix-ui/themes";
 
 interface DashboardClientProps {
@@ -35,6 +36,7 @@ export function DashboardClient({
   stats,
 }: DashboardClientProps) {
   const [showOnboarding, setShowOnboarding] = useState(!onboardingCompleted);
+  const [showGuidedModal, setShowGuidedModal] = useState(false);
   const router = useRouter();
 
   const handleOnboardingComplete = async () => {
@@ -103,6 +105,10 @@ export function DashboardClient({
         isOpen={showOnboarding}
         onComplete={handleOnboardingComplete}
       />
+      <AIGuidedModal
+        open={showGuidedModal}
+        onOpenChange={setShowGuidedModal}
+      />
 
       <div style={{ marginBottom: "2rem" }}>
         <Heading
@@ -139,21 +145,47 @@ export function DashboardClient({
         <Heading size="4" style={{ fontFamily: "var(--font-display)" }}>
           Your Canvases
         </Heading>
-        <button className="quick-launch" onClick={handleNewCanvas}>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <button className="quick-launch" onClick={handleNewCanvas}>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Quick Canvas
+          </button>
+          <button
+            className="quick-launch"
+            onClick={() => setShowGuidedModal(true)}
+            style={{
+              background: 'linear-gradient(135deg, var(--chroma-indigo), var(--chroma-violet))',
+              borderColor: 'transparent',
+            }}
           >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          New Canvas
-        </button>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+            AI-Guided
+          </button>
+        </div>
       </div>
 
       {canvases.length > 0 ? (
@@ -196,21 +228,47 @@ export function DashboardClient({
             Start building your business model. Map out your assumptions,
             validate your ideas, and stress-test your startup.
           </Text>
-          <button className="quick-launch" onClick={handleNewCanvas}>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
+          <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
+            <button className="quick-launch" onClick={handleNewCanvas}>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Quick Canvas
+            </button>
+            <button
+              className="quick-launch"
+              onClick={() => setShowGuidedModal(true)}
+              style={{
+                background: 'linear-gradient(135deg, var(--chroma-indigo), var(--chroma-violet))',
+                borderColor: 'transparent',
+              }}
             >
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Create Canvas
-          </button>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+              AI-Guided
+            </button>
+          </div>
         </div>
       )}
     </>

@@ -117,6 +117,25 @@ export const analyzeCompetitors = tool({
   execute: async (params) => params,
 });
 
+// ─── Canvas Generation Tool ──────────────────────────────────────────────────
+
+export const generateCanvas = tool({
+  description: 'Generate a complete Business Model Canvas with content for all 9 blocks based on the startup idea discussed. Call this once you have enough context from the conversation.',
+  inputSchema: z.object({
+    title: z.string().min(3).describe('A concise title for the canvas (the startup or product name)'),
+    key_partnerships: z.string().min(10).describe('Key Partners block content'),
+    key_activities: z.string().min(10).describe('Key Activities block content'),
+    key_resources: z.string().min(10).describe('Key Resources block content'),
+    value_prop: z.string().min(10).describe('Value Propositions block content'),
+    customer_relationships: z.string().min(10).describe('Customer Relationships block content'),
+    channels: z.string().min(10).describe('Channels block content'),
+    customer_segments: z.string().min(10).describe('Customer Segments block content'),
+    cost_structure: z.string().min(10).describe('Cost Structure block content'),
+    revenue_streams: z.string().min(10).describe('Revenue Streams block content'),
+  }),
+  execute: async (params) => params,
+});
+
 // ─── Block Editing Tool ──────────────────────────────────────────────────────
 
 export const proposeBlockEdit = tool({
@@ -144,6 +163,7 @@ const allTools: Record<string, ReturnType<typeof tool<any, any>>> = {
   analyzeBlock,
   checkConsistency,
   proposeBlockEdit,
+  generateCanvas,
   estimateMarketSize,
   generateSegments,
   generatePersonas,
