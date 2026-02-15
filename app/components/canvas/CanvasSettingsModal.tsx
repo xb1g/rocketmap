@@ -53,28 +53,24 @@ export function CanvasSettingsModal({
             </div>
             <button
               onClick={() => setPub(!pub)}
-              className={`relative w-10 h-5 rounded-full transition-colors ${
-                pub ? 'bg-[var(--chroma-indigo)]' : 'bg-white/10'
-              }`}
+              className={`ui-switch ${pub ? 'is-on' : ''}`}
+              aria-pressed={pub}
+              title={pub ? 'Public enabled' : 'Public disabled'}
             >
-              <span
-                className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                  pub ? 'left-5' : 'left-0.5'
-                }`}
-              />
+              <span className="ui-switch-thumb" />
             </button>
           </div>
 
           <div className="flex justify-end gap-2 mt-2">
             <button
               onClick={() => onOpenChange(false)}
-              className="px-4 py-2 text-sm text-foreground-muted hover:text-foreground transition-colors"
+              className="ui-btn ui-btn-sm ui-btn-ghost"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 text-sm rounded-lg glass-morphism hover:bg-white/10 transition-colors"
+              className="ui-btn ui-btn-sm ui-btn-secondary"
             >
               Save
             </button>
@@ -87,7 +83,7 @@ export function CanvasSettingsModal({
             {!confirmDelete ? (
               <button
                 onClick={() => setConfirmDelete(true)}
-                className="px-4 py-2 text-sm text-[var(--state-critical)] border border-[var(--state-critical)]/20 rounded-lg hover:bg-[var(--state-critical)]/10 transition-colors"
+                className="ui-btn ui-btn-sm ui-btn-danger"
               >
                 Delete Canvas
               </button>
@@ -96,13 +92,13 @@ export function CanvasSettingsModal({
                 <span className="text-sm text-[var(--state-critical)]">Are you sure?</span>
                 <button
                   onClick={onDelete}
-                  className="px-4 py-2 text-sm bg-[var(--state-critical)] text-white rounded-lg hover:opacity-90 transition-opacity"
+                  className="ui-btn ui-btn-sm ui-btn-danger"
                 >
                   Yes, Delete
                 </button>
                 <button
                   onClick={() => setConfirmDelete(false)}
-                  className="px-4 py-2 text-sm text-foreground-muted hover:text-foreground transition-colors"
+                  className="ui-btn ui-btn-sm ui-btn-ghost"
                 >
                   Cancel
                 </button>

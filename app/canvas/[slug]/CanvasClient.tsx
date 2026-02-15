@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type {
   BlockData,
@@ -12,6 +12,7 @@ import type {
   AIAnalysis,
   AIUsage,
   MarketResearchData,
+  Segment,
 } from "@/lib/types/canvas";
 import type { ConsistencyData } from "@/app/components/canvas/ConsistencyReport";
 import { isSharedBlock } from "@/app/components/canvas/constants";
@@ -30,6 +31,7 @@ interface CanvasClientProps {
   canvasId: string;
   initialCanvasData: CanvasData;
   initialBlocks: BlockData[];
+  initialSegments?: Segment[];
 }
 
 type SaveStatus = "saved" | "saving" | "unsaved";
@@ -46,6 +48,7 @@ export function CanvasClient({
   canvasId,
   initialCanvasData,
   initialBlocks,
+  initialSegments = [],
 }: CanvasClientProps) {
   const router = useRouter();
   const [mode, setMode] = useState<CanvasMode>("bmc");
@@ -59,6 +62,9 @@ export function CanvasClient({
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [focusedBlock, setFocusedBlock] = useState<BlockType | null>(null);
   const [expandedBlock, setExpandedBlock] = useState<BlockType | null>(null);
+  const [chatTargetBlock, setChatTargetBlock] = useState<BlockType | null>(null);
+  const [chatDocked, setChatDocked] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const [activeTab, setActiveTab] = useState<CanvasTab>("canvas");
   const [canvasData, setCanvasData] = useState<CanvasData>(initialCanvasData);
   const [showSettings, setShowSettings] = useState(false);
@@ -68,10 +74,31 @@ export function CanvasClient({
     useState<ConsistencyData | null>(null);
   const [isCheckingConsistency, setIsCheckingConsistency] = useState(false);
   const [notes, setNotes] = useState(initialCanvasData.description);
+  const [segments, setSegments] = useState<Map<number, Segment>>(() => {
+    const map = new Map<number, Segment>();
+    for (const seg of initialSegments) {
+      map.set(seg.id, seg);
+    }
+    return map;
+  });
 
   const saveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
   );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const apply = () => setIsDesktop(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    if (expandedBlock) {
+      setChatDocked(false);
+    }
+  }, [expandedBlock]);
 
   // Save block content
   const saveBlock = useCallback(
@@ -303,55 +330,50 @@ export function CanvasClient({
     [],
   );
 
-  // Handle accepted block edits from AI chat
+  // Handle accepted block edit from AI chat (single edit at a time)
   const handleAcceptEdit = useCallback(
-    async (_proposalId: string, edits: BlockEditProposal[]) => {
-      // Build content updates for all edits
-      const updates: { blockType: BlockType; newContent: { bmc: string; lean: string } }[] = [];
+    async (_proposalId: string, edit: BlockEditProposal) => {
+      const existing = blocks.get(edit.blockType);
+      if (!existing) return;
 
-      for (const edit of edits) {
-        const existing = blocks.get(edit.blockType);
-        if (!existing) continue;
+      let newContent = { ...existing.content };
 
-        let newContent = { ...existing.content };
-
-        if (edit.mode === "both" || isSharedBlock(edit.blockType)) {
-          newContent = { bmc: edit.newContent, lean: edit.newContent };
-        } else if (edit.mode === "lean") {
-          newContent = { ...newContent, lean: edit.newContent };
-        } else {
-          newContent = { ...newContent, bmc: edit.newContent };
-        }
-
-        // Update local state immediately (optimistic)
-        setBlocks((prev) => {
-          const next = new Map(prev);
-          next.set(edit.blockType, { ...existing, content: newContent });
-          return next;
-        });
-
-        updates.push({ blockType: edit.blockType, newContent });
+      if (edit.mode === "both" || isSharedBlock(edit.blockType)) {
+        newContent = { bmc: edit.newContent, lean: edit.newContent };
+      } else if (edit.mode === "lean") {
+        newContent = { ...newContent, lean: edit.newContent };
+      } else {
+        newContent = { ...newContent, bmc: edit.newContent };
       }
 
-      // Persist all edits to server in parallel, then re-analyze
-      await Promise.all(
-        updates.map((u) => saveBlock(u.blockType, u.newContent)),
-      );
+      // Update local state immediately (optimistic)
+      setBlocks((prev) => {
+        const next = new Map(prev);
+        next.set(edit.blockType, { ...existing, content: newContent });
+        return next;
+      });
 
-      // Re-analyze all edited blocks in parallel (after saves complete)
-      updates.forEach((u) => handleAnalyze(u.blockType));
+      // Persist to server, then re-analyze
+      await saveBlock(edit.blockType, newContent);
+      handleAnalyze(edit.blockType);
     },
     [blocks, saveBlock, handleAnalyze],
   );
 
-  const handleRejectEdit = useCallback((_proposalId: string) => {
+  const handleRejectEdit = useCallback(() => {
     // No-op — UI handles the visual feedback
   }, []);
 
   // Check if all blocks have meaningful content (gate for deep-dive AI)
   const allBlocksFilled = (() => {
     for (const [type, b] of blocks) {
-      const content = (isSharedBlock(type) ? b.content.bmc : mode === "lean" ? b.content.lean : b.content.bmc).trim();
+      const content = (
+        isSharedBlock(type)
+          ? b.content.bmc
+          : mode === "lean"
+            ? b.content.lean
+            : b.content.bmc
+      ).trim();
       if (content.length < 10) return false;
     }
     return blocks.size >= 9;
@@ -360,7 +382,13 @@ export function CanvasClient({
   const filledCount = (() => {
     let count = 0;
     for (const [type, b] of blocks) {
-      const content = (isSharedBlock(type) ? b.content.bmc : mode === "lean" ? b.content.lean : b.content.bmc).trim();
+      const content = (
+        isSharedBlock(type)
+          ? b.content.bmc
+          : mode === "lean"
+            ? b.content.lean
+            : b.content.bmc
+      ).trim();
       if (content.length >= 10) count++;
     }
     return count;
@@ -373,9 +401,15 @@ export function CanvasClient({
   const deepDiveBlockData = deepDiveBlock
     ? blocks.get(deepDiveBlock)
     : undefined;
+  const activeChatBlock = expandedBlock ?? chatTargetBlock;
+  const reservedRightSpace =
+    chatDocked && isDesktop && !expandedBlock ? "460px" : undefined;
 
   return (
-    <div className="flex flex-col h-screen p-5 gap-3">
+    <div
+      className="flex flex-col h-screen p-5 gap-3 transition-[padding-right] duration-300 ease-out"
+      style={{ paddingRight: reservedRightSpace }}
+    >
       <CanvasToolbar
         title={canvasData.title}
         mode={mode}
@@ -393,11 +427,15 @@ export function CanvasClient({
           mode={mode}
           blocks={blocks}
           focusedBlock={focusedBlock}
+          analyzingBlock={analyzingBlock}
+          chatTargetBlock={activeChatBlock}
           dimmed={!!expandedBlock}
           onBlockChange={handleBlockChange}
           onBlockFocus={setFocusedBlock}
           onBlockBlur={() => setFocusedBlock(null)}
           onBlockExpand={setExpandedBlock}
+          onBlockAddToChat={setChatTargetBlock}
+          onBlockAnalyze={handleAnalyze}
         />
       )}
 
@@ -443,7 +481,13 @@ export function CanvasClient({
       {/* Chat Bar */}
       <ChatBar
         canvasId={canvasId}
-        expandedBlock={expandedBlock}
+        chatBlock={activeChatBlock}
+        docked={expandedBlock ? false : chatDocked}
+        onDockedChange={(next) => {
+          if (!expandedBlock) {
+            setChatDocked(next);
+          }
+        }}
         onAcceptEdit={handleAcceptEdit}
         onRejectEdit={handleRejectEdit}
       />

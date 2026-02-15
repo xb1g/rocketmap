@@ -75,15 +75,19 @@ export function MarketValidationModule({ data, isGenerating, aiEnabled = true, o
       <button
         onClick={onGenerate}
         disabled={isGenerating || !aiEnabled}
-        className={`w-full px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${
+        className={`ui-btn ui-btn-sm ui-btn-block ${
           isGenerating
-            ? 'glow-ai text-[var(--state-ai)] border border-[var(--state-ai)]/20'
+            ? "ui-btn-secondary glow-ai text-[var(--state-ai)]"
             : !aiEnabled
-              ? 'glass-morphism text-foreground-muted/40 cursor-not-allowed'
-              : 'glass-morphism hover:bg-white/10 text-foreground-muted hover:text-foreground'
+              ? "ui-btn-ghost text-foreground-muted/40 cursor-not-allowed"
+              : "ui-btn-secondary text-foreground-muted hover:text-foreground"
         }`}
       >
-        {isGenerating ? 'Validating estimates...' : !aiEnabled ? 'Fill all blocks to unlock AI' : 'Validate Estimates with AI'}
+        {isGenerating
+          ? "Validating estimates..."
+          : !aiEnabled
+            ? "Fill all blocks to unlock AI"
+            : "Validate Estimates with AI"}
       </button>
 
       {current.validations.length > 0 && (

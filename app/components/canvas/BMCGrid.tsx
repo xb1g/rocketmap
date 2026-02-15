@@ -8,22 +8,30 @@ interface BMCGridProps {
   mode: CanvasMode;
   blocks: Map<BlockType, BlockData>;
   focusedBlock: BlockType | null;
+  analyzingBlock: BlockType | null;
+  chatTargetBlock: BlockType | null;
   dimmed: boolean;
   onBlockChange: (blockType: BlockType, value: string) => void;
   onBlockFocus: (blockType: BlockType) => void;
   onBlockBlur: () => void;
   onBlockExpand: (blockType: BlockType) => void;
+  onBlockAddToChat: (blockType: BlockType) => void;
+  onBlockAnalyze: (blockType: BlockType) => void;
 }
 
 export function BMCGrid({
   mode,
   blocks,
   focusedBlock,
+  analyzingBlock,
+  chatTargetBlock,
   dimmed,
   onBlockChange,
   onBlockFocus,
   onBlockBlur,
   onBlockExpand,
+  onBlockAddToChat,
+  onBlockAnalyze,
 }: BMCGridProps) {
   return (
     <div className={`bmc-grid ${dimmed ? 'opacity-40 pointer-events-none' : ''}`} style={{ transition: 'opacity 300ms ease' }}>
@@ -41,12 +49,16 @@ export function BMCGrid({
             value={value}
             state={block?.state ?? 'calm'}
             isFocused={focusedBlock === def.type}
+            isAnalyzing={analyzingBlock === def.type}
+            isChatTarget={chatTargetBlock === def.type}
             confidenceScore={block?.confidenceScore ?? 0}
             hasAnalysis={!!block?.aiAnalysis}
             onChange={(v) => onBlockChange(def.type, v)}
             onFocus={() => onBlockFocus(def.type)}
             onBlur={onBlockBlur}
             onExpand={() => onBlockExpand(def.type)}
+            onAddToChat={() => onBlockAddToChat(def.type)}
+            onAnalyze={() => onBlockAnalyze(def.type)}
           />
         );
       })}

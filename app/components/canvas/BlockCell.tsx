@@ -1,7 +1,116 @@
-'use client';
+"use client";
 
-import type { BlockDefinition, BlockState, CanvasMode } from '@/lib/types/canvas';
-import { BlockTooltip } from './BlockTooltip';
+import { useEffect, useRef, useState } from "react";
+import type {
+  BlockDefinition,
+  BlockState,
+  BlockType,
+  CanvasMode,
+} from "@/lib/types/canvas";
+import { BlockTooltip } from "./BlockTooltip";
+
+const BLOCK_ABBREVIATIONS: Record<
+  BlockType,
+  { bmc: string; lean: string }
+> = {
+  key_partnerships: { bmc: "KP", lean: "PROB" },
+  key_activities: { bmc: "KA", lean: "SOL" },
+  key_resources: { bmc: "KR", lean: "KM" },
+  value_prop: { bmc: "VP", lean: "UVP" },
+  customer_relationships: { bmc: "CR", lean: "UA" },
+  channels: { bmc: "CH", lean: "CH" },
+  customer_segments: { bmc: "CS", lean: "CS" },
+  cost_structure: { bmc: "COST", lean: "COST" },
+  revenue_streams: { bmc: "REV", lean: "REV" },
+};
+
+const COMPACT_WIDTH_PX = 150;
+
+function BlockTypeIcon({ type }: { type: BlockType }) {
+  const common = {
+    width: 11,
+    height: 11,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
+  switch (type) {
+    case "key_partnerships":
+      return (
+        <svg {...common}>
+          <path d="M10 13a5 5 0 0 1 0-7l2-2a5 5 0 1 1 7 7l-1 1" />
+          <path d="M14 11a5 5 0 0 1 0 7l-2 2a5 5 0 1 1-7-7l1-1" />
+        </svg>
+      );
+    case "key_activities":
+      return (
+        <svg {...common}>
+          <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" />
+        </svg>
+      );
+    case "key_resources":
+      return (
+        <svg {...common}>
+          <ellipse cx="12" cy="5" rx="7" ry="3" />
+          <path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5" />
+          <path d="M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" />
+        </svg>
+      );
+    case "value_prop":
+      return (
+        <svg {...common}>
+          <path d="m12 3 1.7 4.4L18 9.1l-4.3 1.7L12 15l-1.7-4.2L6 9.1l4.3-1.7L12 3z" />
+        </svg>
+      );
+    case "customer_relationships":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="8" r="3" />
+          <path d="M5 20a7 7 0 0 1 14 0" />
+        </svg>
+      );
+    case "channels":
+      return (
+        <svg {...common}>
+          <path d="M3 11v2a4 4 0 0 0 4 4h2" />
+          <path d="M3 7v2a8 8 0 0 0 8 8h2" />
+          <path d="M3 3v2a12 12 0 0 0 12 12h2" />
+        </svg>
+      );
+    case "customer_segments":
+      return (
+        <svg {...common}>
+          <circle cx="9" cy="8" r="2.5" />
+          <circle cx="16" cy="9.5" r="2" />
+          <path d="M4.5 20a5 5 0 0 1 9 0" />
+          <path d="M14 20a4 4 0 0 1 6 0" />
+        </svg>
+      );
+    case "cost_structure":
+      return (
+        <svg {...common}>
+          <path d="M3 7h18v10H3z" />
+          <path d="M7 11h10" />
+          <path d="M9 15h3" />
+        </svg>
+      );
+    case "revenue_streams":
+      return (
+        <svg {...common}>
+          <path d="M4 19h16" />
+          <path d="M7 15v-3" />
+          <path d="M12 15V9" />
+          <path d="M17 15V6" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
 
 interface BlockCellProps {
   definition: BlockDefinition;
@@ -9,12 +118,16 @@ interface BlockCellProps {
   value: string;
   state: BlockState;
   isFocused: boolean;
+  isAnalyzing: boolean;
+  isChatTarget: boolean;
   confidenceScore: number;
   hasAnalysis: boolean;
   onChange: (value: string) => void;
   onFocus: () => void;
   onBlur: () => void;
   onExpand: () => void;
+  onAddToChat: () => void;
+  onAnalyze: () => void;
 }
 
 export function BlockCell({
@@ -23,39 +136,159 @@ export function BlockCell({
   value,
   state,
   isFocused,
+  isAnalyzing,
+  isChatTarget,
   confidenceScore,
   hasAnalysis,
   onChange,
   onFocus,
   onBlur,
   onExpand,
+  onAddToChat,
+  onAnalyze,
 }: BlockCellProps) {
+  const cellRef = useRef<HTMLDivElement>(null);
+  const [isCompact, setIsCompact] = useState(false);
+
+  useEffect(() => {
+    const node = cellRef.current;
+    if (!node) return;
+
+    const updateCompact = () => {
+      setIsCompact(node.clientWidth < COMPACT_WIDTH_PX);
+    };
+    updateCompact();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver(updateCompact);
+      observer.observe(node);
+      return () => observer.disconnect();
+    }
+
+    window.addEventListener("resize", updateCompact);
+    return () => window.removeEventListener("resize", updateCompact);
+  }, []);
+
   const label =
-    mode === 'lean' && definition.leanLabel
+    mode === "lean" && definition.leanLabel
       ? definition.leanLabel
       : definition.bmcLabel;
+  const abbreviatedLabel =
+    mode === "lean"
+      ? BLOCK_ABBREVIATIONS[definition.type].lean
+      : BLOCK_ABBREVIATIONS[definition.type].bmc;
+  const useAbbreviation = isCompact;
+  const displayLabel = useAbbreviation ? abbreviatedLabel : label;
 
-  const showLeanChip =
-    mode === 'lean' && definition.leanLabel !== null;
+  const showLeanChip = mode === "lean" && definition.leanLabel !== null;
+  const showActions = isFocused || isChatTarget || isAnalyzing;
 
   return (
     <div
-      className={`bmc-cell glass-morphism state-transition glow-${state} ${
-        isFocused ? 'ring-1 ring-(--chroma-indigo)/30' : ''
+      ref={cellRef}
+      className={`bmc-cell group relative glass-morphism state-transition glow-${state} ${
+        isFocused ? "ring-1 ring-[var(--chroma-indigo)]/30" : ""
       }`}
       style={{
         gridColumn: definition.gridCol,
         gridRow: definition.gridRow,
       }}
     >
+      <div className={`block-cell-actions ${showActions ? "is-visible" : ""}`}>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onExpand();
+          }}
+          className="block-action-btn"
+          aria-label={`Expand ${label}`}
+          title="Expand"
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="15 3 21 3 21 9" />
+            <polyline points="9 21 3 21 3 15" />
+            <line x1="21" y1="3" x2="14" y2="10" />
+            <line x1="3" y1="21" x2="10" y2="14" />
+          </svg>
+          <span>Expand</span>
+        </button>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddToChat();
+          }}
+          className={`block-action-btn ${isChatTarget ? "is-active" : ""}`}
+          aria-label={`Add ${label} to chat`}
+          title="Add to Canvas Chat"
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+            <line x1="8" y1="11" x2="16" y2="11" />
+          </svg>
+          <span>{isChatTarget ? "In Chat" : "Add to Chat"}</span>
+        </button>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAnalyze();
+          }}
+          className="block-action-btn"
+          disabled={isAnalyzing}
+          aria-label={`Test ${label} with AI`}
+          title="Test with AI"
+        >
+          {isAnalyzing ? (
+            <span className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
+          ) : (
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 3l1.7 4.4L18 9.1l-4.3 1.7L12 15l-1.7-4.2L6 9.1l4.3-1.7L12 3z" />
+              <path d="M18 14l.9 2.2L21 17l-2.1.8L18 20l-.8-2.2L15 17l2.2-.8L18 14z" />
+            </svg>
+          )}
+          <span>{isAnalyzing ? "Testing..." : "Test with AI"}</span>
+        </button>
+      </div>
+
       <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1">
         <BlockTooltip definition={definition} mode={mode}>
-          <span className="font-display-small uppercase tracking-wider text-foreground-muted cursor-help decoration-dotted underline-offset-4 hover:decoration-solid hover:text-foreground transition-all">
-            {label}
+          <span className="inline-flex items-center gap-1 font-display-small uppercase tracking-wider text-foreground-muted cursor-help decoration-dotted underline-offset-4 hover:decoration-solid hover:text-foreground transition-all">
+            <span className="w-4 h-4 rounded-md border border-white/12 bg-white/5 text-foreground-muted/70 shrink-0 inline-flex items-center justify-center">
+              <BlockTypeIcon type={definition.type} />
+            </span>
+            <span>{displayLabel}</span>
           </span>
         </BlockTooltip>
         {showLeanChip && (
-          <span className="text-[8px] font-mono uppercase tracking-wider px-1.5 py-px rounded-full bg-(--chroma-indigo)/10 text-(--chroma-indigo) border border-(--chroma-indigo)/20">
+          <span className="text-[8px] font-mono uppercase tracking-wider px-1.5 py-px rounded-full bg-[var(--chroma-indigo)]/10 text-[var(--chroma-indigo)] border border-[var(--chroma-indigo)]/20">
             Lean
           </span>
         )}
@@ -64,29 +297,16 @@ export function BlockCell({
           <span
             className="w-1.5 h-1.5 rounded-full shrink-0"
             style={{
-              background: confidenceScore >= 0.7
-                ? 'var(--state-healthy)'
-                : confidenceScore >= 0.4
-                  ? 'var(--state-warning)'
-                  : 'var(--state-critical)',
+              background:
+                confidenceScore >= 0.7
+                  ? "var(--state-healthy)"
+                  : confidenceScore >= 0.4
+                    ? "var(--state-warning)"
+                    : "var(--state-critical)",
             }}
             title={`${Math.round(confidenceScore * 100)}% confidence`}
           />
         )}
-        <button
-          onClick={(e) => { e.stopPropagation(); onExpand(); }}
-          className="text-foreground-muted hover:text-foreground transition-colors p-0.5 opacity-0 group-hover:opacity-100 focus:opacity-100"
-          style={{ opacity: isFocused ? 1 : undefined }}
-          aria-label={`Expand ${label}`}
-          title="Expand"
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 3 21 3 21 9" />
-            <polyline points="9 21 3 21 3 15" />
-            <line x1="21" y1="3" x2="14" y2="10" />
-            <line x1="3" y1="21" x2="10" y2="14" />
-          </svg>
-        </button>
       </div>
       <textarea
         className="bmc-cell-textarea"

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import type { CanvasMode } from '@/lib/types/canvas';
-import { InlineEditableTitle } from './InlineEditableTitle';
+import Link from "next/link";
+import type { CanvasMode } from "@/lib/types/canvas";
+import { InlineEditableTitle } from "./InlineEditableTitle";
 
-type SaveStatus = 'saved' | 'saving' | 'unsaved';
+type SaveStatus = "saved" | "saving" | "unsaved";
 
 interface CanvasToolbarProps {
   title: string;
@@ -37,11 +37,20 @@ export function CanvasToolbar({
         <InlineEditableTitle value={title} onSave={onTitleChange} />
         <button
           onClick={onSettingsOpen}
-          className="text-foreground-muted hover:text-foreground transition-colors text-sm p-1"
+          className="ui-btn ui-btn-xs ui-btn-ghost"
           aria-label="Canvas settings"
           title="Settings"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <circle cx="12" cy="12" r="3" />
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
           </svg>
@@ -49,46 +58,38 @@ export function CanvasToolbar({
       </div>
 
       {/* Center: mode toggle */}
-      <div className="flex items-center rounded-lg border border-white/10 p-0.5 bg-white/[0.02]">
+      <div className="ui-segmented">
         <button
-          onClick={() => onModeChange('bmc')}
-          className={`px-3 py-1 font-display-small text-[10px] rounded-md transition-all ${
-            mode === 'bmc'
-              ? 'glass-morphism text-foreground border border-white/10 shadow-sm'
-              : 'text-foreground-muted hover:text-foreground'
-          }`}
+          onClick={() => onModeChange("bmc")}
+          className={`ui-segmented-btn ${mode === "bmc" ? "is-active" : ""}`}
         >
           BMC
         </button>
         <button
-          onClick={() => onModeChange('lean')}
-          className={`px-3 py-1 font-display-small text-[10px] rounded-md transition-all ${
-            mode === 'lean'
-              ? 'glass-morphism text-foreground border border-white/10 shadow-sm'
-              : 'text-foreground-muted hover:text-foreground'
-          }`}
+          onClick={() => onModeChange("lean")}
+          className={`ui-segmented-btn ${mode === "lean" ? "is-active" : ""}`}
         >
           Lean
         </button>
       </div>
 
       {/* Right: save status */}
-      <div className="flex items-center gap-1.5 font-mono text-[10px] text-foreground-muted min-w-[80px] justify-end">
-        {saveStatus === 'saved' && (
+      <div className="flex items-center gap-1.5 font-mono text-[10px] text-foreground-muted min-w-20 justify-end">
+        {saveStatus === "saved" && (
           <>
-            <span className="text-[var(--state-healthy)]">&#10003;</span>
+            <span className="text-(--state-healthy)">&#10003;</span>
             <span className="uppercase tracking-wider">Saved</span>
           </>
         )}
-        {saveStatus === 'saving' && (
+        {saveStatus === "saving" && (
           <>
             <span className="animate-spin inline-block w-2.5 h-2.5 border border-foreground-muted border-t-transparent rounded-full" />
             <span className="uppercase tracking-wider">Saving</span>
           </>
         )}
-        {saveStatus === 'unsaved' && (
+        {saveStatus === "unsaved" && (
           <>
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--state-warning)]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-(--state-warning)" />
             <span className="uppercase tracking-wider">Unsaved</span>
           </>
         )}

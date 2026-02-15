@@ -115,15 +115,19 @@ export function SegmentationModule({ data, isGenerating, aiEnabled = true, onGen
       <button
         onClick={onGenerate}
         disabled={isGenerating || !aiEnabled}
-        className={`w-full px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${
+        className={`ui-btn ui-btn-sm ui-btn-block ${
           isGenerating
-            ? 'glow-ai text-[var(--state-ai)] border border-[var(--state-ai)]/20'
+            ? "ui-btn-secondary glow-ai text-[var(--state-ai)]"
             : !aiEnabled
-              ? 'glass-morphism text-foreground-muted/40 cursor-not-allowed'
-              : 'glass-morphism hover:bg-white/10 text-foreground-muted hover:text-foreground'
+              ? "ui-btn-ghost text-foreground-muted/40 cursor-not-allowed"
+              : "ui-btn-secondary text-foreground-muted hover:text-foreground"
         }`}
       >
-        {isGenerating ? 'Generating segments...' : !aiEnabled ? 'Fill all blocks to unlock AI' : 'Generate Segments with AI'}
+        {isGenerating
+          ? "Generating segments..."
+          : !aiEnabled
+            ? "Fill all blocks to unlock AI"
+            : "Generate Segments with AI"}
       </button>
 
       {current.segments.length > 0 && (
@@ -141,7 +145,7 @@ export function SegmentationModule({ data, isGenerating, aiEnabled = true, onGen
 
       <button
         onClick={handleAdd}
-        className="w-full px-3 py-2 text-xs text-foreground-muted hover:text-foreground border border-dashed border-white/10 hover:border-white/20 rounded-lg transition-colors"
+        className="ui-btn ui-btn-xs ui-btn-block ui-btn-ghost text-foreground-muted hover:text-foreground border-dashed"
       >
         + Add segment manually
       </button>

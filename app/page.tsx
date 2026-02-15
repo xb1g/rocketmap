@@ -297,7 +297,7 @@ function LandingContent() {
                   </span>
                 </div>
                 <div className={styles.miniGrid}>
-                  {BMC_BLOCKS.slice(0, 4).map((block, index) => (
+                  {BMC_BLOCKS.slice(0, 4).map((block) => (
                     <div
                       key={block.label}
                       className={`${styles.miniBlock} ${TONE_CLASS[block.tone]}`}
@@ -327,7 +327,7 @@ function LandingContent() {
             </h2>
             <p className={styles.featureDescription}>
               AI analyzes relationships across all 9 canvas blocks. If your
-              channels dont reach your segments, or revenue doesn't cover
+              channels don&apos;t reach your segments, or revenue doesn&apos;t cover
               costs—we catch it.
             </p>
             <ul className={styles.featureList}>

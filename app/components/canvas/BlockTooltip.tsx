@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Tooltip } from '@radix-ui/themes';
-import type { BlockDefinition, CanvasMode } from '@/lib/types/canvas';
+import React from "react";
+import { Tooltip } from "@radix-ui/themes";
+import type { BlockDefinition, CanvasMode } from "@/lib/types/canvas";
 
 interface BlockTooltipProps {
   definition: BlockDefinition;
@@ -10,8 +10,13 @@ interface BlockTooltipProps {
   children: React.ReactElement;
 }
 
-export function BlockTooltip({ definition, mode, children }: BlockTooltipProps) {
-  const tooltipBody = mode === 'lean' ? definition.tooltip.lean : definition.tooltip.bmc;
+export function BlockTooltip({
+  definition,
+  mode,
+  children,
+}: BlockTooltipProps) {
+  const tooltipBody =
+    mode === "lean" ? definition.tooltip.lean : definition.tooltip.bmc;
   const tooltipAI = definition.tooltip.ai;
 
   const tooltipContent = (
@@ -20,19 +25,15 @@ export function BlockTooltip({ definition, mode, children }: BlockTooltipProps) 
         {tooltipBody}
       </div>
       <div className="flex items-start gap-2 mt-1 pt-1.5 border-t border-white/10">
-        <div className="text-[9px] font-bold px-1 py-px rounded bg-(--chroma-cyan)/20 text-(--chroma-cyan) border border-(--chroma-cyan)/30 uppercase tracking-tighter mt-0.5">
+        <div className="text-[9px] font-bold px-1 py-px rounded bg-[var(--chroma-cyan)]/20 text-[var(--chroma-cyan)] border border-[var(--chroma-cyan)]/30 uppercase tracking-tighter mt-0.5">
           AI
         </div>
-        <div className="text-[11px] italic text-(--chroma-cyan)/90 leading-tight">
+        <div className="text-[11px] italic text-[var(--chroma-cyan)]/90 leading-tight">
           {tooltipAI}
         </div>
       </div>
     </div>
   );
 
-  return (
-    <Tooltip content={tooltipContent}>
-      {children}
-    </Tooltip>
-  );
+  return <Tooltip content={tooltipContent}>{children}</Tooltip>;
 }

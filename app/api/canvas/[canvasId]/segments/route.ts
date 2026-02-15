@@ -1,0 +1,101 @@
+import { NextResponse } from 'next/server';
+import { ID, Query } from 'node-appwrite';
+import { requireAuth } from '@/lib/appwrite-server';
+import {
+  serverDatabases,
+  DATABASE_ID,
+  CANVASES_COLLECTION_ID,
+  SEGMENTS_COLLECTION_ID,
+} from '@/lib/appwrite';
+
+interface RouteContext {
+  params: Promise<{ canvasId: string }>;
+}
+
+async function verifyCanvasOwnership(canvasId: string, userId: string) {
+  const canvas = await serverDatabases.getDocument(
+    DATABASE_ID,
+    CANVASES_COLLECTION_ID,
+    canvasId,
+  );
+  if (canvas.ownerId !== userId) {
+    throw new Error('Forbidden');
+  }
+  return canvas.id as number;
+}
+
+export async function GET(_request: Request, context: RouteContext) {
+  try {
+    const user = await requireAuth();
+    const { canvasId } = await context.params;
+    const businessModelId = await verifyCanvasOwnership(canvasId, user.$id);
+
+    const result = await serverDatabases.listDocuments(
+      DATABASE_ID,
+      SEGMENTS_COLLECTION_ID,
+      [
+        Query.equal('businessModelId', businessModelId),
+        Query.orderDesc('priorityScore'),
+        Query.limit(100),
+      ],
+    );
+
+    return NextResponse.json({ segments: result.documents });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message === 'Unauthorized') {
+      return NextResponse.json({ error: message }, { status: 401 });
+    }
+    if (message === 'Forbidden') {
+      return NextResponse.json({ error: message }, { status: 403 });
+    }
+    console.error('List segments error:', message);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request, context: RouteContext) {
+  try {
+    const user = await requireAuth();
+    const { canvasId } = await context.params;
+    const businessModelId = await verifyCanvasOwnership(canvasId, user.$id);
+    const body = await request.json();
+
+    const { name, description, earlyAdopterFlag, priorityScore, demographics, psychographics, behavioral, geographic, estimatedSize } = body;
+
+    if (!name || typeof name !== 'string') {
+      return NextResponse.json({ error: 'name is required' }, { status: 400 });
+    }
+
+    const doc = await serverDatabases.createDocument(
+      DATABASE_ID,
+      SEGMENTS_COLLECTION_ID,
+      ID.unique(),
+      {
+        id: Date.now(),
+        businessModelId,
+        name,
+        description: description ?? '',
+        earlyAdopterFlag: earlyAdopterFlag ?? false,
+        priorityScore: priorityScore ?? 50,
+        demographics: demographics ?? '',
+        psychographics: psychographics ?? '',
+        behavioral: behavioral ?? '',
+        geographic: geographic ?? '',
+        estimatedSize: estimatedSize ?? '',
+      },
+    );
+
+    return NextResponse.json({ segment: doc }, { status: 201 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message === 'Unauthorized') {
+      return NextResponse.json({ error: message }, { status: 401 });
+    }
+    if (message === 'Forbidden') {
+      return NextResponse.json({ error: message }, { status: 403 });
+    }
+    console.error('Create segment error:', message);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}

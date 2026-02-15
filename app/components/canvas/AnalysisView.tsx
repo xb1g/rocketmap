@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import type { BlockData, BlockType, CanvasMode } from '@/lib/types/canvas';
-import { BLOCK_DEFINITIONS } from './constants';
-import { ConsistencyReport, type ConsistencyData } from './ConsistencyReport';
-import { BlockTooltip } from './BlockTooltip';
+import type { BlockData, BlockType, CanvasMode } from "@/lib/types/canvas";
+import { BLOCK_DEFINITIONS } from "./constants";
+import { ConsistencyReport, type ConsistencyData } from "./ConsistencyReport";
+import { BlockTooltip } from "./BlockTooltip";
 
 interface AnalysisViewProps {
   blocks: Map<BlockType, BlockData>;
@@ -15,7 +15,10 @@ interface AnalysisViewProps {
 
 function BlockSummary({ block, mode }: { block: BlockData; mode: CanvasMode }) {
   const def = BLOCK_DEFINITIONS.find((d) => d.type === block.blockType);
-  const label = mode === 'lean' && def?.leanLabel ? def.leanLabel : def?.bmcLabel ?? block.blockType;
+  const label =
+    mode === "lean" && def?.leanLabel
+      ? def.leanLabel
+      : def?.bmcLabel ?? block.blockType;
   const hasAnalysis = !!block.aiAnalysis;
 
   return (
@@ -35,23 +38,28 @@ function BlockSummary({ block, mode }: { block: BlockData; mode: CanvasMode }) {
             <span
               className="w-1.5 h-1.5 rounded-full"
               style={{
-                background: block.confidenceScore >= 0.7
-                  ? 'var(--state-healthy)'
-                  : block.confidenceScore >= 0.4
-                    ? 'var(--state-warning)'
-                    : 'var(--state-critical)',
+                background:
+                  block.confidenceScore >= 0.7
+                    ? "var(--state-healthy)"
+                    : block.confidenceScore >= 0.4
+                      ? "var(--state-warning)"
+                      : "var(--state-critical)",
               }}
             />
           )}
           <span className="text-[10px] text-foreground-muted">
-            {hasAnalysis ? `${Math.round(block.confidenceScore * 100)}%` : 'Not analyzed'}
+            {hasAnalysis
+              ? `${Math.round(block.confidenceScore * 100)}%`
+              : "Not analyzed"}
           </span>
         </div>
       </div>
       {hasAnalysis && block.aiAnalysis && (
         <div className="flex gap-3 text-[10px] text-foreground-muted">
           <span>{block.aiAnalysis.assumptions.length} assumptions</span>
-          <span className="text-(--state-critical)">{block.aiAnalysis.risks.length} risks</span>
+          <span className="text-[var(--state-critical)]">
+            {block.aiAnalysis.risks.length} risks
+          </span>
           <span>{block.aiAnalysis.questions.length} questions</span>
         </div>
       )}
@@ -66,7 +74,9 @@ export function AnalysisView({
   isCheckingConsistency,
   onRunConsistencyCheck,
 }: AnalysisViewProps) {
-  const analyzedCount = Array.from(blocks.values()).filter((b) => b.aiAnalysis).length;
+  const analyzedCount = Array.from(blocks.values()).filter(
+    (b) => b.aiAnalysis,
+  ).length;
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-6">
@@ -81,16 +91,18 @@ export function AnalysisView({
         <button
           onClick={onRunConsistencyCheck}
           disabled={isCheckingConsistency || analyzedCount < 2}
-          className={`px-4 py-2 text-xs font-medium rounded-lg transition-all ${
+          className={`ui-btn ui-btn-sm ${
             isCheckingConsistency
-              ? 'glow-ai text-(--state-ai)'
+              ? "ui-btn-secondary glow-ai text-[var(--state-ai)]"
               : analyzedCount < 2
-                ? 'glass-morphism text-foreground-muted opacity-50 cursor-not-allowed'
-                : 'glass-morphism hover:bg-white/10 text-foreground-muted hover:text-foreground'
+                ? "ui-btn-ghost text-foreground-muted cursor-not-allowed"
+                : "ui-btn-secondary text-foreground-muted hover:text-foreground"
           }`}
-          title={analyzedCount < 2 ? 'Analyze at least 2 blocks first' : undefined}
+          title={
+            analyzedCount < 2 ? "Analyze at least 2 blocks first" : undefined
+          }
         >
-          {isCheckingConsistency ? 'Checking...' : 'Run Consistency Check'}
+          {isCheckingConsistency ? "Checking..." : "Run Consistency Check"}
         </button>
       </div>
 
@@ -113,7 +125,10 @@ export function AnalysisView({
         <span className="text-[10px] uppercase tracking-wider text-foreground-muted font-medium mb-2 block">
           Cross-Block Analysis
         </span>
-        <ConsistencyReport data={consistencyData} isLoading={isCheckingConsistency} />
+        <ConsistencyReport
+          data={consistencyData}
+          isLoading={isCheckingConsistency}
+        />
       </div>
     </div>
   );

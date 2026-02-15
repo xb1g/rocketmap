@@ -62,22 +62,22 @@ export function DeepDiveOverlay({
           </div>
           <button
             onClick={onClose}
-            className="text-foreground-muted hover:text-foreground text-sm px-3 py-1 rounded-md hover:bg-white/5 transition-colors"
+            className="ui-btn ui-btn-sm ui-btn-ghost"
           >
             Close
           </button>
         </div>
 
         {/* Tab bar */}
-        <div className="flex gap-1 px-6 py-2 border-b border-white/5 overflow-x-auto">
+        <div className="flex gap-2 px-6 py-2 border-b border-white/5 overflow-x-auto">
           {MODULE_TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveModule(tab.key)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-all ${
+              className={`ui-tab-btn whitespace-nowrap ${
                 activeModule === tab.key
-                  ? 'bg-white/10 text-foreground'
-                  : 'text-foreground-muted hover:text-foreground hover:bg-white/5'
+                  ? 'is-active'
+                  : ''
               }`}
             >
               {tab.label}

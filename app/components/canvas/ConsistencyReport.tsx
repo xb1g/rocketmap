@@ -89,7 +89,7 @@ export function ConsistencyReport({ data, isLoading }: ConsistencyReportProps) {
                 </span>
               </div>
               <p className="text-xs text-foreground/80">{c.issue}</p>
-              <p className="text-xs text-[var(--chroma-cyan)]/70">{c.suggestion}</p>
+              <p className="text-xs text-(--chroma-cyan)/70">{c.suggestion}</p>
             </div>
           ))}
         </div>

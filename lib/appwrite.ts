@@ -28,3 +28,5 @@ export const USERS_COLLECTION_ID = "users";
 export const CANVASES_COLLECTION_ID = "canvases";
 export const BLOCKS_COLLECTION_ID = "blocks";
 export const MESSAGES_COLLECTION_ID = "messages";
+export const SEGMENTS_COLLECTION_ID = "segments";
+export const BLOCK_SEGMENTS_COLLECTION_ID = "block_segments";

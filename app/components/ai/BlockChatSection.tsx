@@ -11,8 +11,8 @@ import { ChatInput } from './ChatInput';
 interface BlockChatSectionProps {
   canvasId: string;
   blockType: BlockType;
-  onAcceptEdit?: (proposalId: string, edits: BlockEditProposal[]) => void;
-  onRejectEdit?: (proposalId: string) => void;
+  onAcceptEdit?: (proposalId: string, edit: BlockEditProposal) => void;
+  onRejectEdit?: (proposalId: string, editIndex: number) => void;
 }
 
 function toUIMessages(msgs: { id: string; role: string; content: string; createdAt: string }[]): UIMessage[] {

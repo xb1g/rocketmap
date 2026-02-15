@@ -122,24 +122,14 @@ export function BrainstormClient() {
             <button
               onClick={saveIdea}
               disabled={!ideaText.trim()}
-              style={{
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                border: '1px solid rgba(255,255,255,0.1)',
-                background: 'rgba(255,255,255,0.05)',
-                color: ideaText.trim() ? '#fff' : 'var(--foreground-muted)',
-                cursor: ideaText.trim() ? 'pointer' : 'default',
-                fontSize: '0.8rem',
-                fontWeight: 500,
-              }}
+              className="ui-btn ui-btn-sm ui-btn-secondary"
             >
               Save Idea
             </button>
             <button
               onClick={() => ideaText.trim() && createCanvas(ideaText.trim().slice(0, 60))}
               disabled={!ideaText.trim()}
-              className="quick-launch"
-              style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
+              className="quick-launch ui-btn-sm"
             >
               Create Canvas &#x2192;
             </button>
@@ -211,30 +201,13 @@ export function BrainstormClient() {
                 <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
                   <button
                     onClick={() => createCanvas(idea.text.slice(0, 60))}
-                    style={{
-                      padding: '0.35rem 0.75rem',
-                      borderRadius: '6px',
-                      border: '1px solid rgba(99,102,241,0.2)',
-                      background: 'rgba(99,102,241,0.08)',
-                      color: 'var(--chroma-indigo)',
-                      cursor: 'pointer',
-                      fontSize: '0.75rem',
-                      fontWeight: 500,
-                    }}
+                    className="ui-btn ui-btn-xs ui-btn-secondary"
                   >
                     Create Canvas
                   </button>
                   <button
                     onClick={() => deleteIdea(idea.id)}
-                    style={{
-                      padding: '0.35rem 0.5rem',
-                      borderRadius: '6px',
-                      border: '1px solid rgba(255,255,255,0.06)',
-                      background: 'transparent',
-                      color: 'var(--foreground-muted)',
-                      cursor: 'pointer',
-                      fontSize: '0.75rem',
-                    }}
+                    className="ui-btn ui-btn-xs ui-btn-ghost"
                   >
                     &#xD7;
                   </button>

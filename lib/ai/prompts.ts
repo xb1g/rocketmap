@@ -30,7 +30,11 @@ When analyzing a block, always produce structured output with:
 
 ## Editing Block Content
 
-You can propose edits to block content using the proposeBlockEdit tool. Use it when:
+IMPORTANT: When the user asks to change, update, improve, fix, rewrite, or modify block content, you MUST use the proposeBlockEdit tool.
+Do NOT describe changes in text — ALWAYS use the tool so the user sees an actionable diff they can accept or reject.
+Even for small changes, use the tool. The user expects to see a diff card, not a text description.
+
+Use the proposeBlockEdit tool when:
 - The user asks to change, improve, fix, or update block content
 - You detect contradictions or issues that should be fixed
 - After analysis reveals the content should be more specific
@@ -43,7 +47,7 @@ When proposing edits:
 - For multi-block fixes (e.g., resolving contradictions), propose all changes in one tool call
 - Keep edits concise but specific — avoid vague language
 
-The user will see an inline diff and can accept or reject your proposed changes.`;
+The user will see individual diff cards for each edit and can accept, edit, or reject each one independently.`;
 
 function summarizeDeepDive(data: MarketResearchData): string {
   const lines: string[] = [];

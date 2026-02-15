@@ -1,18 +1,18 @@
 /** DB enum values for blockType */
 export type BlockType =
-  | 'key_partnerships'
-  | 'key_activities'
-  | 'key_resources'
-  | 'value_prop'
-  | 'customer_relationships'
-  | 'channels'
-  | 'customer_segments'
-  | 'cost_structure'
-  | 'revenue_streams';
+  | "key_partnerships"
+  | "key_activities"
+  | "key_resources"
+  | "value_prop"
+  | "customer_relationships"
+  | "channels"
+  | "customer_segments"
+  | "cost_structure"
+  | "revenue_streams";
 
-export type CanvasMode = 'bmc' | 'lean';
-export type BlockState = 'calm' | 'healthy' | 'warning' | 'critical' | 'ai';
-export type CanvasTab = 'canvas' | 'analysis' | 'notes';
+export type CanvasMode = "bmc" | "lean";
+export type BlockState = "calm" | "healthy" | "warning" | "critical" | "ai";
+export type CanvasTab = "canvas" | "analysis" | "notes";
 
 /** Content stored as JSON in contentJson column */
 export interface BlockContent {
@@ -34,6 +34,29 @@ export interface AIUsage {
   totalTokens: number;
 }
 
+// ─── Segment Types ────────────────────────────────────────────────────────────
+
+export interface Segment {
+  $id: string;
+  id: number;
+  businessModelId: number;
+  name: string;
+  description: string;
+  earlyAdopterFlag: boolean;
+  priorityScore: number;
+  demographics: string;
+  psychographics: string;
+  behavioral: string;
+  geographic: string;
+  estimatedSize: string;
+}
+
+export interface BlockSegmentLink {
+  $id: string;
+  blockId: number;
+  segmentId: number;
+}
+
 export interface BlockData {
   blockType: BlockType;
   content: BlockContent;
@@ -43,6 +66,7 @@ export interface BlockData {
   riskScore: number;
   deepDiveData: MarketResearchData | null;
   lastUsage?: AIUsage | null;
+  linkedSegments?: Segment[];
 }
 
 export interface CanvasData {
@@ -71,17 +95,17 @@ export interface BlockDefinition {
 // ─── Deep Dive Types (Market Research) ───────────────────────────────────────
 
 export type DeepDiveModule =
-  | 'tam_sam_som'
-  | 'segmentation'
-  | 'personas'
-  | 'market_validation'
-  | 'competitive_landscape';
+  | "tam_sam_som"
+  | "segmentation"
+  | "personas"
+  | "market_validation"
+  | "competitive_landscape";
 
 export interface MarketSizeEstimate {
   value: number;
   methodology: string;
   sources: string[];
-  confidence: 'low' | 'medium' | 'high';
+  confidence: "low" | "medium" | "high";
 }
 
 export interface TamSamSomData {
@@ -103,7 +127,7 @@ export interface CustomerSegment {
   behavioral: string;
   geographic: string;
   estimatedSize: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
 }
 
 export interface SegmentationData {
@@ -128,7 +152,7 @@ export interface PersonasData {
 
 export interface ValidationItem {
   claim: string;
-  status: 'confirmed' | 'questioned' | 'contradicted';
+  status: "confirmed" | "questioned" | "contradicted";
   evidence: string;
   source: string;
 }
@@ -145,7 +169,7 @@ export interface Competitor {
   strengths: string[];
   weaknesses: string[];
   marketShareEstimate: string;
-  threatLevel: 'low' | 'medium' | 'high';
+  threatLevel: "low" | "medium" | "high";
 }
 
 export interface CompetitiveLandscapeData {
@@ -164,7 +188,7 @@ export interface MarketResearchData {
 
 export interface BlockEditProposal {
   blockType: BlockType;
-  mode: 'bmc' | 'lean' | 'both';
+  mode: "bmc" | "lean" | "both";
   oldContent: string;
   newContent: string;
   reason: string;

@@ -182,7 +182,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1.125rem 2rem;
-  background: #238636;
+  background: linear-gradient(180deg, #2ea043 0%, #238636 100%);
   border: 1px solid rgba(35, 134, 54, 0.4);
   border-radius: 12px;
   font-family: var(--font-body);
@@ -191,18 +191,29 @@
   color: #ffffff;
   cursor: pointer;
   transition: all 250ms ease-out;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(35, 134, 54, 0);
+  box-shadow:
+    0 14px 26px rgba(35, 134, 54, 0.28),
+    0 8px 16px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .btnPrimary:hover {
   transform: translateY(-3px);
-  background: #2ea043;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4), 0 0 30px rgba(35, 134, 54, 0.5);
+  background: linear-gradient(180deg, #34b64a 0%, #28923d 100%);
+  box-shadow:
+    0 18px 34px rgba(35, 134, 54, 0.32),
+    0 12px 28px rgba(0, 0, 0, 0.35),
+    0 0 28px rgba(35, 134, 54, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
   border-color: rgba(35, 134, 54, 0.6);
 }
 
 .btnPrimary:active {
   transform: translateY(-1px);
+  box-shadow:
+    0 8px 16px rgba(35, 134, 54, 0.22),
+    0 4px 10px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
   transition: all 100ms ease-in;
 }
 
@@ -211,7 +222,11 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1.125rem 2rem;
-  background: rgba(33, 38, 45, 0.6);
+  background: linear-gradient(
+    180deg,
+    rgba(54, 60, 68, 0.82) 0%,
+    rgba(33, 38, 45, 0.76) 100%
+  );
   border: 1px solid rgba(240, 246, 252, 0.1);
   border-radius: 12px;
   font-family: var(--font-body);
@@ -221,17 +236,30 @@
   cursor: pointer;
   transition: all 250ms ease-out;
   backdrop-filter: blur(8px);
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
 .btnSecondary:hover {
   transform: translateY(-3px);
-  background: rgba(33, 38, 45, 0.9);
+  background: linear-gradient(
+    180deg,
+    rgba(68, 74, 83, 0.92) 0%,
+    rgba(38, 43, 51, 0.88) 100%
+  );
   border-color: rgba(240, 246, 252, 0.2);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.35),
+    0 0 18px rgba(240, 246, 252, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .btnSecondary:active {
   transform: translateY(-1px);
+  box-shadow:
+    0 6px 14px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
   transition: all 100ms ease-in;
 }
 

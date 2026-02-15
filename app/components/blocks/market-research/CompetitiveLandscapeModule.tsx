@@ -117,15 +117,19 @@ export function CompetitiveLandscapeModule({ data, isGenerating, aiEnabled = tru
       <button
         onClick={onGenerate}
         disabled={isGenerating || !aiEnabled}
-        className={`w-full px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${
+        className={`ui-btn ui-btn-sm ui-btn-block ${
           isGenerating
-            ? 'glow-ai text-[var(--state-ai)] border border-[var(--state-ai)]/20'
+            ? "ui-btn-secondary glow-ai text-[var(--state-ai)]"
             : !aiEnabled
-              ? 'glass-morphism text-foreground-muted/40 cursor-not-allowed'
-              : 'glass-morphism hover:bg-white/10 text-foreground-muted hover:text-foreground'
+              ? "ui-btn-ghost text-foreground-muted/40 cursor-not-allowed"
+              : "ui-btn-secondary text-foreground-muted hover:text-foreground"
         }`}
       >
-        {isGenerating ? 'Analyzing competitors...' : !aiEnabled ? 'Fill all blocks to unlock AI' : 'Analyze Competitors with AI'}
+        {isGenerating
+          ? "Analyzing competitors..."
+          : !aiEnabled
+            ? "Fill all blocks to unlock AI"
+            : "Analyze Competitors with AI"}
       </button>
 
       {current.competitors.length > 0 && (
@@ -143,7 +147,7 @@ export function CompetitiveLandscapeModule({ data, isGenerating, aiEnabled = tru
 
       <button
         onClick={handleAdd}
-        className="w-full px-3 py-2 text-xs text-foreground-muted hover:text-foreground border border-dashed border-white/10 hover:border-white/20 rounded-lg transition-colors"
+        className="ui-btn ui-btn-xs ui-btn-block ui-btn-ghost text-foreground-muted hover:text-foreground border-dashed"
       >
         + Add competitor manually
       </button>

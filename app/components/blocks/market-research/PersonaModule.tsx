@@ -35,7 +35,7 @@ function PersonaCard({
     <div className="p-4 rounded-lg bg-white/3 border border-white/5 space-y-3">
       <div className="flex items-start gap-3">
         {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center text-xs font-semibold text-foreground shrink-0">
+        <div className="w-10 h-10 rounded-full bg-linear-to-br from-indigo-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center text-xs font-semibold text-foreground shrink-0">
           {initials || '?'}
         </div>
         <div className="flex-1 min-w-0">
@@ -124,15 +124,19 @@ export function PersonaModule({ data, segments, isGenerating, aiEnabled = true, 
       <button
         onClick={onGenerate}
         disabled={isGenerating || !aiEnabled}
-        className={`w-full px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${
+        className={`ui-btn ui-btn-sm ui-btn-block ${
           isGenerating
-            ? 'glow-ai text-[var(--state-ai)] border border-[var(--state-ai)]/20'
+            ? "ui-btn-secondary glow-ai text-[var(--state-ai)]"
             : !aiEnabled
-              ? 'glass-morphism text-foreground-muted/40 cursor-not-allowed'
-              : 'glass-morphism hover:bg-white/10 text-foreground-muted hover:text-foreground'
+              ? "ui-btn-ghost text-foreground-muted/40 cursor-not-allowed"
+              : "ui-btn-secondary text-foreground-muted hover:text-foreground"
         }`}
       >
-        {isGenerating ? 'Generating personas...' : !aiEnabled ? 'Fill all blocks to unlock AI' : 'Generate Personas with AI'}
+        {isGenerating
+          ? "Generating personas..."
+          : !aiEnabled
+            ? "Fill all blocks to unlock AI"
+            : "Generate Personas with AI"}
       </button>
 
       {current.personas.length > 0 && (

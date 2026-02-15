@@ -127,15 +127,19 @@ export function TamSamSomModule({ data, isGenerating, aiEnabled = true, onGenera
       <button
         onClick={() => onGenerate({ industry, geography, targetCustomerType })}
         disabled={isGenerating || !aiEnabled}
-        className={`w-full px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${
+        className={`ui-btn ui-btn-sm ui-btn-block ${
           isGenerating
-            ? 'glow-ai text-[var(--state-ai)] border border-[var(--state-ai)]/20'
+            ? "ui-btn-secondary glow-ai text-[var(--state-ai)]"
             : !aiEnabled
-              ? 'glass-morphism text-foreground-muted/40 cursor-not-allowed'
-              : 'glass-morphism hover:bg-white/10 text-foreground-muted hover:text-foreground'
+              ? "ui-btn-ghost text-foreground-muted/40 cursor-not-allowed"
+              : "ui-btn-secondary text-foreground-muted hover:text-foreground"
         }`}
       >
-        {isGenerating ? 'Estimating market size...' : !aiEnabled ? 'Fill all blocks to unlock AI' : 'Estimate with AI'}
+        {isGenerating
+          ? "Estimating market size..."
+          : !aiEnabled
+            ? "Fill all blocks to unlock AI"
+            : "Estimate with AI"}
       </button>
 
       {/* Results */}

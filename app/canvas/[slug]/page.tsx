@@ -6,8 +6,10 @@ import {
   DATABASE_ID,
   CANVASES_COLLECTION_ID,
   BLOCKS_COLLECTION_ID,
+  SEGMENTS_COLLECTION_ID,
+  BLOCK_SEGMENTS_COLLECTION_ID,
 } from '@/lib/appwrite';
-import type { BlockData, BlockType, BlockContent, CanvasData, AIAnalysis, MarketResearchData } from '@/lib/types/canvas';
+import type { BlockData, BlockType, BlockContent, CanvasData, AIAnalysis, MarketResearchData, Segment } from '@/lib/types/canvas';
 import { BLOCK_DEFINITIONS } from '@/app/components/canvas/constants';
 import { CanvasClient } from './CanvasClient';
 
@@ -91,10 +93,69 @@ export default async function CanvasPage({ params }: PageProps) {
     // blocks collection may not have data yet
   }
 
+  // Fetch segments and block_segment links
+  let segmentDocs: Record<string, unknown>[] = [];
+  let linkDocs: Record<string, unknown>[] = [];
+  try {
+    const [segResult, linkResult] = await Promise.all([
+      serverDatabases.listDocuments(
+        DATABASE_ID,
+        SEGMENTS_COLLECTION_ID,
+        [Query.equal('businessModelId', canvasIntId), Query.orderDesc('priorityScore'), Query.limit(100)],
+      ),
+      serverDatabases.listDocuments(
+        DATABASE_ID,
+        BLOCK_SEGMENTS_COLLECTION_ID,
+        [Query.limit(500)],
+      ),
+    ]);
+    segmentDocs = segResult.documents as unknown as Record<string, unknown>[];
+    linkDocs = linkResult.documents as unknown as Record<string, unknown>[];
+  } catch {
+    // segments collections may not exist yet
+  }
+
+  // Build segment map by integer id
+  const segmentMap = new Map<number, Segment>();
+  for (const doc of segmentDocs) {
+    const seg: Segment = {
+      $id: doc.$id as string,
+      id: doc.id as number,
+      businessModelId: doc.businessModelId as number,
+      name: doc.name as string,
+      description: (doc.description as string) ?? '',
+      earlyAdopterFlag: (doc.earlyAdopterFlag as boolean) ?? false,
+      priorityScore: (doc.priorityScore as number) ?? 50,
+      demographics: (doc.demographics as string) ?? '',
+      psychographics: (doc.psychographics as string) ?? '',
+      behavioral: (doc.behavioral as string) ?? '',
+      geographic: (doc.geographic as string) ?? '',
+      estimatedSize: (doc.estimatedSize as string) ?? '',
+    };
+    segmentMap.set(seg.id, seg);
+  }
+
+  // Build block-to-segments mapping (blockIntId -> segmentIntId[])
+  const blockSegmentLinks = new Map<number, number[]>();
+  for (const link of linkDocs) {
+    const blockId = link.blockId as number;
+    const segmentId = link.segmentId as number;
+    if (!blockSegmentLinks.has(blockId)) {
+      blockSegmentLinks.set(blockId, []);
+    }
+    blockSegmentLinks.get(blockId)!.push(segmentId);
+  }
+
   // Build initial blocks with defaults for missing ones
   const blockMap = new Map(blockDocs.map((d) => [d.blockType as string, d]));
   const initialBlocks: BlockData[] = BLOCK_DEFINITIONS.map((def) => {
     const doc = blockMap.get(def.type);
+    const blockIntId = doc?.id as number | undefined;
+    const linkedSegmentIds = blockIntId ? (blockSegmentLinks.get(blockIntId) ?? []) : [];
+    const linkedSegments = linkedSegmentIds
+      .map((sid) => segmentMap.get(sid))
+      .filter((s): s is Segment => !!s);
+
     return {
       blockType: def.type as BlockType,
       content: parseContentJson(doc?.contentJson as string | undefined),
@@ -103,8 +164,11 @@ export default async function CanvasPage({ params }: PageProps) {
       confidenceScore: (doc?.confidenceScore as number) ?? 0,
       riskScore: (doc?.riskScore as number) ?? 0,
       deepDiveData: parseDeepDiveJson(doc?.deepDiveJson as string | undefined),
+      linkedSegments,
     };
   });
+
+  const initialSegments = Array.from(segmentMap.values());
 
   const canvasData: CanvasData = {
     $id: canvas.$id,
@@ -117,10 +181,13 @@ export default async function CanvasPage({ params }: PageProps) {
   };
 
   return (
-    <CanvasClient
-      canvasId={canvas.$id}
-      initialCanvasData={canvasData}
-      initialBlocks={initialBlocks}
-    />
+    <div className="canvas-page-bg">
+      <CanvasClient
+        canvasId={canvas.$id}
+        initialCanvasData={canvasData}
+        initialBlocks={initialBlocks}
+        initialSegments={initialSegments}
+      />
+    </div>
   );
 }

@@ -114,16 +114,7 @@ export function AccountClient({ user, stats }: AccountClientProps) {
         </Text>
         <button
           onClick={handleExport}
-          style={{
-            padding: '0.5rem 1rem',
-            borderRadius: '8px',
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(255,255,255,0.05)',
-            color: '#fff',
-            cursor: 'pointer',
-            fontSize: '0.85rem',
-            fontWeight: 500,
-          }}
+          className="ui-btn ui-btn-sm ui-btn-secondary"
         >
           Download Export
         </button>
