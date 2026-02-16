@@ -37,7 +37,7 @@ import { NotesView } from "@/app/components/canvas/NotesView";
 import { CanvasSettingsModal } from "@/app/components/canvas/CanvasSettingsModal";
 import { BlockFocusPanel } from "@/app/components/canvas/BlockFocusPanel";
 import { AnalysisView } from "@/app/components/canvas/AnalysisView";
-import { AssumptionsView } from "@/app/components/canvas/AssumptionsView";
+import { AssumptionsView, type AssumptionItem } from "@/app/components/canvas/AssumptionsView";
 import { DebugPanel } from "@/app/components/canvas/DebugPanel";
 import { ChatBar } from "@/app/components/ai/ChatBar";
 import { BlockChatSection } from "@/app/components/ai/BlockChatSection";
@@ -49,6 +49,7 @@ interface CanvasClientProps {
   initialCanvasData: CanvasData;
   initialBlocks: BlockData[];
   initialSegments?: Segment[];
+  initialAssumptions?: AssumptionItem[];
 }
 
 type SaveStatus = "saved" | "saving" | "unsaved";
@@ -73,6 +74,7 @@ export function CanvasClient({
   initialCanvasData,
   initialBlocks,
   initialSegments = [],
+  initialAssumptions = [],
 }: CanvasClientProps) {
   const router = useRouter();
   const [mode, setMode] = useState<CanvasMode>("bmc");
@@ -626,8 +628,8 @@ export function CanvasClient({
       const newItem: BlockItem = {
         id: crypto.randomUUID(),
         name: "New item",
-        linkedSegmentIds: [],
         linkedItemIds: [],
+        linkedSegmentIds: [],
         createdAt: new Date().toISOString(),
       };
       updateBlockItems(blockType, (items) => [...items, newItem]);
@@ -1021,7 +1023,12 @@ export function CanvasClient({
         />
       )}
 
-      {activeTab === "assumptions" && <AssumptionsView />}
+      {activeTab === "assumptions" && (
+        <AssumptionsView
+          canvasId={canvasId}
+          initialAssumptions={initialAssumptions}
+        />
+      )}
 
       {activeTab === "notes" && (
         <NotesView value={notes} onChange={handleNotesChange} />

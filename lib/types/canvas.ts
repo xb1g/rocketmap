@@ -25,9 +25,11 @@ export interface BlockItem {
   id: string; // Internal stable ID
   name: string;
   description?: string;
+  linkedSegmentIds: string[]; // List of segment IDs this item is relevant to
   linkedItemIds: string[]; // format: "blockType:itemId" - cross-block item links
   createdAt: string;
 }
+
 
 export interface BlockCard {
   $id: string;

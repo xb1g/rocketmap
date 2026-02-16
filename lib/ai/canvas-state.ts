@@ -7,8 +7,7 @@ import {
   SEGMENTS_TABLE_ID,
 } from '@/lib/appwrite';
 import { BLOCK_DEFINITIONS } from '@/app/components/canvas/constants';
-import type { BlockData, BlockType, BlockContent, MarketResearchData, Segment, CanvasData } from '@/lib/types/canvas';
-import { getUserIdFromCanvas } from '@/lib/utils';
+import type { BlockData, BlockType, BlockContent, MarketResearchData, Segment } from '@/lib/types/canvas';
 
 function parseContentJson(raw: string | undefined): BlockContent {
   if (!raw) return { bmc: '', lean: '', items: [] };
@@ -21,17 +20,19 @@ function parseContentJson(raw: string | undefined): BlockContent {
 }
 
 export async function getCanvasBlocks(canvasId: string, userId: string): Promise<BlockData[]> {
-  // Fetch canvas for ownership check
-  // Note: "users" relationship is auto-loaded (can't be in Query.select)
-  const canvas = await serverTablesDB.getRow({
+  // Verify canvas exists and belongs to this user
+  // Use listRows with both filters — avoids unreliable relationship auto-loading
+  const canvasCheck = await serverTablesDB.listRows({
     databaseId: DATABASE_ID,
     tableId: CANVASES_TABLE_ID,
-    rowId: canvasId,
-    queries: [Query.select(['$id'])],
-  }) as unknown as CanvasData;
-
-  if (getUserIdFromCanvas(canvas) !== userId) {
-    throw new Error('Forbidden');
+    queries: [
+      Query.equal('$id', canvasId),
+      Query.select(['$id']),
+      Query.limit(1),
+    ],
+  });
+  if (canvasCheck.rows.length === 0) {
+    throw new Error('Canvas not found');
   }
 
   // Index required: blocks collection — composite [canvas] key index

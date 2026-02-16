@@ -7,6 +7,7 @@ import {
   CANVASES_TABLE_ID,
   BLOCKS_TABLE_ID,
   SEGMENTS_TABLE_ID,
+  ASSUMPTIONS_TABLE_ID,
 } from "@/lib/appwrite";
 import type {
   BlockData,
@@ -18,6 +19,7 @@ import type {
   Segment,
 } from "@/lib/types/canvas";
 import { BLOCK_DEFINITIONS } from "@/app/components/canvas/constants";
+import type { AssumptionItem } from "@/app/components/canvas/AssumptionsView";
 import { CanvasClient } from "./CanvasClient";
 
 interface PageProps {
@@ -194,7 +196,56 @@ export default async function CanvasPage({ params }: PageProps) {
     console.error("Error fetching canvas components:", error);
   }
 
-  // 3. Map segments for easy lookup
+  // 3. Fetch assumptions directly — linked to blocks via many-to-many
+  const blockIds = blockDocs.map((d: any) => d.$id as string);
+  let initialAssumptions: AssumptionItem[] = [];
+  if (blockIds.length > 0) {
+    try {
+      const assumptionsRes = await serverTablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: ASSUMPTIONS_TABLE_ID,
+        queries: [
+          Query.select(["$id", "assumptionText", "category", "severityScore", "status"]),
+          Query.orderDesc("severityScore"),
+          Query.limit(100),
+        ],
+      });
+
+      // Filter to assumptions linked to this canvas's blocks
+      // The "blocks" relationship auto-loads (not in select)
+      initialAssumptions = assumptionsRes.rows
+        .filter((a: any) => {
+          if (!Array.isArray(a.blocks)) return false;
+          return a.blocks.some((b: any) => {
+            const bId = typeof b === "string" ? b : b?.$id;
+            return bId && blockIds.includes(bId);
+          });
+        })
+        .map((a: any) => {
+          const linkedBlockTypes = Array.isArray(a.blocks)
+            ? a.blocks
+                .map((b: any) => {
+                  const bId = typeof b === "string" ? b : b?.$id;
+                  const doc = blockDocs.find((d: any) => d.$id === bId);
+                  return doc?.blockType as string | undefined;
+                })
+                .filter((bt: string | undefined): bt is string => !!bt)
+            : [];
+          return {
+            $id: a.$id,
+            statement: a.assumptionText ?? "",
+            category: a.category ?? "market",
+            severityScore: a.severityScore ?? 0,
+            status: a.status ?? "untested",
+            blockTypes: linkedBlockTypes,
+          };
+        });
+    } catch (err) {
+      console.error("Error fetching assumptions:", err);
+    }
+  }
+
+  // 4. Map segments for easy lookup
   const initialSegments: Segment[] = segmentDocs.map((doc: any) => ({
     $id: doc.$id,
     name: doc.name,
@@ -305,6 +356,7 @@ export default async function CanvasPage({ params }: PageProps) {
         initialCanvasData={canvasData}
         initialBlocks={initialBlocks}
         initialSegments={initialSegments}
+        initialAssumptions={initialAssumptions}
       />
     </div>
   );
