@@ -100,6 +100,8 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
 
     const [isAddingTag, setIsAddingTag] = useState(false);
     const [newTagInput, setNewTagInput] = useState("");
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showLinkPicker, setShowLinkPicker] = useState(false);
 
     return (
       <div
@@ -225,8 +227,70 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
                 {Math.round(block.confidenceScore)}%
               </span>
             )}
+
+            <div className="flex-1" />
+
+            {/* Link button */}
+            <button
+              onClick={() => setShowLinkPicker(!showLinkPicker)}
+              className="flex items-center gap-1 text-[9px] text-foreground-muted/40 hover:text-foreground-muted transition-colors px-1 py-0.5 rounded hover:bg-white/5"
+              title="Link to segments"
+            >
+              <svg
+                width="9"
+                height="9"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
+              Link
+            </button>
+
+            {/* Delete button */}
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="text-[9px] text-red-400/40 hover:text-red-400 transition-colors px-1 py-0.5 rounded hover:bg-red-400/5"
+              title="Delete block"
+            >
+              ×
+            </button>
           </div>
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-[#1a1a1f] border border-white/12 rounded-lg p-4 max-w-sm">
+              <h3 className="text-sm font-medium text-foreground mb-2">Delete Block?</h3>
+              <p className="text-xs text-foreground-muted mb-4">
+                This action cannot be undone.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-3 py-1 text-xs rounded bg-white/5 text-foreground hover:bg-white/10 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    onDelete(block.$id);
+                    setShowDeleteConfirm(false);
+                  }}
+                  className="px-3 py-1 text-xs rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
