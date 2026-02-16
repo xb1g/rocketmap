@@ -12,7 +12,7 @@ export type BlockType =
 
 export type CanvasMode = "bmc" | "lean";
 export type BlockState = "calm" | "healthy" | "warning" | "critical" | "ai";
-export type CanvasTab = "canvas" | "analysis" | "notes" | "debug";
+export type CanvasTab = "canvas" | "analysis" | "assumptions" | "notes" | "debug";
 
 /** Content stored as JSON in contentJson column */
 export interface BlockContent {
