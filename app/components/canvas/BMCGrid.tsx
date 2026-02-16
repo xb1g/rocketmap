@@ -6,6 +6,7 @@ import type {
   BlockItem,
   BlockType,
   CanvasMode,
+  RiskMetrics,
   Segment,
 } from "@/lib/types/canvas";
 import { BLOCK_DEFINITIONS, getBlockValue } from "./constants";
@@ -53,6 +54,7 @@ interface BMCGridProps {
     linkedItemId: string,
   ) => void;
   onItemHover?: (hoveredItem: HoveredItem | null) => void;
+  riskHeatmap?: Record<BlockType, RiskMetrics> | null;
 }
 
 export function BMCGrid({
@@ -81,6 +83,7 @@ export function BMCGrid({
   onItemToggleSegment,
   onItemToggleLink,
   onItemHover,
+  riskHeatmap,
 }: BMCGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -204,6 +207,7 @@ export function BMCGrid({
               }
               blockRefCallback={blockRefCallback}
               segmentRefCallback={segmentRefCallback}
+              riskMetrics={riskHeatmap?.[def.type]}
             />
           );
         })}

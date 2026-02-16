@@ -6,8 +6,10 @@ import type {
   BlockState,
   BlockType,
   CanvasMode,
+  RiskMetrics,
   Segment,
 } from "@/lib/types/canvas";
+import { getRiskBorderClass } from "@/lib/utils/risk";
 import { BlockTooltip } from "./BlockTooltip";
 import { BlockCard } from "./BlockCard";
 import { SegmentCard } from "./SegmentCard";
@@ -164,6 +166,7 @@ interface BlockCellProps {
   onBlockHover?: (blockId: string | null) => void;
   blockRefCallback?: (blockId: string, el: HTMLElement | null) => void;
   segmentRefCallback?: (segmentId: string, el: HTMLElement | null) => void;
+  riskMetrics?: RiskMetrics;
 }
 
 export function BlockCell({
@@ -198,6 +201,7 @@ export function BlockCell({
   onBlockHover,
   blockRefCallback,
   segmentRefCallback,
+  riskMetrics,
 }: BlockCellProps) {
   const cellRef = useRef<HTMLDivElement>(null);
   const [isCompact, setIsCompact] = useState(false);
@@ -302,11 +306,14 @@ export function BlockCell({
   const showLeanChip = mode === "lean" && definition.leanLabel !== null;
   const showActions = isFocused || isChatTarget || isAnalyzing;
   const stateSurfaceClass = BLOCK_STATE_SURFACE_CLASS[state];
+  const riskBorderClass = riskMetrics
+    ? getRiskBorderClass(riskMetrics.riskScore, riskMetrics.confidenceScore)
+    : "";
 
   return (
     <div
       ref={cellRef}
-      className={`bmc-cell bmc-cell-panel group relative state-transition ${stateSurfaceClass} ${
+      className={`bmc-cell bmc-cell-panel group relative state-transition ${stateSurfaceClass} ${riskBorderClass} ${
         isFocused ? "ring-1 ring-[var(--chroma-indigo)]/30" : ""
       }`}
       style={{
@@ -416,6 +423,30 @@ export function BlockCell({
           </span>
         )}
         <div className="flex-1" />
+        {riskMetrics && (riskMetrics.untestedHighRisk > 0 || riskMetrics.untestedMediumRisk > 0) && (
+          <span
+            className="inline-flex items-center gap-0.5 text-[8px] font-mono px-1 py-px rounded-full shrink-0"
+            style={{
+              backgroundColor: riskMetrics.riskScore >= 70
+                ? "color-mix(in srgb, var(--state-critical) 15%, transparent)"
+                : "color-mix(in srgb, var(--state-warning) 15%, transparent)",
+              color: riskMetrics.riskScore >= 70
+                ? "var(--state-critical)"
+                : "var(--state-warning)",
+            }}
+            title={`Risk: ${riskMetrics.riskScore}% | ${riskMetrics.untestedHighRisk} high, ${riskMetrics.untestedMediumRisk} med untested`}
+          >
+            <span
+              className="w-1 h-1 rounded-full shrink-0"
+              style={{
+                background: riskMetrics.riskScore >= 70
+                  ? "var(--state-critical)"
+                  : "var(--state-warning)",
+              }}
+            />
+            {riskMetrics.confidenceScore > 0 && `${riskMetrics.confidenceScore}%`}
+          </span>
+        )}
         {hasAnalysis && (
           <span
             className="w-1.5 h-1.5 rounded-full shrink-0"
