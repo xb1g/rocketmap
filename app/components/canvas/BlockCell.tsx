@@ -10,7 +10,7 @@ import type {
   Segment,
 } from "@/lib/types/canvas";
 import { BlockTooltip } from "./BlockTooltip";
-import { BlockItemCard } from "./BlockItemCard";
+import { BlockCard } from "./BlockCard";
 import { LinkPicker } from "./LinkPicker";
 
 const BLOCK_ABBREVIATIONS: Record<BlockType, { bmc: string; lean: string }> = {
@@ -133,6 +133,14 @@ interface BlockCellProps {
   hasAnalysis: boolean;
   linkedSegments?: Segment[];
   items?: BlockItem[];
+  blocks?: Array<{
+    $id: string;
+    blockType: BlockType;
+    contentJson: string;
+    confidenceScore: number;
+    riskScore: number;
+    segments: Segment[];
+  }>;
   allSegments?: Segment[];
   allBlockItems?: Map<BlockType, BlockItem[]>;
   onChange: (value: string) => void;
@@ -154,6 +162,10 @@ interface BlockCellProps {
   onItemToggleSegment?: (itemId: string, segmentId: number) => void;
   onItemToggleLink?: (itemId: string, linkedItemId: string) => void;
   onItemHover?: (itemId: string | null) => void;
+  onBlockUpdate?: (blockId: string, updates: { contentJson: string }) => void;
+  onBlockDelete?: (blockId: string) => void;
+  onBlockSegmentToggle?: (blockId: string, segmentId: string) => void;
+  onBlockHover?: (blockId: string | null) => void;
   itemRefCallback?: (itemId: string, el: HTMLElement | null) => void;
   segmentRefCallback?: (segmentId: number, el: HTMLElement | null) => void;
 }
@@ -170,6 +182,7 @@ export function BlockCell({
   hasAnalysis,
   linkedSegments,
   items,
+  blocks,
   allSegments,
   allBlockItems,
   onChange,
@@ -188,6 +201,10 @@ export function BlockCell({
   onItemToggleSegment,
   onItemToggleLink,
   onItemHover,
+  onBlockUpdate,
+  onBlockDelete,
+  onBlockSegmentToggle,
+  onBlockHover,
   itemRefCallback,
   segmentRefCallback,
 }: BlockCellProps) {
@@ -414,57 +431,25 @@ export function BlockCell({
         spellCheck={false}
       />
 
-      {/* Block item cards — shown for all blocks */}
-      {onItemCreate && (
-        <div
-          className="block-items-container"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {items?.map((item) => {
-            const linkPickerOpen = linkPickerItemId === item.id;
-            return (
-              <div key={item.id} className="relative">
-                <BlockItemCard
-                  ref={(el) => {
-                    itemRefCallback?.(`${definition.type}:${item.id}`, el);
-                  }}
-                  item={item}
-                  segments={allSegments ?? []}
-                  onUpdate={(updates) => onItemUpdate?.(item.id, updates)}
-                  onDelete={() => onItemDelete?.(item.id)}
-                  onLinkClick={() => {
-                    setLinkPickerItemId(linkPickerOpen ? null : item.id);
-                  }}
-                  onMouseEnter={() => onItemHover?.(item.id)}
-                  onMouseLeave={() => onItemHover?.(null)}
-                />
-                {linkPickerOpen && allBlockItems && (
-                  <LinkPicker
-                    item={item}
-                    blockType={definition.type}
-                    segments={allSegments ?? []}
-                    allBlockItems={allBlockItems}
-                    anchorRef={linkPickerAnchorRef}
-                    onToggleSegment={(segId) =>
-                      onItemToggleSegment?.(item.id, segId)
-                    }
-                    onToggleItem={(linkedId) =>
-                      onItemToggleLink?.(item.id, linkedId)
-                    }
-                    onClose={() => setLinkPickerItemId(null)}
-                  />
-                )}
-              </div>
-            );
-          })}
-          <button
-            onClick={onItemCreate}
-            className="w-full rounded-md border border-dashed border-white/8 hover:border-white/15 px-2 py-1 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/[0.03] transition-colors text-left"
-          >
-            + Add item
-          </button>
+      {/* Block cards - multiple blocks per blockType */}
+      {blocks?.map((block) => (
+        <div key={block.$id} className="relative">
+          <BlockCard
+            ref={(el) => {
+              itemRefCallback?.(`${definition.type}:${block.$id}`, el);
+            }}
+            block={block}
+            allSegments={allSegments ?? []}
+            onUpdate={(blockId, updates) => onBlockUpdate?.(blockId, updates)}
+            onDelete={(blockId) => onBlockDelete?.(blockId)}
+            onSegmentToggle={(blockId, segmentId) =>
+              onBlockSegmentToggle?.(blockId, segmentId)
+            }
+            onMouseEnter={() => onBlockHover?.(block.$id)}
+            onMouseLeave={() => onBlockHover?.(null)}
+          />
         </div>
-      )}
+      ))}
 
       {/* Segment cards — shown for customer_segments below text */}
       {isSegmentBlock && (
