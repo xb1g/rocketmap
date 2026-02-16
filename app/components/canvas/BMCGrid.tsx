@@ -113,8 +113,8 @@ export function BMCGrid({
   return (
     <div className="relative flex-1 min-h-0" ref={containerRef}>
       <div
-        className={`bmc-grid ${dimmed ? "opacity-40 pointer-events-none" : ""}`}
-        style={{ transition: "opacity 300ms ease" }}
+        className={`bmc-grid ${dimmed ? "opacity-40 pointer-events-none blur-sm" : ""}`}
+        style={{ transition: "opacity 300ms ease, filter 300ms ease" }}
       >
         {BLOCK_DEFINITIONS.map((def) => {
           const block = blocks.get(def.type);
