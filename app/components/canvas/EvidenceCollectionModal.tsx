@@ -39,9 +39,9 @@ export function EvidenceCollectionModal({
     fetch(
       `/api/canvas/${canvasId}/assumptions/${assumption.$id}/experiments`,
     )
-      .then((res) => (res.ok ? res.json() : { experiments: [] }))
+      .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        const exps = data.experiments ?? [];
+        const exps = Array.isArray(data) ? data : [];
         setExperiments(exps);
         if (exps.length > 0) setSelectedExperiment(exps[0]);
       })
