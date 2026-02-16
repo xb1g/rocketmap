@@ -624,7 +624,11 @@ export function CanvasClient({
         const next = new Map(prev);
         const block = next.get(blockType);
         if (!block) return prev;
-        const items = updater(block.content.items ?? []);
+        const updatedItems = updater(block.content.items ?? []);
+        // Deduplicate items by ID (prevent React Strict Mode double-creation)
+        const items = updatedItems.filter(
+          (item, index, arr) => arr.findIndex((i) => i.id === item.id) === index,
+        );
         const newContent = { ...block.content, items };
         next.set(blockType, { ...block, content: newContent });
         debouncedSaveItems(blockType, newContent);
@@ -969,13 +973,16 @@ export function CanvasClient({
         saveStatus={saveStatus}
         onModeChange={setMode}
         onTitleChange={(title) => saveCanvas({ title })}
-        onSettingsOpen={() => setShowSettings(true)}
         onConvertLeanToBmc={handleConvertLeanToBmc}
         hasLeanContent={hasLeanContent}
         isConverting={isConverting}
       />
 
-      <CanvasTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      <CanvasTabs
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onSettingsClick={() => setShowSettings(true)}
+      />
 
       {/* Tab content */}
       {activeTab === "canvas" && !isMobile && (

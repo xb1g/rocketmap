@@ -435,11 +435,16 @@ export function BlockCell({
           className="block-items-container"
           onClick={(e) => e.stopPropagation()}
         >
-          {items?.map((item) => {
-            const linkPickerOpen = linkPickerItemId === item.id;
-            return (
-              <div key={item.id} className="relative">
-                <BlockItemCard
+          {items
+            ?.filter(
+              (item, index, arr) =>
+                arr.findIndex((i) => i.id === item.id) === index,
+            )
+            .map((item) => {
+              const linkPickerOpen = linkPickerItemId === item.id;
+              return (
+                <div key={item.id} className="relative">
+                  <BlockItemCard
                   ref={(el) => {
                     itemRefCallback?.(`${definition.type}:${item.id}`, el);
                   }}
