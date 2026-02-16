@@ -437,7 +437,7 @@ export function BlockCell({
         )}
       </div>
 
-      <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1">
+      <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1 flex-shrink-0">
         <BlockTooltip definition={definition} mode={mode}>
           <span className="inline-flex items-center gap-1 font-display-small uppercase tracking-wider text-foreground-muted cursor-help decoration-dotted underline-offset-4 hover:decoration-solid hover:text-foreground transition-all">
             <span className="w-4 h-4 rounded-md border border-white/12 bg-white/5 text-foreground-muted/70 shrink-0 inline-flex items-center justify-center">

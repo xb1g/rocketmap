@@ -18,11 +18,11 @@ interface RouteContext {
 }
 
 const viabilitySchema = z.object({
-  score: z.number().min(0).max(100),
+  score: z.number().describe("0-100 viability score"),
   breakdown: z.object({
-    assumptions: z.number().min(0).max(100),
-    market: z.number().min(0).max(100),
-    unmetNeed: z.number().min(0).max(100),
+    assumptions: z.number().describe("0-100 assumptions sub-score"),
+    market: z.number().describe("0-100 market sub-score"),
+    unmetNeed: z.number().describe("0-100 unmet need sub-score"),
   }),
   reasoning: z.string(),
   validatedAssumptions: z.array(
