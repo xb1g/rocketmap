@@ -44,6 +44,12 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
 
     const [isEditing, setIsEditing] = useState(false);
     const [editText, setEditText] = useState(content.text);
+    const [showLinkPicker, setShowLinkPicker] = useState(false);
+
+    const linkedSegmentIds = useMemo(
+      () => new Set(block.segments.map(s => s.$id)),
+      [block.segments],
+    );
 
     const handleSave = useCallback(() => {
       onUpdate(block.$id, {
@@ -122,6 +128,18 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
               </span>
             )}
 
+            {/* Link to segments button */}
+            <button
+              onClick={() => setShowLinkPicker(!showLinkPicker)}
+              className="flex items-center gap-0.5 text-[9px] text-foreground-muted/40 hover:text-foreground-muted transition-colors px-1 py-0.5 rounded hover:bg-white/5"
+              title="Link to segments"
+            >
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
+            </button>
+
             {/* Confidence score */}
             <span
               className="text-[9px] font-mono ml-auto"
@@ -143,6 +161,33 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
               ×
             </button>
           </div>
+
+          {/* Segment link picker */}
+          {showLinkPicker && allSegments.length > 0 && (
+            <div className="rounded border border-white/10 bg-white/[0.04] p-1 space-y-0.5 max-h-[120px] overflow-y-auto">
+              {allSegments.map(seg => {
+                const isLinked = linkedSegmentIds.has(seg.$id);
+                return (
+                  <button
+                    key={seg.$id}
+                    onClick={() => onSegmentToggle(block.$id, seg.$id)}
+                    className="flex items-center gap-1.5 w-full text-left px-1.5 py-0.5 rounded hover:bg-white/5 transition-colors"
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ background: seg.colorHex || 'var(--state-calm)' }}
+                    />
+                    <span className="text-[9px] text-foreground-muted/70 truncate flex-1">
+                      {seg.name}
+                    </span>
+                    {isLinked && (
+                      <span className="text-[8px] text-emerald-400/70 shrink-0">✓</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     );
