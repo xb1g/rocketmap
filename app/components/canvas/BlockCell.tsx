@@ -218,12 +218,17 @@ export function BlockCell({
   );
 
   const resolvedLinkedSegments = useMemo(
-    () =>
-      (linkedSegments ?? []).map((seg) => {
+    () => {
+      // For customer_segments block, show ALL segments regardless of linking
+      if (isSegmentBlock) {
+        return allSegments ?? [];
+      }
+      return (linkedSegments ?? []).map((seg) => {
         const fullSegment = linkedSegmentById.get(seg.$id);
         return fullSegment ?? seg;
-      }),
-    [linkedSegments, linkedSegmentById],
+      });
+    },
+    [isSegmentBlock, allSegments, linkedSegments, linkedSegmentById],
   );
 
   const handleCreateSegment = useCallback(async () => {
