@@ -29,8 +29,10 @@ export async function GET(request: Request, context: RouteContext) {
       return Response.json({ error: 'chatKey or sessions+scope is required' }, { status: 400 });
     }
 
-    const messages = await loadChatMessages(canvasId, chatKey, user.$id);
-    return Response.json({ messages });
+    // Support cursor pagination via ?cursor= query param
+    const cursor = searchParams.get('cursor') ?? undefined;
+    const { messages, lastId } = await loadChatMessages(canvasId, chatKey, user.$id, cursor);
+    return Response.json({ messages, lastId });
   } catch (error: unknown) {
     console.error('[messages GET]', error);
     const message = error instanceof Error ? error.message : String(error);

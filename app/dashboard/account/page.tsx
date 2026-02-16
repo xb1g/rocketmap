@@ -1,42 +1,60 @@
-import { redirect } from 'next/navigation';
-import { getSessionUser } from '@/lib/appwrite-server';
-import { serverDatabases, DATABASE_ID, CANVASES_COLLECTION_ID, BLOCKS_COLLECTION_ID } from '@/lib/appwrite';
-import { Query } from 'node-appwrite';
-import { AccountClient } from './AccountClient';
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/lib/appwrite-server";
+import {
+  serverTablesDB,
+  DATABASE_ID,
+  CANVASES_TABLE_ID,
+  BLOCKS_TABLE_ID,
+} from "@/lib/appwrite";
+import { Query } from "node-appwrite";
+import { AccountClient } from "./AccountClient";
 
 export default async function AccountPage() {
   const user = await getSessionUser();
 
   if (!user) {
-    redirect('/?error=unauthorized');
+    redirect("/?error=unauthorized");
   }
 
   let canvasCount = 0;
   let totalBlocksFilled = 0;
 
+  // Index required: canvases.users (key)
+  // Index required: blocks.canvasId (key)
   try {
-    const canvasesResult = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      CANVASES_COLLECTION_ID,
-      [Query.equal('ownerId', user.$id), Query.limit(100)]
-    );
+    const canvasesResult = await serverTablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: CANVASES_TABLE_ID,
+      queries: [
+        Query.equal("users", user.$id),
+        Query.select(["$id"]),
+        Query.limit(100),
+      ],
+    });
     canvasCount = canvasesResult.total;
 
-    for (const canvas of canvasesResult.documents) {
+    for (const canvas of canvasesResult.rows) {
       try {
-        const blocksResult = await serverDatabases.listDocuments(
-          DATABASE_ID,
-          BLOCKS_COLLECTION_ID,
-          [Query.equal('canvasId', canvas.id as number), Query.limit(9)]
-        );
-        totalBlocksFilled += blocksResult.documents.filter((block) => {
+        const blocksResult = await serverTablesDB.listRows({
+          databaseId: DATABASE_ID,
+          tableId: BLOCKS_TABLE_ID,
+          queries: [
+            Query.equal("canvasId", canvas.$id),
+            Query.select(["$id", "contentJson"]),
+            Query.limit(9),
+          ],
+        });
+        totalBlocksFilled += blocksResult.rows.filter((block) => {
           const content = block.contentJson as string;
           if (!content) return false;
           try {
             const parsed = JSON.parse(content);
-            return (parsed.bmc && parsed.bmc.trim() !== '') || (parsed.lean && parsed.lean.trim() !== '');
+            return (
+              (parsed.bmc && parsed.bmc.trim() !== "") ||
+              (parsed.lean && parsed.lean.trim() !== "")
+            );
           } catch {
-            return content.trim() !== '';
+            return content.trim() !== "";
           }
         }).length;
       } catch {
@@ -47,12 +65,15 @@ export default async function AccountPage() {
     // Collections might not exist
   }
 
-  const daysActive = Math.max(1, Math.floor((Date.now() - new Date(user.$createdAt).getTime()) / 86400000));
+  const daysActive = Math.max(
+    1,
+    Math.floor((Date.now() - new Date(user.$createdAt).getTime()) / 86400000),
+  );
 
   return (
     <AccountClient
       user={{
-        name: user.name || '',
+        name: user.name || "",
         email: user.email,
         joinDate: user.$createdAt,
       }}

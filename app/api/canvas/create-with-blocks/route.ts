@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { ID } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
+import { ID } from 'node-appwrite';
 import {
-  serverDatabases,
+  serverTablesDB,
   DATABASE_ID,
-  CANVASES_COLLECTION_ID,
-  BLOCKS_COLLECTION_ID,
+  CANVASES_TABLE_ID,
+  BLOCKS_TABLE_ID,
 } from '@/lib/appwrite';
 import { generateSlug } from '@/lib/utils';
 import type { BlockType } from '@/lib/types/canvas';
@@ -30,41 +30,38 @@ export async function POST(request: Request) {
 
     const slug = await generateSlug(title, user.$id);
     const now = new Date().toISOString();
-    const canvasIntId = Date.now();
 
     // Create canvas
-    const doc = await serverDatabases.createDocument(
-      DATABASE_ID,
-      CANVASES_COLLECTION_ID,
-      ID.unique(),
-      {
-        id: canvasIntId,
+    const doc = await serverTablesDB.createRow({
+      databaseId: DATABASE_ID,
+      tableId: CANVASES_TABLE_ID,
+      rowId: ID.unique(),
+      data: {
         title: title.trim(),
         slug,
         description: '',
         createdAt: now,
         updatedAt: now,
         isPublic: false,
-        ownerId: user.$id,
+        users: user.$id,
       },
-    );
+    });
 
     // Create all 9 blocks in parallel
     await Promise.all(
-      ALL_BLOCK_TYPES.map((blockType, index) => {
+      ALL_BLOCK_TYPES.map((blockType) => {
         const content = blocks[blockType] ?? '';
         const contentJson = JSON.stringify({ bmc: content, lean: content });
-        return serverDatabases.createDocument(
-          DATABASE_ID,
-          BLOCKS_COLLECTION_ID,
-          ID.unique(),
-          {
-            id: canvasIntId * 100 + index + 1,
-            canvasId: canvasIntId,
+        return serverTablesDB.createRow({
+          databaseId: DATABASE_ID,
+          tableId: BLOCKS_TABLE_ID,
+          rowId: ID.unique(),
+          data: {
+            canvasId: doc.$id,
             blockType,
             contentJson,
           },
-        );
+        });
       }),
     );
 

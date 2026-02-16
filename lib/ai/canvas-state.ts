@@ -1,62 +1,68 @@
 import { Query } from 'node-appwrite';
 import {
-  serverDatabases,
+  serverTablesDB,
   DATABASE_ID,
-  CANVASES_COLLECTION_ID,
-  BLOCKS_COLLECTION_ID,
-  SEGMENTS_COLLECTION_ID,
-  BLOCK_SEGMENTS_COLLECTION_ID,
+  CANVASES_TABLE_ID,
+  BLOCKS_TABLE_ID,
+  SEGMENTS_TABLE_ID,
 } from '@/lib/appwrite';
 import { BLOCK_DEFINITIONS } from '@/app/components/canvas/constants';
-import type { BlockData, BlockType, BlockContent, MarketResearchData, Segment } from '@/lib/types/canvas';
+import type { BlockData, BlockType, BlockContent, MarketResearchData, Segment, CanvasData } from '@/lib/types/canvas';
+import { getUserIdFromCanvas } from '@/lib/utils';
 
 function parseContentJson(raw: string | undefined): BlockContent {
-  if (!raw) return { bmc: '', lean: '' };
+  if (!raw) return { bmc: '', lean: '', items: [] };
   try {
     const parsed = JSON.parse(raw);
-    return { bmc: parsed.bmc ?? '', lean: parsed.lean ?? '' };
+    return { bmc: parsed.bmc ?? '', lean: parsed.lean ?? '', items: parsed.items ?? [] };
   } catch {
-    return { bmc: raw, lean: '' };
+    return { bmc: raw, lean: '', items: [] };
   }
 }
 
 export async function getCanvasBlocks(canvasId: string, userId: string): Promise<BlockData[]> {
-  const canvas = await serverDatabases.getDocument(
-    DATABASE_ID,
-    CANVASES_COLLECTION_ID,
-    canvasId,
-  );
+  // Fetch canvas for ownership check
+  // Note: "users" relationship is auto-loaded (can't be in Query.select)
+  const canvas = await serverTablesDB.getRow({
+    databaseId: DATABASE_ID,
+    tableId: CANVASES_TABLE_ID,
+    rowId: canvasId,
+    queries: [Query.select(['$id'])],
+  }) as unknown as CanvasData;
 
-  if (canvas.ownerId !== userId) {
+  if (getUserIdFromCanvas(canvas) !== userId) {
     throw new Error('Forbidden');
   }
 
-  const canvasIntId = canvas.id as number;
-  const [result, segResult, linkResult] = await Promise.all([
-    serverDatabases.listDocuments(
-      DATABASE_ID,
-      BLOCKS_COLLECTION_ID,
-      [Query.equal('canvasId', canvasIntId), Query.limit(25)],
-    ),
-    serverDatabases.listDocuments(
-      DATABASE_ID,
-      SEGMENTS_COLLECTION_ID,
-      [Query.equal('canvasId', canvasIntId), Query.limit(100)],
-    ).catch(() => ({ documents: [] })),
-    serverDatabases.listDocuments(
-      DATABASE_ID,
-      BLOCK_SEGMENTS_COLLECTION_ID,
-      [Query.limit(500)],
-    ).catch(() => ({ documents: [] })),
+  // Index required: blocks collection — composite [canvas] key index
+  // Index required: segments collection — composite [canvas] key index
+  // Note: "segments" relationship is auto-loaded (can't be in Query.select)
+  const [result, segResult] = await Promise.all([
+    serverTablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: BLOCKS_TABLE_ID,
+      queries: [
+        Query.equal('canvas', canvasId),
+        Query.select(['$id', 'blockType', 'contentJson', 'confidenceScore', 'riskScore', 'deepDiveJson']),
+        Query.limit(25),
+      ],
+    }),
+    serverTablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: SEGMENTS_TABLE_ID,
+      queries: [
+        Query.equal('canvas', canvasId),
+        Query.select(['$id', 'name', 'description', 'earlyAdopterFlag', 'priorityScore', 'demographics', 'psychographics', 'behavioral', 'geographic', 'estimatedSize']),
+        Query.limit(100),
+      ],
+    }).catch(() => ({ rows: [] })),
   ]);
 
   // Build segment map
-  const segmentMap = new Map<number, Segment>();
-  for (const doc of segResult.documents) {
-    segmentMap.set(doc.id as number, {
+  const segmentMap = new Map<string, Segment>();
+  for (const doc of segResult.rows) {
+    segmentMap.set(doc.$id, {
       $id: doc.$id,
-      id: doc.id as number,
-      canvasId: doc.canvasId as number,
       name: doc.name as string,
       description: (doc.description as string) ?? '',
       earlyAdopterFlag: (doc.earlyAdopterFlag as boolean) ?? false,
@@ -69,19 +75,8 @@ export async function getCanvasBlocks(canvasId: string, userId: string): Promise
     });
   }
 
-  // Build block-to-segments mapping
-  const blockSegmentLinks = new Map<number, number[]>();
-  for (const link of linkResult.documents) {
-    const blockId = link.blockId as number;
-    const segmentId = link.segmentId as number;
-    if (!blockSegmentLinks.has(blockId)) {
-      blockSegmentLinks.set(blockId, []);
-    }
-    blockSegmentLinks.get(blockId)!.push(segmentId);
-  }
-
   const blockMap = new Map(
-    result.documents.map((d) => [d.blockType as string, d]),
+    result.rows.map((d) => [d.blockType as string, d]),
   );
 
   return BLOCK_DEFINITIONS.map((def) => {
@@ -93,11 +88,17 @@ export async function getCanvasBlocks(canvasId: string, userId: string): Promise
       } catch { /* ignore parse errors */ }
     }
 
-    const blockIntId = doc?.id as number | undefined;
-    const linkedSegmentIds = blockIntId ? (blockSegmentLinks.get(blockIntId) ?? []) : [];
-    const linkedSegments = linkedSegmentIds
-      .map((sid) => segmentMap.get(sid))
-      .filter((s): s is Segment => !!s);
+    // Get linked segments from the block's segments relationship
+    const linkedSegments: Segment[] = [];
+    if (doc?.segments && Array.isArray(doc.segments)) {
+      for (const seg of doc.segments) {
+        const segId = typeof seg === 'string' ? seg : seg.$id;
+        const segment = segmentMap.get(segId);
+        if (segment) {
+          linkedSegments.push(segment);
+        }
+      }
+    }
 
     return {
       blockType: def.type as BlockType,

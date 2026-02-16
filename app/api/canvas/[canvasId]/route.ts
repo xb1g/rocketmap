@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { Query } from "node-appwrite";
 import { requireAuth } from "@/lib/appwrite-server";
-import { generateSlug } from "@/lib/utils";
+import { generateSlug, getUserIdFromCanvas } from "@/lib/utils";
 import {
-  serverDatabases,
+  serverTablesDB,
   DATABASE_ID,
-  CANVASES_COLLECTION_ID,
-  BLOCKS_COLLECTION_ID,
+  CANVASES_TABLE_ID,
+  BLOCKS_TABLE_ID,
 } from "@/lib/appwrite";
+import type { CanvasData } from "@/lib/types/canvas";
 
 interface RouteContext {
   params: Promise<{ canvasId: string }>;
@@ -19,13 +20,15 @@ export async function PATCH(request: Request, context: RouteContext) {
     const { canvasId } = await context.params;
     const body = await request.json();
 
-    const canvas = await serverDatabases.getDocument(
-      DATABASE_ID,
-      CANVASES_COLLECTION_ID,
-      canvasId,
-    );
+    // Fetch only fields needed for auth check and title comparison
+    const canvas = await serverTablesDB.getRow({
+      databaseId: DATABASE_ID,
+      tableId: CANVASES_TABLE_ID,
+      rowId: canvasId,
+      queries: [Query.select(["$id", "title"])],
+    });
 
-    if (canvas.ownerId !== user.$id) {
+    if (getUserIdFromCanvas(canvas as unknown as CanvasData) !== user.$id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -48,19 +51,12 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
-    await serverDatabases.updateDocument(
-      DATABASE_ID,
-      CANVASES_COLLECTION_ID,
-      canvasId,
-      updates,
-    );
-
-    // Return updated canvas data
-    const updatedCanvas = await serverDatabases.getDocument(
-      DATABASE_ID,
-      CANVASES_COLLECTION_ID,
-      canvasId,
-    );
+    const updatedCanvas = await serverTablesDB.updateRow({
+      databaseId: DATABASE_ID,
+      tableId: CANVASES_TABLE_ID,
+      rowId: canvasId,
+      data: updates,
+    });
 
     return NextResponse.json({ success: true, canvas: updatedCanvas });
   } catch (error: unknown) {
@@ -75,38 +71,47 @@ export async function DELETE(_request: Request, context: RouteContext) {
     const user = await requireAuth();
     const { canvasId } = await context.params;
 
-    const canvas = await serverDatabases.getDocument(
-      DATABASE_ID,
-      CANVASES_COLLECTION_ID,
-      canvasId,
-    );
+    // Fetch only fields needed for auth check and block lookup
+    const canvas = await serverTablesDB.getRow({
+      databaseId: DATABASE_ID,
+      tableId: CANVASES_TABLE_ID,
+      rowId: canvasId,
+      queries: [Query.select(["$id", "id"])],
+    });
 
-    if (canvas.ownerId !== user.$id) {
+    if (getUserIdFromCanvas(canvas as unknown as CanvasData) !== user.$id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Delete all blocks first
+    // Fetch only block $id values for deletion
     const canvasIntId = canvas.id as number;
-    const blocks = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      BLOCKS_COLLECTION_ID,
-      [Query.equal("canvasId", canvasIntId), Query.limit(25)],
-    );
+    const blocks = await serverTablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: BLOCKS_TABLE_ID,
+      queries: [
+        Query.equal("canvasId", canvasIntId),
+        Query.select(["$id"]),
+        Query.limit(25),
+      ],
+    });
 
-    for (const block of blocks.documents) {
-      await serverDatabases.deleteDocument(
-        DATABASE_ID,
-        BLOCKS_COLLECTION_ID,
-        block.$id,
-      );
-    }
+    // Delete blocks in parallel for faster cleanup
+    await Promise.all(
+      blocks.rows.map((block: { $id: string }) =>
+        serverTablesDB.deleteRow({
+          databaseId: DATABASE_ID,
+          tableId: BLOCKS_TABLE_ID,
+          rowId: block.$id,
+        }),
+      ),
+    );
 
     // Delete canvas
-    await serverDatabases.deleteDocument(
-      DATABASE_ID,
-      CANVASES_COLLECTION_ID,
-      canvasId,
-    );
+    await serverTablesDB.deleteRow({
+      databaseId: DATABASE_ID,
+      tableId: CANVASES_TABLE_ID,
+      rowId: canvasId,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

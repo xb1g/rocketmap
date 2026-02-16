@@ -5,10 +5,10 @@ import { generateTextWithLogging } from '@/lib/ai/logger';
 import { Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
 import {
-  serverDatabases,
+  serverTablesDB,
   DATABASE_ID,
-  CANVASES_COLLECTION_ID,
-  BLOCKS_COLLECTION_ID,
+  CANVASES_TABLE_ID,
+  BLOCKS_TABLE_ID,
 } from '@/lib/appwrite';
 import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { BLOCK_DEFINITIONS, isSharedBlock } from '@/app/components/canvas/constants';
@@ -138,11 +138,11 @@ Use the convertLeanToBmc tool to generate BMC content for all 5 non-shared block
     }
 
     // Persist converted content to Appwrite
-    const canvas = await serverDatabases.getDocument(
-      DATABASE_ID,
-      CANVASES_COLLECTION_ID,
-      canvasId,
-    );
+    const canvas = await serverTablesDB.getRow({
+      databaseId: DATABASE_ID,
+      tableId: CANVASES_TABLE_ID,
+      rowId: canvasId,
+    });
     const canvasIntId = canvas.id as number;
 
     const NON_SHARED_TYPES = ['key_partnerships', 'key_activities', 'key_resources', 'value_prop', 'customer_relationships'];
@@ -157,23 +157,23 @@ Use the convertLeanToBmc tool to generate BMC content for all 5 non-shared block
 
       const newContent = { bmc: conv.content, lean: block.content.lean };
 
-      const existing = await serverDatabases.listDocuments(
-        DATABASE_ID,
-        BLOCKS_COLLECTION_ID,
-        [
+      const existing = await serverTablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: BLOCKS_TABLE_ID,
+        queries: [
           Query.equal('canvasId', canvasIntId),
           Query.equal('blockType', blockType),
           Query.limit(1),
         ],
-      );
+      });
 
-      if (existing.documents.length > 0) {
-        await serverDatabases.updateDocument(
-          DATABASE_ID,
-          BLOCKS_COLLECTION_ID,
-          existing.documents[0].$id,
-          { contentJson: JSON.stringify(newContent) },
-        );
+      if (existing.rows.length > 0) {
+        await serverTablesDB.updateRow({
+          databaseId: DATABASE_ID,
+          tableId: BLOCKS_TABLE_ID,
+          rowId: existing.rows[0].$id,
+          data: { contentJson: JSON.stringify(newContent) },
+        });
       }
 
       updates.push({

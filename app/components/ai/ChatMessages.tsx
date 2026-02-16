@@ -228,7 +228,8 @@ function getAIActivity(
         : (toolState !== 'output-available');
       if (!isPending) continue;
 
-      if (toolName === 'generateCanvas') return { label: 'Building your canvas...', icon: 'tool' };
+      // Don't show status indicator for generateCanvas - the card shows it instead
+      if (toolName === 'generateCanvas') return { label: '', icon: 'tool' };
       if (toolName === 'analyzeBlock') return { label: 'Analyzing block...', icon: 'tool' };
       if (toolName === 'proposeBlockEdit') return { label: 'Drafting changes...', icon: 'tool' };
       if (toolName === 'checkConsistency') return { label: 'Checking consistency...', icon: 'tool' };

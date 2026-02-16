@@ -7,11 +7,17 @@ interface CanvasTabsProps {
   onTabChange: (tab: CanvasTab) => void;
 }
 
-const TABS: { value: CanvasTab; label: string }[] = [
+const BASE_TABS: { value: CanvasTab; label: string }[] = [
   { value: "canvas", label: "Canvas" },
   { value: "analysis", label: "Analysis" },
   { value: "notes", label: "Notes" },
 ];
+
+// Add debug tab in development
+const TABS: { value: CanvasTab; label: string }[] =
+  process.env.NODE_ENV === "development"
+    ? [...BASE_TABS, { value: "debug", label: "Debug" }]
+    : BASE_TABS;
 
 export function CanvasTabs({ activeTab, onTabChange }: CanvasTabsProps) {
   return (

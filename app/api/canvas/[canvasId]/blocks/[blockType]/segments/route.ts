@@ -1,85 +1,81 @@
 import { NextResponse } from 'next/server';
-import { ID, Query } from 'node-appwrite';
+import { Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
 import {
-  serverDatabases,
+  serverTablesDB,
   DATABASE_ID,
-  CANVASES_COLLECTION_ID,
-  BLOCKS_COLLECTION_ID,
-  BLOCK_SEGMENTS_COLLECTION_ID,
+  CANVASES_TABLE_ID,
+  BLOCKS_TABLE_ID,
 } from '@/lib/appwrite';
+import { getUserIdFromCanvas } from '@/lib/utils';
+import type { CanvasData } from '@/lib/types/canvas';
 
 interface RouteContext {
   params: Promise<{ canvasId: string; blockType: string }>;
 }
 
-async function verifyCanvasAndGetBlockId(
+async function verifyCanvasAndGetBlock(
   canvasId: string,
   blockType: string,
   userId: string,
 ) {
-  const canvas = await serverDatabases.getDocument(
-    DATABASE_ID,
-    CANVASES_COLLECTION_ID,
-    canvasId,
-  );
-  if (canvas.ownerId !== userId) {
+  const canvas = await serverTablesDB.getRow({
+    databaseId: DATABASE_ID,
+    tableId: CANVASES_TABLE_ID,
+    rowId: canvasId,
+  }) as unknown as CanvasData;
+  if (getUserIdFromCanvas(canvas) !== userId) {
     throw new Error('Forbidden');
   }
 
-  const canvasIntId = canvas.id as number;
-  const blockResult = await serverDatabases.listDocuments(
-    DATABASE_ID,
-    BLOCKS_COLLECTION_ID,
-    [
-      Query.equal('canvasId', canvasIntId),
+  const existing = await serverTablesDB.listRows({
+    databaseId: DATABASE_ID,
+    tableId: BLOCKS_TABLE_ID,
+    queries: [
+      Query.equal('canvas', canvasId),
       Query.equal('blockType', blockType),
+      Query.select(['$id']),
       Query.limit(1),
     ],
-  );
+  });
 
-  if (blockResult.documents.length === 0) {
+  if (existing.rows.length === 0) {
     throw new Error('Block not found');
   }
 
-  return blockResult.documents[0].id as number;
+  return existing.rows[0];
 }
 
 export async function POST(request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
     const { canvasId, blockType } = await context.params;
-    const blockId = await verifyCanvasAndGetBlockId(canvasId, blockType, user.$id);
+    const block = await verifyCanvasAndGetBlock(canvasId, blockType, user.$id);
     const body = await request.json();
     const { segmentId } = body;
 
-    if (!segmentId || typeof segmentId !== 'number') {
-      return NextResponse.json({ error: 'segmentId (number) is required' }, { status: 400 });
+    if (!segmentId || typeof segmentId !== 'string') {
+      return NextResponse.json({ error: 'segmentId (string) is required' }, { status: 400 });
     }
 
-    // Idempotent: check if link already exists
-    const existing = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      BLOCK_SEGMENTS_COLLECTION_ID,
-      [
-        Query.equal('blockId', blockId),
-        Query.equal('segmentId', segmentId),
-        Query.limit(1),
-      ],
-    );
+    // Get current segment IDs
+    const currentSegments = Array.isArray(block.segments)
+      ? block.segments.map((s: any) => (typeof s === 'string' ? s : s.$id))
+      : [];
 
-    if (existing.documents.length > 0) {
-      return NextResponse.json({ link: existing.documents[0] });
+    // Add new segment if not already linked
+    if (!currentSegments.includes(segmentId)) {
+      currentSegments.push(segmentId);
+
+      await serverTablesDB.updateRow({
+        databaseId: DATABASE_ID,
+        tableId: BLOCKS_TABLE_ID,
+        rowId: block.$id,
+        data: { segments: currentSegments },
+      });
     }
 
-    const doc = await serverDatabases.createDocument(
-      DATABASE_ID,
-      BLOCK_SEGMENTS_COLLECTION_ID,
-      ID.unique(),
-      { id: Math.floor(Math.random() * 2_000_000_000), blockId, segmentId },
-    );
-
-    return NextResponse.json({ link: doc }, { status: 201 });
+    return NextResponse.json({ success: true }, { status: 201 });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     if (message === 'Unauthorized') return NextResponse.json({ error: message }, { status: 401 });
@@ -94,31 +90,28 @@ export async function DELETE(request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
     const { canvasId, blockType } = await context.params;
-    const blockId = await verifyCanvasAndGetBlockId(canvasId, blockType, user.$id);
+    const block = await verifyCanvasAndGetBlock(canvasId, blockType, user.$id);
     const { searchParams } = new URL(request.url);
-    const segmentId = parseInt(searchParams.get('segmentId') ?? '', 10);
+    const segmentId = searchParams.get('segmentId');
 
     if (!segmentId) {
       return NextResponse.json({ error: 'segmentId query param required' }, { status: 400 });
     }
 
-    const existing = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      BLOCK_SEGMENTS_COLLECTION_ID,
-      [
-        Query.equal('blockId', blockId),
-        Query.equal('segmentId', segmentId),
-        Query.limit(1),
-      ],
-    );
+    // Get current segment IDs
+    const currentSegments = Array.isArray(block.segments)
+      ? block.segments.map((s: any) => (typeof s === 'string' ? s : s.$id))
+      : [];
 
-    if (existing.documents.length > 0) {
-      await serverDatabases.deleteDocument(
-        DATABASE_ID,
-        BLOCK_SEGMENTS_COLLECTION_ID,
-        existing.documents[0].$id,
-      );
-    }
+    // Remove segment
+    const updatedSegments = currentSegments.filter((id: string) => id !== segmentId);
+
+    await serverTablesDB.updateRow({
+      databaseId: DATABASE_ID,
+      tableId: BLOCKS_TABLE_ID,
+      rowId: block.$id,
+      data: { segments: updatedSegments },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

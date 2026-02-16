@@ -1,32 +1,39 @@
 import { NextResponse } from 'next/server';
 import { Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
-import { serverDatabases, DATABASE_ID, CANVASES_COLLECTION_ID, BLOCKS_COLLECTION_ID } from '@/lib/appwrite';
+import { serverTablesDB, DATABASE_ID, CANVASES_TABLE_ID, BLOCKS_TABLE_ID } from '@/lib/appwrite';
 
 export async function GET() {
   try {
     const user = await requireAuth();
 
-    const canvasesResult = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      CANVASES_COLLECTION_ID,
-      [
-        Query.equal('ownerId', user.$id),
+    // Index required: users (key), $updatedAt (desc) — composite index recommended
+    const canvasesResult = await serverTablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: CANVASES_TABLE_ID,
+      queries: [
+        Query.equal('users', user.$id),
+        Query.select(['$id', 'title', 'slug', 'createdAt', '$updatedAt']),
         Query.orderDesc('$updatedAt'),
         Query.limit(100),
-      ]
-    );
+      ],
+    });
 
     const canvases = await Promise.all(
-      canvasesResult.documents.map(async (canvas) => {
+      canvasesResult.rows.map(async (canvas) => {
         let blocks: { blockType: string; content: unknown }[] = [];
         try {
-          const blocksResult = await serverDatabases.listDocuments(
-            DATABASE_ID,
-            BLOCKS_COLLECTION_ID,
-            [Query.equal('canvasId', canvas.id as number), Query.limit(9)]
-          );
-          blocks = blocksResult.documents.map((block) => ({
+          // Index required: canvasId (key)
+          const blocksResult = await serverTablesDB.listRows({
+            databaseId: DATABASE_ID,
+            tableId: BLOCKS_TABLE_ID,
+            queries: [
+              Query.equal('canvasId', canvas.$id),
+              Query.select(['blockType', 'contentJson']),
+              Query.limit(9),
+            ],
+          });
+          blocks = blocksResult.rows.map((block) => ({
             blockType: block.blockType as string,
             content: (() => {
               try { return JSON.parse(block.contentJson as string); }

@@ -1,46 +1,53 @@
-import { redirect } from 'next/navigation';
-import { Query } from 'node-appwrite';
-import { getSessionUser } from '@/lib/appwrite-server';
+import { redirect } from "next/navigation";
+import { Query } from "node-appwrite";
+import { getSessionUser } from "@/lib/appwrite-server";
 import {
-  serverDatabases,
+  serverTablesDB,
   DATABASE_ID,
-  CANVASES_COLLECTION_ID,
-  BLOCKS_COLLECTION_ID,
-  SEGMENTS_COLLECTION_ID,
-  BLOCK_SEGMENTS_COLLECTION_ID,
-  CARDS_COLLECTION_ID,
-} from '@/lib/appwrite';
-import type { BlockData, BlockType, BlockContent, CanvasData, AIAnalysis, MarketResearchData, Segment, Card } from '@/lib/types/canvas';
-import { BLOCK_DEFINITIONS } from '@/app/components/canvas/constants';
-import { CanvasClient } from './CanvasClient';
+  CANVASES_TABLE_ID,
+  BLOCKS_TABLE_ID,
+  SEGMENTS_TABLE_ID,
+} from "@/lib/appwrite";
+import type {
+  BlockData,
+  BlockType,
+  BlockContent,
+  CanvasData,
+  AIAnalysis,
+  MarketResearchData,
+  Segment,
+} from "@/lib/types/canvas";
+import { BLOCK_DEFINITIONS } from "@/app/components/canvas/constants";
+import { CanvasClient } from "./CanvasClient";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
 function parseContentJson(raw: string | undefined): BlockContent {
-  if (!raw) return { bmc: '', lean: '' };
+  if (!raw) return { bmc: "", lean: "", items: [] };
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
     return {
-      bmc: parsed.bmc ?? '',
-      lean: parsed.lean ?? '',
+      bmc: parsed.bmc ?? "",
+      lean: parsed.lean ?? "",
+      items: parsed.items ?? [],
     };
   } catch {
-    return { bmc: raw, lean: '' };
+    return { bmc: String(raw), lean: "", items: [] };
   }
 }
 
 function parseAiAnalysis(raw: string | undefined): AIAnalysis | null {
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
     return {
-      draft: parsed.draft ?? '',
+      draft: parsed.draft ?? "",
       assumptions: parsed.assumptions ?? [],
       risks: parsed.risks ?? [],
       questions: parsed.questions ?? [],
-      generatedAt: parsed.generatedAt ?? '',
+      generatedAt: parsed.generatedAt ?? "",
     };
   } catch {
     return null;
@@ -50,191 +57,245 @@ function parseAiAnalysis(raw: string | undefined): AIAnalysis | null {
 function parseDeepDiveJson(raw: string | undefined): MarketResearchData | null {
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as MarketResearchData;
+    return (
+      typeof raw === "string" ? JSON.parse(raw) : raw
+    ) as MarketResearchData;
   } catch {
     return null;
   }
+}
+
+function normalizeSegmentRef(
+  segmentRef: any,
+  segmentById: Map<string, Segment>,
+): Segment | null {
+  if (!segmentRef) return null;
+
+  const segmentId =
+    typeof segmentRef === "string"
+      ? segmentRef
+      : typeof segmentRef === "object"
+        ? segmentRef.$id
+        : null;
+
+  if (!segmentId) return null;
+
+  const fromLookup = segmentById.get(segmentId);
+  if (fromLookup) return fromLookup;
+
+  if (typeof segmentRef === "string") {
+    return null;
+  }
+
+  if (typeof segmentRef !== "string" && segmentRef.$id) {
+    return {
+      $id: segmentRef.$id,
+      name: segmentRef.name ?? "",
+      description: segmentRef.description ?? "",
+      earlyAdopterFlag: segmentRef.earlyAdopterFlag ?? false,
+      priorityScore: segmentRef.priorityScore ?? 50,
+      demographics: segmentRef.demographics ?? "",
+      psychographics: segmentRef.psychographics ?? "",
+      behavioral: segmentRef.behavioral ?? "",
+      geographic: segmentRef.geographic ?? "",
+      estimatedSize: segmentRef.estimatedSize ?? "",
+      colorHex: segmentRef.colorHex,
+    };
+  }
+
+  return null;
 }
 
 export default async function CanvasPage({ params }: PageProps) {
   const { slug } = await params;
   const user = await getSessionUser();
 
+  console.log('🔍 [Canvas Page] Accessing:', { slug, userId: user?.$id, hasUser: !!user });
+
   if (!user) {
-    redirect('/?error=unauthorized');
+    console.log('❌ [Canvas Page] No user session - redirecting to auth');
+    redirect("/?error=unauthorized");
   }
 
-  // Fetch canvas by slug
+  // 1. Fetch canvas by slug
+  // Index required: slug (key)
+  // Note: "users" relationship field is automatically loaded (can't be in Query.select)
   let canvas;
   try {
-    const result = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      CANVASES_COLLECTION_ID,
-      [Query.equal('slug', slug), Query.equal('ownerId', user.$id)],
-    );
-    if (result.documents.length === 0) {
-      redirect('/dashboard');
+    console.log('🔍 [Canvas Page] Querying database for slug:', slug);
+    const result = await serverTablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: CANVASES_TABLE_ID,
+      queries: [
+        Query.equal("slug", slug),
+        Query.select(["$id", "title", "slug", "description", "isPublic"]),
+        Query.limit(1),
+      ],
+    });
+    console.log('✅ [Canvas Page] Query result:', {
+      found: result.rows.length,
+      canvasId: result.rows[0]?.$id,
+      title: result.rows[0]?.title
+    });
+    if (result.rows.length === 0) {
+      console.log('❌ [Canvas Page] Canvas not found - redirecting to dashboard');
+      redirect("/dashboard");
     }
-    canvas = result.documents[0];
-  } catch {
-    redirect('/dashboard');
+    canvas = result.rows[0];
+  } catch (error) {
+    console.error('❌ [Canvas Page] Database error:', error);
+    redirect("/dashboard");
   }
 
-  // Fetch blocks using the canvas integer id
-  const canvasIntId = canvas.id as number;
-  let blockDocs: Record<string, unknown>[] = [];
-  try {
-    const result = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      BLOCKS_COLLECTION_ID,
-      [Query.equal('canvasId', canvasIntId), Query.limit(25)],
-    );
-    blockDocs = result.documents as unknown as Record<string, unknown>[];
-  } catch {
-    // blocks collection may not have data yet
-  }
+  // 2. Fetch blocks and segments for this canvas
+  let blockDocs: any[] = [];
+  let segmentDocs: any[] = [];
 
-  // Fetch segments, block_segment links, and cards
-  let segmentDocs: Record<string, unknown>[] = [];
-  let linkDocs: Record<string, unknown>[] = [];
-  let cardDocs: Record<string, unknown>[] = [];
   try {
-    const [segResult, linkResult, cardResult] = await Promise.all([
-      serverDatabases.listDocuments(
-        DATABASE_ID,
-        SEGMENTS_COLLECTION_ID,
-        [Query.equal('canvasId', canvasIntId), Query.orderDesc('priorityScore'), Query.limit(100)],
-      ),
-      serverDatabases.listDocuments(
-        DATABASE_ID,
-        BLOCK_SEGMENTS_COLLECTION_ID,
-        [Query.limit(500)],
-      ),
-      serverDatabases.listDocuments(
-        DATABASE_ID,
-        CARDS_COLLECTION_ID,
-        [Query.equal('canvasId', canvasIntId), Query.orderAsc('order'), Query.limit(500)],
-      ),
+    // Index required: blocks.canvas (key), segments.canvas + priorityScore (composite, desc)
+    const [blocksRes, segmentsRes] = await Promise.all([
+      serverTablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: BLOCKS_TABLE_ID,
+        queries: [
+          Query.equal("canvas", canvas.$id),
+          Query.select([
+            "$id", "$createdAt", "blockType", "contentJson",
+            "aiAnalysisJson", "confidenceScore", "riskScore",
+            "deepDiveJson",
+          ]),
+          Query.limit(100),
+        ],
+      }),
+      serverTablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: SEGMENTS_TABLE_ID,
+        queries: [
+          Query.equal("canvas", canvas.$id),
+          Query.select([
+            "$id", "name", "description", "earlyAdopterFlag",
+            "priorityScore", "demographics", "psychographics",
+            "behavioral", "geographic", "estimatedSize", "colorHex",
+          ]),
+          Query.orderDesc("priorityScore"),
+          Query.limit(100),
+        ],
+      }),
     ]);
-    segmentDocs = segResult.documents as unknown as Record<string, unknown>[];
-    linkDocs = linkResult.documents as unknown as Record<string, unknown>[];
-    cardDocs = cardResult.documents as unknown as Record<string, unknown>[];
-  } catch {
-    // collections may not exist yet
-  }
+    blockDocs = blocksRes.rows;
+    segmentDocs = segmentsRes.rows;
 
-  // Build segment map by integer id
-  const segmentMap = new Map<number, Segment>();
-  for (const doc of segmentDocs) {
-    const seg: Segment = {
-      $id: doc.$id as string,
-      id: doc.id as number,
-      canvasId: doc.canvasId as number,
-      name: doc.name as string,
-      description: (doc.description as string) ?? '',
-      earlyAdopterFlag: (doc.earlyAdopterFlag as boolean) ?? false,
-      priorityScore: (doc.priorityScore as number) ?? 50,
-      demographics: (doc.demographics as string) ?? '',
-      psychographics: (doc.psychographics as string) ?? '',
-      behavioral: (doc.behavioral as string) ?? '',
-      geographic: (doc.geographic as string) ?? '',
-      estimatedSize: (doc.estimatedSize as string) ?? '',
-    };
-    segmentMap.set(seg.id, seg);
-  }
-
-  // Build block-to-segments mapping (blockIntId -> segmentIntId[])
-  const blockSegmentLinks = new Map<number, number[]>();
-  for (const link of linkDocs) {
-    const blockId = link.blockId as number;
-    const segmentId = link.segmentId as number;
-    if (!blockSegmentLinks.has(blockId)) {
-      blockSegmentLinks.set(blockId, []);
+    // Debug: Log how many blocks we have
+    console.log(`[Canvas ${canvas.$id}] Loaded ${blockDocs.length} blocks from database`);
+    if (blockDocs.length > 9) {
+      console.log('Block types:', blockDocs.map(d => d.blockType));
     }
-    blockSegmentLinks.get(blockId)!.push(segmentId);
+  } catch (error) {
+    console.error("Error fetching canvas components:", error);
   }
 
-  // Build blockId -> cards mapping
-  const blockCardsMap = new Map<number, Card[]>();
-  for (const doc of cardDocs) {
-    const card: Card = {
-      $id: doc.$id as string,
-      id: doc.id as string,
-      blockId: doc.blockId as number,
-      canvasId: doc.canvasId as number,
-      name: doc.name as string,
-      description: (doc.description as string) ?? '',
-      order: (doc.order as number) ?? 0,
-      createdAt: (doc.createdAt as string) ?? '',
-    };
-    const existing = blockCardsMap.get(card.blockId) ?? [];
-    existing.push(card);
-    blockCardsMap.set(card.blockId, existing);
-  }
+  // 3. Map segments for easy lookup
+  const initialSegments: Segment[] = segmentDocs.map((doc: any) => ({
+    $id: doc.$id,
+    name: doc.name,
+    description: doc.description ?? "",
+    earlyAdopterFlag: doc.earlyAdopterFlag ?? false,
+    priorityScore: doc.priorityScore ?? 50,
+    demographics: doc.demographics ?? "",
+    psychographics: doc.psychographics ?? "",
+    behavioral: doc.behavioral ?? "",
+    geographic: doc.geographic ?? "",
+    estimatedSize: doc.estimatedSize ?? "",
+    colorHex: doc.colorHex,
+  }));
 
-  // Build blocks grouped by blockType (supporting multiple blocks per type)
-  const blocksByType = new Map<BlockType, BlockData[]>();
+  const segmentById = new Map(
+    initialSegments.map((segment) => [segment.$id, segment]),
+  );
 
+  // 4. Group blocks by blockType (handle multiple blocks per type)
+  const blocksByType = new Map<string, any[]>();
   for (const doc of blockDocs) {
-    const blockIntId = doc.id as number;
-    const blockType = doc.blockType as BlockType;
-    const linkedSegmentIds = blockSegmentLinks.get(blockIntId) ?? [];
-    const linkedSegments = linkedSegmentIds
-      .map((sid) => segmentMap.get(sid))
-      .filter((s): s is Segment => !!s);
-
-    const cards = blockCardsMap.get(blockIntId) ?? [];
-
-    const blockData: BlockData = {
-      $id: doc.$id as string,
-      id: blockIntId,
-      blockType,
-      content: parseContentJson(doc?.contentJson as string | undefined),
-      state: 'calm' as const,
-      aiAnalysis: parseAiAnalysis(doc?.aiAnalysisJson as string | undefined),
-      confidenceScore: (doc?.confidenceScore as number) ?? 0,
-      riskScore: (doc?.riskScore as number) ?? 0,
-      deepDiveData: parseDeepDiveJson(doc?.deepDiveJson as string | undefined),
-      linkedSegments,
-      cards,
-    };
-
-    if (!blocksByType.has(blockType)) {
-      blocksByType.set(blockType, []);
+    const type = doc.blockType;
+    if (!blocksByType.has(type)) {
+      blocksByType.set(type, []);
     }
-    blocksByType.get(blockType)!.push(blockData);
+    blocksByType.get(type)!.push(doc);
   }
 
-  // Create legacy format (single block per type) for backward compatibility
+  // 5. Build initial blocks, converting extra blocks to items
   const initialBlocks: BlockData[] = BLOCK_DEFINITIONS.map((def) => {
-    const blocks = blocksByType.get(def.type);
-    // Use first block if exists, otherwise create empty placeholder
-    if (blocks && blocks.length > 0) {
-      return blocks[0];
+    const docsForType = blocksByType.get(def.type) || [];
+
+    if (docsForType.length === 0) {
+      // No blocks for this type, return empty
+      return {
+        blockType: def.type as BlockType,
+        content: { bmc: "", lean: "", items: [] },
+        state: "calm" as const,
+        aiAnalysis: null,
+        confidenceScore: 0,
+        riskScore: 0,
+        deepDiveData: null,
+        linkedSegments: [],
+      };
     }
+
+    // Use first block as the "main" block
+    const mainDoc = docsForType[0];
+    const content = parseContentJson(mainDoc?.contentJson);
+
+    // Convert remaining blocks to items
+    if (docsForType.length > 1) {
+      console.log(`[${def.type}] Converting ${docsForType.length - 1} extra blocks to items`);
+
+      const extraItems = docsForType.slice(1).map((doc, idx) => {
+        const extraContent = parseContentJson(doc.contentJson);
+        // Use the bmc content as the item name
+        const name = extraContent.bmc || extraContent.lean || `Item ${idx + 1}`;
+        const description = extraContent.bmc !== extraContent.lean && extraContent.lean
+          ? extraContent.lean
+          : "";
+
+        return {
+          id: doc.$id,
+          name,
+          description,
+          linkedSegmentIds: [],
+          linkedItemIds: [],
+          createdAt: doc.$createdAt || new Date().toISOString(),
+        };
+      });
+
+      content.items = [...content.items, ...extraItems];
+    }
+
+    // Relationship attributes for segments
+    const linkedSegments: Segment[] = Array.isArray(mainDoc?.segments)
+      ? mainDoc.segments
+          .map((s: any) => normalizeSegmentRef(s, segmentById))
+          .filter((s): s is Segment => s !== null)
+      : [];
+
     return {
       blockType: def.type as BlockType,
-      content: { bmc: '', lean: '' },
-      state: 'calm' as const,
-      aiAnalysis: null,
-      confidenceScore: 0,
-      riskScore: 0,
-      deepDiveData: null,
-      linkedSegments: [],
-      cards: [],
+      content,
+      state: "calm" as const,
+      aiAnalysis: parseAiAnalysis(mainDoc?.aiAnalysisJson),
+      confidenceScore: mainDoc?.confidenceScore ?? 0,
+      riskScore: mainDoc?.riskScore ?? 0,
+      deepDiveData: parseDeepDiveJson(mainDoc?.deepDiveJson),
+      linkedSegments,
     };
   });
 
-  const initialSegments = Array.from(segmentMap.values());
-
   const canvasData: CanvasData = {
     $id: canvas.$id,
-    id: canvas.id as number,
-    title: canvas.title as string,
-    slug: canvas.slug as string,
-    description: (canvas.description as string) ?? '',
-    isPublic: (canvas.isPublic as boolean) ?? false,
-    ownerId: canvas.ownerId as string,
+    title: canvas.title,
+    slug: canvas.slug,
+    description: canvas.description ?? "",
+    isPublic: canvas.isPublic ?? false,
+    users: canvas.users?.$id || canvas.users || "", // Handle relationship object or ID
   };
 
   return (
@@ -244,7 +305,6 @@ export default async function CanvasPage({ params }: PageProps) {
         initialCanvasData={canvasData}
         initialBlocks={initialBlocks}
         initialSegments={initialSegments}
-        initialBlocksByType={blocksByType}
       />
     </div>
   );

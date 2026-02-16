@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from "react";
 import type {
   BlockData,
   Segment,
   MarketResearchData,
   SegmentScorecard,
   SegmentProfile,
-} from '@/lib/types/canvas';
-import { BlockChatSection } from '@/app/components/ai/BlockChatSection';
-import { SegmentSelector } from './SegmentSelector';
-import { SegmentSnapshot } from './SegmentSnapshot';
-import { DecisionMatrix } from './DecisionMatrix';
-import { BeachheadDecision, type ComparisonResult } from './BeachheadDecision';
+} from "@/lib/types/canvas";
+import { BlockChatSection } from "@/app/components/ai/BlockChatSection";
+import { SegmentSelector } from "./SegmentSelector";
+import { SegmentSnapshot } from "./SegmentSnapshot";
+import { DecisionMatrix } from "./DecisionMatrix";
+import { BeachheadDecision, type ComparisonResult } from "./BeachheadDecision";
 
 interface SegmentEvalOverlayProps {
   canvasId: string;
@@ -38,20 +38,23 @@ export function SegmentEvalOverlay({
   };
   const scorecards = data.scorecards ?? [];
 
-  const [selectedSegmentId, setSelectedSegmentId] = useState<number | null>(
-    segments.length > 0 ? segments[0].id : null,
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(
+    segments.length > 0 ? segments[0].$id : null,
   );
   const [isScoring, setIsScoring] = useState(false);
   const [isComparing, setIsComparing] = useState(false);
   const [isSuggestingProfile, setIsSuggestingProfile] = useState(false);
-  const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null);
+  const [comparisonResult, setComparisonResult] =
+    useState<ComparisonResult | null>(null);
   const [creatingSegment, setCreatingSegment] = useState(false);
-  const [newSegmentName, setNewSegmentName] = useState('');
+  const [newSegmentName, setNewSegmentName] = useState("");
 
   const putTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const selectedSegment = segments.find((s) => s.id === selectedSegmentId) ?? null;
-  const selectedScorecard = scorecards.find((s) => s.segmentId === selectedSegmentId) ?? null;
+  const selectedSegment =
+    segments.find((s) => s.$id === selectedSegmentId) ?? null;
+  const selectedScorecard =
+    scorecards.find((s) => s.segmentId === selectedSegmentId) ?? null;
 
   // Persist deep-dive data (debounced)
   const persistDeepDive = useCallback(
@@ -62,8 +65,8 @@ export function SegmentEvalOverlay({
         await fetch(
           `/api/canvas/${canvasId}/blocks/customer_segments/deep-dive`,
           {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ deepDiveJson: JSON.stringify(updatedData) }),
           },
         );
@@ -82,12 +85,12 @@ export function SegmentEvalOverlay({
       const res = await fetch(
         `/api/canvas/${canvasId}/blocks/customer_segments/deep-dive`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            module: 'segment_scoring',
+            module: "segment_scoring",
             inputs: {
-              segmentId: String(selectedSegment.id),
+              segmentId: selectedSegment.$id,
               segmentName: selectedSegment.name,
               segmentDescription: selectedSegment.description,
               demographics: selectedSegment.demographics,
@@ -112,9 +115,9 @@ export function SegmentEvalOverlay({
 
   // Compare two segments
   const handleCompare = useCallback(
-    async (otherSegmentId: number) => {
+    async (otherSegmentId: string) => {
       if (!selectedSegment || isComparing) return;
-      const otherSegment = segments.find((s) => s.id === otherSegmentId);
+      const otherSegment = segments.find((s) => s.$id === otherSegmentId);
       if (!otherSegment) return;
 
       setIsComparing(true);
@@ -124,15 +127,15 @@ export function SegmentEvalOverlay({
         const res = await fetch(
           `/api/canvas/${canvasId}/blocks/customer_segments/deep-dive`,
           {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              module: 'segment_comparison',
+              module: "segment_comparison",
               inputs: {
-                segmentAId: String(selectedSegment.id),
+                segmentAId: selectedSegment.$id,
                 segmentAName: selectedSegment.name,
                 segmentADescription: selectedSegment.description,
-                segmentBId: String(otherSegment.id),
+                segmentBId: otherSegment.$id,
                 segmentBName: otherSegment.name,
                 segmentBDescription: otherSegment.description,
               },
@@ -169,7 +172,9 @@ export function SegmentEvalOverlay({
         const catCriteria = updatedCriteria.filter((c) => c.category === cat);
         const totalWeight = catCriteria.reduce((s, c) => s + c.weight, 0);
         if (totalWeight > 0) {
-          const catScore = catCriteria.reduce((s, c) => s + c.score * c.weight, 0) / totalWeight;
+          const catScore =
+            catCriteria.reduce((s, c) => s + c.score * c.weight, 0) /
+            totalWeight;
           overall += catScore * catWeight;
         }
       }
@@ -184,7 +189,9 @@ export function SegmentEvalOverlay({
       const updatedData: MarketResearchData = {
         ...data,
         scorecards: [
-          ...(data.scorecards ?? []).filter((s) => s.segmentId !== selectedScorecard.segmentId),
+          ...(data.scorecards ?? []).filter(
+            (s) => s.segmentId !== selectedScorecard.segmentId,
+          ),
           updatedScorecard,
         ],
       };
@@ -210,7 +217,9 @@ export function SegmentEvalOverlay({
       const updatedData: MarketResearchData = {
         ...data,
         scorecards: [
-          ...(data.scorecards ?? []).filter((s) => s.segmentId !== selectedScorecard.segmentId),
+          ...(data.scorecards ?? []).filter(
+            (s) => s.segmentId !== selectedScorecard.segmentId,
+          ),
           updatedScorecard,
         ],
       };
@@ -231,7 +240,9 @@ export function SegmentEvalOverlay({
       const updatedData: MarketResearchData = {
         ...data,
         scorecards: [
-          ...(data.scorecards ?? []).filter((s) => s.segmentId !== selectedScorecard.segmentId),
+          ...(data.scorecards ?? []).filter(
+            (s) => s.segmentId !== selectedScorecard.segmentId,
+          ),
           updatedScorecard,
         ],
       };
@@ -248,7 +259,7 @@ export function SegmentEvalOverlay({
         ...data,
         segmentProfiles: {
           ...(data.segmentProfiles ?? {}),
-          [String(selectedSegmentId)]: profile,
+          [selectedSegmentId]: profile,
         },
       };
       persistDeepDive(updatedData);
@@ -265,12 +276,12 @@ export function SegmentEvalOverlay({
       const res = await fetch(
         `/api/canvas/${canvasId}/blocks/customer_segments/deep-dive`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            module: 'segment_profile',
+            module: "segment_profile",
             inputs: {
-              segmentId: String(selectedSegment.id),
+              segmentId: selectedSegment.$id,
               segmentName: selectedSegment.name,
               segmentDescription: selectedSegment.description,
             },
@@ -301,7 +312,9 @@ export function SegmentEvalOverlay({
           <div className="flex items-center gap-2 text-sm">
             <span className="text-foreground-muted">Customer Segments</span>
             <span className="text-foreground-muted/40">›</span>
-            <span className="text-foreground font-medium">Segment Evaluation</span>
+            <span className="text-foreground font-medium">
+              Segment Evaluation
+            </span>
           </div>
           <button onClick={onClose} className="ui-btn ui-btn-sm ui-btn-ghost">
             Close
@@ -321,9 +334,9 @@ export function SegmentEvalOverlay({
                   className="w-full bg-white/3 rounded px-2.5 py-1.5 text-xs text-foreground outline-none border border-white/8 focus:border-white/15"
                   autoFocus
                   onKeyDown={(e) => {
-                    if (e.key === 'Escape') {
+                    if (e.key === "Escape") {
                       setCreatingSegment(false);
-                      setNewSegmentName('');
+                      setNewSegmentName("");
                     }
                   }}
                 />
@@ -333,7 +346,7 @@ export function SegmentEvalOverlay({
                       // Creating segments would need a handler from parent
                       // For now, just close the create form
                       setCreatingSegment(false);
-                      setNewSegmentName('');
+                      setNewSegmentName("");
                     }}
                     className="flex-1 text-[10px] py-1 rounded bg-white/5 text-foreground-muted hover:text-foreground transition-colors"
                   >
@@ -363,7 +376,11 @@ export function SegmentEvalOverlay({
                   segment={selectedSegment}
                   scorecard={selectedScorecard}
                   deepDiveData={data}
-                  profile={data.segmentProfiles?.[String(selectedSegmentId)] ?? null}
+                  profile={
+                    selectedSegmentId
+                      ? data.segmentProfiles?.[selectedSegmentId] ?? null
+                      : null
+                  }
                   isScoring={isScoring}
                   isSuggestingProfile={isSuggestingProfile}
                   onScore={handleScore}
@@ -394,8 +411,8 @@ export function SegmentEvalOverlay({
             ) : (
               <div className="flex items-center justify-center h-full text-sm text-foreground-muted/40">
                 {segments.length === 0
-                  ? 'Create a segment to start evaluating'
-                  : 'Select a segment from the left panel'}
+                  ? "Create a segment to start evaluating"
+                  : "Select a segment from the left panel"}
               </div>
             )}
           </div>

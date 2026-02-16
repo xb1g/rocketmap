@@ -176,20 +176,46 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
       if (m.role !== 'assistant') continue;
       for (const part of m.parts ?? []) {
         const p = part as Record<string, unknown>;
-        if (p.type !== 'tool-invocation') continue;
 
-        const inv = p.toolInvocation as {
-          toolName?: string;
-          state?: string;
-          args?: Record<string, string>;
-          result?: { slug?: string; canvasId?: number; title?: string };
-        } | undefined;
-        if (!inv || inv.toolName !== 'generateCanvas') continue;
+        // Check if this is a tool part (handles both tool-invocation and dynamic-tool formats)
+        const isToolPart = p.type === 'tool-invocation' || p.type === 'dynamic-tool' ||
+                          (typeof p.type === 'string' && (p.type as string).startsWith('tool-'));
+        if (!isToolPart) continue;
 
-        // The server-side tool returns { slug, canvasId, title } in `result`
-        if (inv.state === 'result' && inv.result?.slug) {
+        // Extract tool name and check if it's generateCanvas
+        let toolName = '';
+        let slug = '';
+        let title = '';
+        let isComplete = false;
+
+        if (p.type === 'tool-invocation') {
+          const inv = p.toolInvocation as {
+            toolName?: string;
+            state?: string;
+            args?: Record<string, string>;
+            result?: { slug?: string; canvasId?: number; title?: string };
+          } | undefined;
+          if (!inv || inv.toolName !== 'generateCanvas') continue;
+          toolName = inv.toolName;
+          isComplete = inv.state === 'result';
+          slug = inv.result?.slug ?? '';
+          title = inv.result?.title ?? inv.args?.title ?? 'Untitled Canvas';
+        } else if (p.type === 'dynamic-tool') {
+          toolName = (p.toolName as string) ?? '';
+          if (toolName !== 'generateCanvas') continue;
+          isComplete = p.state === 'output-available';
+          const output = p.output as { slug?: string; title?: string } | undefined;
+          const input = p.input as { title?: string } | undefined;
+          slug = output?.slug ?? '';
+          title = output?.title ?? input?.title ?? 'Untitled Canvas';
+        } else {
+          continue;
+        }
+
+        // If generateCanvas is complete and has a slug, trigger redirect
+        if (isComplete && slug) {
           creatingRef.current = true;
-          handleCanvasReady(inv.result.slug, inv.result.title ?? inv.args?.title ?? 'Untitled Canvas');
+          handleCanvasReady(slug, title);
           return;
         }
       }
@@ -239,6 +265,24 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
     setInput('');
     sendMessage({ text });
   };
+
+  const handleEditMessage = useCallback((messageId: string, newText: string) => {
+    // Find the index of the message being edited
+    const editIndex = messages.findIndex((m) => m.id === messageId);
+    if (editIndex === -1) return;
+
+    // Truncate messages BEFORE the edited message (remove it and everything after)
+    // sendMessage will add the new user message automatically
+    const truncatedMessages = messages.slice(0, editIndex);
+    setMessages(truncatedMessages);
+
+    // Reset creation state in case we were mid-creation
+    setCreationState('chatting');
+    creatingRef.current = false;
+
+    // Send the edited message - this will add it to messages and trigger AI response
+    sendMessage({ text: newText });
+  }, [messages, setMessages, sendMessage]);
 
   const hasMessages = messages.filter((m) => m.role === 'user' || m.role === 'assistant').length > 0;
 
@@ -543,6 +587,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
                     isLoading={isLoading}
                     status={status}
                     canvasSlug={sessions.find((s) => s.id === activeSessionId)?.canvasSlug}
+                    onEditMessage={handleEditMessage}
                   />
                 )}
                 <ChatInput

@@ -2,45 +2,53 @@ import { NextResponse } from 'next/server';
 import { ID, Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
 import {
-  serverDatabases,
+  serverTablesDB,
   DATABASE_ID,
-  CANVASES_COLLECTION_ID,
-  SEGMENTS_COLLECTION_ID,
+  CANVASES_TABLE_ID,
+  SEGMENTS_TABLE_ID,
 } from '@/lib/appwrite';
+import { getUserIdFromCanvas } from '@/lib/utils';
+import type { CanvasData } from '@/lib/types/canvas';
 
 interface RouteContext {
   params: Promise<{ canvasId: string }>;
 }
 
 async function verifyCanvasOwnership(canvasId: string, userId: string) {
-  const canvas = await serverDatabases.getDocument(
-    DATABASE_ID,
-    CANVASES_COLLECTION_ID,
-    canvasId,
-  );
-  if (canvas.ownerId !== userId) {
+  const canvas = await serverTablesDB.getRow({
+    databaseId: DATABASE_ID,
+    tableId: CANVASES_TABLE_ID,
+    rowId: canvasId,
+  }) as unknown as CanvasData;
+  if (getUserIdFromCanvas(canvas) !== userId) {
     throw new Error('Forbidden');
   }
-  return canvas.id as number;
+  return canvasId;
 }
 
 export async function GET(_request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
     const { canvasId } = await context.params;
-    const canvasIntId = await verifyCanvasOwnership(canvasId, user.$id);
+    await verifyCanvasOwnership(canvasId, user.$id);
 
-    const result = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      SEGMENTS_COLLECTION_ID,
-      [
-        Query.equal('canvasId', canvasIntId),
+    const result = await serverTablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: SEGMENTS_TABLE_ID,
+      queries: [
+        Query.equal('canvas', canvasId),
         Query.orderDesc('priorityScore'),
+        Query.select([
+          '$id', '$createdAt', '$updatedAt',
+          'name', 'description', 'earlyAdopterFlag', 'priorityScore',
+          'demographics', 'psychographics', 'behavioral', 'geographic',
+          'estimatedSize', 'colorHex',
+        ]),
         Query.limit(100),
       ],
-    );
+    });
 
-    return NextResponse.json({ segments: result.documents });
+    return NextResponse.json({ segments: result.rows });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     if (message === 'Unauthorized') {
@@ -58,7 +66,7 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
     const { canvasId } = await context.params;
-    const canvasIntId = await verifyCanvasOwnership(canvasId, user.$id);
+    await verifyCanvasOwnership(canvasId, user.$id);
     const body = await request.json();
 
     const { name, description, earlyAdopterFlag, priorityScore, demographics, psychographics, behavioral, geographic, estimatedSize, colorHex } = body;
@@ -74,21 +82,24 @@ export async function POST(request: Request, context: RouteContext) {
     ];
     let assignedColor = colorHex;
     if (!assignedColor) {
-      const existingSegments = await serverDatabases.listDocuments(
-        DATABASE_ID,
-        SEGMENTS_COLLECTION_ID,
-        [Query.equal('canvasId', canvasIntId), Query.limit(100)],
-      );
+      const existingSegments = await serverTablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: SEGMENTS_TABLE_ID,
+        queries: [
+          Query.equal('canvas', canvasId),
+          Query.select(['$id']),
+          Query.limit(100),
+        ],
+      });
       assignedColor = SEGMENT_COLORS[existingSegments.total % SEGMENT_COLORS.length];
     }
 
-    const doc = await serverDatabases.createDocument(
-      DATABASE_ID,
-      SEGMENTS_COLLECTION_ID,
-      ID.unique(),
-      {
-        id: Math.floor(Math.random() * 2_000_000_000),
-        canvasId: canvasIntId,
+    const doc = await serverTablesDB.createRow({
+      databaseId: DATABASE_ID,
+      tableId: SEGMENTS_TABLE_ID,
+      rowId: ID.unique(),
+      data: {
+        canvas: canvasId,
         name,
         description: description ?? '',
         earlyAdopterFlag: earlyAdopterFlag ?? false,
@@ -100,7 +111,7 @@ export async function POST(request: Request, context: RouteContext) {
         estimatedSize: estimatedSize ?? '',
         colorHex: assignedColor,
       },
-    );
+    });
 
     return NextResponse.json({ segment: doc }, { status: 201 });
   } catch (error: unknown) {

@@ -1,3 +1,4 @@
 {
-  "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": true
+  "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": true,
+  "deno.enable": false
 }

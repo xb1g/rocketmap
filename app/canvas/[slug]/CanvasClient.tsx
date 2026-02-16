@@ -1,11 +1,18 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, type CSSProperties } from "react";
+import {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  type CSSProperties,
+} from "react";
 import { useRouter } from "next/navigation";
 import type {
   BlockData,
   BlockItem,
   BlockType,
+  BlockContent,
   BlockEditProposal,
   BlockItemProposal,
   SegmentProposal,
@@ -16,11 +23,13 @@ import type {
   AIUsage,
   MarketResearchData,
   Segment,
-  Card,
 } from "@/lib/types/canvas";
 import type { HoveredItem } from "@/app/components/canvas/ConnectionOverlay";
 import type { ConsistencyData } from "@/app/components/canvas/ConsistencyReport";
-import { isSharedBlock, BLOCK_DEFINITIONS } from "@/app/components/canvas/constants";
+import {
+  isSharedBlock,
+  BLOCK_DEFINITIONS,
+} from "@/app/components/canvas/constants";
 import { BMCGrid } from "@/app/components/canvas/BMCGrid";
 import { CanvasToolbar } from "@/app/components/canvas/CanvasToolbar";
 import { CanvasTabs } from "@/app/components/canvas/CanvasTabs";
@@ -28,6 +37,7 @@ import { NotesView } from "@/app/components/canvas/NotesView";
 import { CanvasSettingsModal } from "@/app/components/canvas/CanvasSettingsModal";
 import { BlockFocusPanel } from "@/app/components/canvas/BlockFocusPanel";
 import { AnalysisView } from "@/app/components/canvas/AnalysisView";
+import { DebugPanel } from "@/app/components/canvas/DebugPanel";
 import { ChatBar } from "@/app/components/ai/ChatBar";
 import { BlockChatSection } from "@/app/components/ai/BlockChatSection";
 import { DeepDiveOverlay } from "@/app/components/blocks/DeepDiveOverlay";
@@ -38,7 +48,6 @@ interface CanvasClientProps {
   initialCanvasData: CanvasData;
   initialBlocks: BlockData[];
   initialSegments?: Segment[];
-  initialBlocksByType?: Map<BlockType, BlockData[]>;
 }
 
 type SaveStatus = "saved" | "saving" | "unsaved";
@@ -63,7 +72,6 @@ export function CanvasClient({
   initialCanvasData,
   initialBlocks,
   initialSegments = [],
-  initialBlocksByType,
 }: CanvasClientProps) {
   const router = useRouter();
   const [mode, setMode] = useState<CanvasMode>("bmc");
@@ -93,28 +101,14 @@ export function CanvasClient({
     useState<ConsistencyData | null>(null);
   const [isCheckingConsistency, setIsCheckingConsistency] = useState(false);
   const [notes, setNotes] = useState(initialCanvasData.description);
-  const [segments, setSegments] = useState<Map<number, Segment>>(() => {
-    const map = new Map<number, Segment>();
+  const [segments, setSegments] = useState<Map<string, Segment>>(() => {
+    const map = new Map<string, Segment>();
     for (const seg of initialSegments) {
-      map.set(seg.id, seg);
+      map.set(seg.$id, seg);
     }
     return map;
   });
   const [hoveredItem, setHoveredItem] = useState<HoveredItem | null>(null);
-  const [blocksByType, setBlocksByType] = useState<
-    Map<BlockType, BlockData[]>
-  >(() => {
-    if (initialBlocksByType) return initialBlocksByType;
-    // Fallback: create empty map
-    const map = new Map<BlockType, BlockData[]>();
-    for (const block of initialBlocks) {
-      if (!map.has(block.blockType)) {
-        map.set(block.blockType, []);
-      }
-      map.get(block.blockType)!.push(block);
-    }
-    return map;
-  });
 
   const saveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
@@ -150,7 +144,10 @@ export function CanvasClient({
   useEffect(() => {
     if (!isZoomStorageReady) return;
     try {
-      window.localStorage.setItem(`canvas:textZoom:${canvasId}`, String(textZoom));
+      window.localStorage.setItem(
+        `canvas:textZoom:${canvasId}`,
+        String(textZoom),
+      );
     } catch {
       // ignore storage errors
     }
@@ -158,7 +155,10 @@ export function CanvasClient({
 
   // Save block content
   const saveBlock = useCallback(
-    async (blockType: BlockType, content: { bmc: string; lean: string; items?: BlockItem[] }) => {
+    async (
+      blockType: BlockType,
+      content: { bmc: string; lean: string; items?: BlockItem[] },
+    ) => {
       setSaveStatus("saving");
       try {
         const res = await fetch(`/api/canvas/${canvasId}/blocks`, {
@@ -209,21 +209,29 @@ export function CanvasClient({
 
   const handleBlockChange = useCallback(
     (blockType: BlockType, value: string) => {
-      let updatedContent: { bmc: string; lean: string; items?: BlockItem[] } = { bmc: "", lean: "" };
+      let updatedContent: BlockContent = {
+        bmc: "",
+        lean: "",
+        items: [],
+      };
 
       setBlocks((prev) => {
         const next = new Map(prev);
         const existing = next.get(blockType);
-        const content = existing?.content ?? { bmc: "", lean: "" };
+        const content = existing?.content ?? { bmc: "", lean: "", items: [] };
         // Shared blocks (channels, customer_segments, cost_structure, revenue_streams)
         // always write to both bmc and lean so content stays in sync across modes
         if (isSharedBlock(blockType)) {
-          updatedContent = { bmc: value, lean: value, items: content.items };
+          updatedContent = {
+            bmc: value,
+            lean: value,
+            items: content.items,
+          };
         } else {
           updatedContent =
             mode === "lean"
-              ? { ...content, lean: value }
-              : { ...content, bmc: value };
+              ? { bmc: content.bmc, lean: value, items: content.items }
+              : { bmc: value, lean: content.lean, items: content.items };
         }
         next.set(blockType, {
           ...existing!,
@@ -405,8 +413,6 @@ export function CanvasClient({
         const { segment: doc } = await res.json();
         const seg: Segment = {
           $id: doc.$id,
-          id: doc.id,
-          canvasId: doc.canvasId,
           name: doc.name,
           description: doc.description ?? "",
           earlyAdopterFlag: doc.earlyAdopterFlag ?? false,
@@ -418,7 +424,7 @@ export function CanvasClient({
           estimatedSize: doc.estimatedSize ?? "",
           colorHex: doc.colorHex ?? undefined,
         };
-        setSegments((prev) => new Map(prev).set(seg.id, seg));
+        setSegments((prev) => new Map(prev).set(seg.$id, seg));
         return seg;
       } catch {
         return null;
@@ -428,7 +434,7 @@ export function CanvasClient({
   );
 
   const handleSegmentUpdate = useCallback(
-    async (segmentId: number, updates: Partial<Segment>) => {
+    async (segmentId: string, updates: Partial<Segment>) => {
       try {
         const res = await fetch(
           `/api/canvas/${canvasId}/segments/${segmentId}`,
@@ -442,8 +448,6 @@ export function CanvasClient({
         const { segment: doc } = await res.json();
         const seg: Segment = {
           $id: doc.$id,
-          id: doc.id,
-          canvasId: doc.canvasId,
           name: doc.name,
           description: doc.description ?? "",
           earlyAdopterFlag: doc.earlyAdopterFlag ?? false,
@@ -455,15 +459,15 @@ export function CanvasClient({
           estimatedSize: doc.estimatedSize ?? "",
           colorHex: doc.colorHex ?? undefined,
         };
-        setSegments((prev) => new Map(prev).set(seg.id, seg));
+        setSegments((prev) => new Map(prev).set(seg.$id, seg));
         setBlocks((prev) => {
           const next = new Map(prev);
           for (const [bt, block] of next) {
-            if (block.linkedSegments?.some((s) => s.id === seg.id)) {
+            if (block.linkedSegments?.some((s) => s.$id === seg.$id)) {
               next.set(bt, {
                 ...block,
                 linkedSegments: block.linkedSegments.map((s) =>
-                  s.id === seg.id ? seg : s,
+                  s.$id === seg.$id ? seg : s,
                 ),
               });
             }
@@ -478,7 +482,7 @@ export function CanvasClient({
   );
 
   const handleSegmentDelete = useCallback(
-    async (segmentId: number) => {
+    async (segmentId: string) => {
       try {
         const res = await fetch(
           `/api/canvas/${canvasId}/segments/${segmentId}`,
@@ -493,11 +497,11 @@ export function CanvasClient({
         setBlocks((prev) => {
           const next = new Map(prev);
           for (const [bt, block] of next) {
-            if (block.linkedSegments?.some((s) => s.id === segmentId)) {
+            if (block.linkedSegments?.some((s) => s.$id === segmentId)) {
               next.set(bt, {
                 ...block,
                 linkedSegments: block.linkedSegments.filter(
-                  (s) => s.id !== segmentId,
+                  (s) => s.$id !== segmentId,
                 ),
               });
             }
@@ -512,7 +516,11 @@ export function CanvasClient({
   );
 
   const handleSegmentLink = useCallback(
-    async (blockType: BlockType, segmentId: number, segmentOverride?: Segment) => {
+    async (
+      blockType: BlockType,
+      segmentId: string,
+      segmentOverride?: Segment,
+    ) => {
       try {
         const res = await fetch(
           `/api/canvas/${canvasId}/blocks/${blockType}/segments`,
@@ -530,7 +538,7 @@ export function CanvasClient({
           const block = next.get(blockType);
           if (block) {
             const existing = block.linkedSegments ?? [];
-            if (!existing.some((s) => s.id === segmentId)) {
+            if (!existing.some((s) => s.$id === segmentId)) {
               next.set(blockType, {
                 ...block,
                 linkedSegments: [...existing, seg],
@@ -547,7 +555,7 @@ export function CanvasClient({
   );
 
   const handleSegmentUnlink = useCallback(
-    async (blockType: BlockType, segmentId: number) => {
+    async (blockType: BlockType, segmentId: string) => {
       try {
         const res = await fetch(
           `/api/canvas/${canvasId}/blocks/${blockType}/segments?segmentId=${segmentId}`,
@@ -561,7 +569,7 @@ export function CanvasClient({
             next.set(blockType, {
               ...block,
               linkedSegments: (block.linkedSegments ?? []).filter(
-                (s) => s.id !== segmentId,
+                (s) => s.$id !== segmentId,
               ),
             });
           }
@@ -577,7 +585,10 @@ export function CanvasClient({
   // ─── Block Item Handlers ───────────────────────────────────────────────────
 
   const debouncedSaveItems = useCallback(
-    (blockType: BlockType, content: { bmc: string; lean: string; items?: BlockItem[] }) => {
+    (
+      blockType: BlockType,
+      content: { bmc: string; lean: string; items?: BlockItem[] },
+    ) => {
       setSaveStatus("unsaved");
       const key = `__items_${blockType}`;
       const existing = saveTimers.current.get(key);
@@ -626,7 +637,9 @@ export function CanvasClient({
   const handleItemUpdate = useCallback(
     (blockType: BlockType, itemId: string, updates: Partial<BlockItem>) => {
       updateBlockItems(blockType, (items) =>
-        items.map((item) => (item.id === itemId ? { ...item, ...updates } : item)),
+        items.map((item) =>
+          item.id === itemId ? { ...item, ...updates } : item,
+        ),
       );
     },
     [updateBlockItems],
@@ -634,13 +647,15 @@ export function CanvasClient({
 
   const handleItemDelete = useCallback(
     (blockType: BlockType, itemId: string) => {
-      updateBlockItems(blockType, (items) => items.filter((item) => item.id !== itemId));
+      updateBlockItems(blockType, (items) =>
+        items.filter((item) => item.id !== itemId),
+      );
     },
     [updateBlockItems],
   );
 
   const handleItemToggleSegment = useCallback(
-    (blockType: BlockType, itemId: string, segmentId: number) => {
+    (blockType: BlockType, itemId: string, segmentId: string) => {
       updateBlockItems(blockType, (items) =>
         items.map((item) => {
           if (item.id !== itemId) return item;
@@ -675,281 +690,10 @@ export function CanvasClient({
     [updateBlockItems],
   );
 
-  // ─── Block Handlers (New Architecture) ─────────────────────────────────────
-
-  /**
-   * Update a single block's contentJson field
-   */
-  const handleBlockUpdate = useCallback(
-    async (blockId: string, updates: { contentJson: string }) => {
-      try {
-        const res = await fetch(`/api/blocks/${blockId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updates),
-        });
-        if (!res.ok) {
-          console.error("Failed to update block");
-          return;
-        }
-        // Update local blocksByType state
-        setBlocksByType((prev) => {
-          const next = new Map(prev);
-          for (const [blockType, blocksArray] of next) {
-            const blockIndex = blocksArray.findIndex((b) => b.$id === blockId);
-            if (blockIndex !== -1) {
-              const updatedBlocks = [...blocksArray];
-              updatedBlocks[blockIndex] = {
-                ...updatedBlocks[blockIndex],
-                // TODO: Parse contentJson when fully migrated
-                // For now, keep existing structure
-              };
-              next.set(blockType, updatedBlocks);
-              break;
-            }
-          }
-          return next;
-        });
-      } catch (error) {
-        console.error("Failed to update block:", error);
-      }
-    },
-    [],
-  );
-
-  /**
-   * Delete a single block
-   */
-  const handleBlockDelete = useCallback(
-    async (blockId: string) => {
-      try {
-        const res = await fetch(`/api/blocks/${blockId}`, {
-          method: "DELETE",
-        });
-        if (!res.ok) {
-          console.error("Failed to delete block");
-          return;
-        }
-        // Update local blocksByType state
-        setBlocksByType((prev) => {
-          const next = new Map(prev);
-          for (const [blockType, blocksArray] of next) {
-            const filtered = blocksArray.filter((b) => b.$id !== blockId);
-            if (filtered.length !== blocksArray.length) {
-              next.set(blockType, filtered);
-              break;
-            }
-          }
-          return next;
-        });
-        // Also remove from legacy blocks map if present
-        setBlocks((prev) => {
-          const next = new Map(prev);
-          for (const [blockType, block] of next) {
-            if (block.$id === blockId) {
-              // Don't delete the blockType entry, just clear its content
-              next.set(blockType, {
-                ...block,
-                content: { bmc: "", lean: "" },
-                aiAnalysis: null,
-                confidenceScore: 0,
-                riskScore: 0,
-              });
-              break;
-            }
-          }
-          return next;
-        });
-      } catch (error) {
-        console.error("Failed to delete block:", error);
-      }
-    },
-    [],
-  );
-
-  /**
-   * Toggle segment link for a single block (M:M relationship)
-   */
-  const handleBlockSegmentToggle = useCallback(
-    async (blockId: string, segmentId: number) => {
-      try {
-        const res = await fetch(`/api/blocks/${blockId}/segments`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ segmentId }),
-        });
-        if (!res.ok) {
-          console.error("Failed to toggle segment");
-          return;
-        }
-        const { action } = await res.json();
-        const segment = segments.get(segmentId);
-        if (!segment) return;
-
-        // Update local blocksByType state
-        setBlocksByType((prev) => {
-          const next = new Map(prev);
-          for (const [blockType, blocksArray] of next) {
-            const blockIndex = blocksArray.findIndex((b) => b.$id === blockId);
-            if (blockIndex !== -1) {
-              const updatedBlocks = [...blocksArray];
-              const block = updatedBlocks[blockIndex];
-              const linkedSegments = block.linkedSegments ?? [];
-
-              if (action === "linked") {
-                updatedBlocks[blockIndex] = {
-                  ...block,
-                  linkedSegments: [...linkedSegments, segment],
-                };
-              } else {
-                updatedBlocks[blockIndex] = {
-                  ...block,
-                  linkedSegments: linkedSegments.filter(
-                    (s) => s.id !== segmentId,
-                  ),
-                };
-              }
-              next.set(blockType, updatedBlocks);
-              break;
-            }
-          }
-          return next;
-        });
-
-        // Also update legacy blocks map
-        setBlocks((prev) => {
-          const next = new Map(prev);
-          for (const [blockType, block] of next) {
-            if (block.$id === blockId) {
-              const linkedSegments = block.linkedSegments ?? [];
-              if (action === "linked") {
-                next.set(blockType, {
-                  ...block,
-                  linkedSegments: [...linkedSegments, segment],
-                });
-              } else {
-                next.set(blockType, {
-                  ...block,
-                  linkedSegments: linkedSegments.filter(
-                    (s) => s.id !== segmentId,
-                  ),
-                });
-              }
-              break;
-            }
-          }
-          return next;
-        });
-      } catch (error) {
-        console.error("Failed to toggle segment:", error);
-      }
-    },
-    [segments],
-  );
-
-  // ─── Card Handlers (Normalized Collection) ─────────────────────────────────
-
-  const handleCardCreate = useCallback(
-    async (blockType: BlockType, name: string, description = "") => {
-      try {
-        const res = await fetch(
-          `/api/canvas/${canvasId}/blocks/${blockType}/cards`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, description }),
-          },
-        );
-        if (!res.ok) return null;
-        const { card: doc } = await res.json();
-        const card: Card = {
-          $id: doc.$id,
-          id: doc.id,
-          blockId: doc.blockId,
-          canvasId: doc.canvasId,
-          name: doc.name,
-          description: doc.description ?? "",
-          order: doc.order ?? 0,
-          createdAt: doc.createdAt ?? "",
-        };
-        setBlocks((prev) => {
-          const next = new Map(prev);
-          const block = next.get(blockType);
-          if (block) {
-            next.set(blockType, {
-              ...block,
-              cards: [...(block.cards ?? []), card],
-            });
-          }
-          return next;
-        });
-        return card;
-      } catch {
-        return null;
-      }
-    },
-    [canvasId],
-  );
-
-  const handleCardUpdate = useCallback(
-    async (cardId: string, updates: Partial<Pick<Card, "name" | "description" | "order">>) => {
-      try {
-        const res = await fetch(`/api/cards/${cardId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updates),
-        });
-        if (!res.ok) return;
-        const { card: doc } = await res.json();
-        setBlocks((prev) => {
-          const next = new Map(prev);
-          for (const [bt, block] of next) {
-            const cards = block.cards ?? [];
-            const idx = cards.findIndex((c) => c.id === cardId);
-            if (idx !== -1) {
-              const updated = cards.map((c) =>
-                c.id === cardId
-                  ? { ...c, name: doc.name, description: doc.description ?? "", order: doc.order ?? c.order }
-                  : c,
-              );
-              next.set(bt, { ...block, cards: updated });
-              break;
-            }
-          }
-          return next;
-        });
-      } catch {
-        // silently fail
-      }
-    },
-    [],
-  );
-
-  const handleCardDelete = useCallback(
-    async (cardId: string) => {
-      try {
-        const res = await fetch(`/api/cards/${cardId}`, { method: "DELETE" });
-        if (!res.ok) return;
-        setBlocks((prev) => {
-          const next = new Map(prev);
-          for (const [bt, block] of next) {
-            const cards = block.cards ?? [];
-            if (cards.some((c) => c.id === cardId)) {
-              next.set(bt, { ...block, cards: cards.filter((c) => c.id !== cardId) });
-              break;
-            }
-          }
-          return next;
-        });
-      } catch {
-        // silently fail
-      }
-    },
-    [],
-  );
-
   // Track old content for revert/undo of accepted edits
-  const revertMapRef = useRef<Map<string, { blockType: BlockType; oldContent: { bmc: string; lean: string } }>>(new Map());
+  const revertMapRef = useRef<
+    Map<string, { blockType: BlockType; oldContent: BlockContent }>
+  >(new Map());
 
   // Handle accepted block edit from AI chat (single edit at a time)
   const handleAcceptEdit = useCallback(
@@ -967,7 +711,11 @@ export function CanvasClient({
       let newContent = { ...existing.content };
 
       if (edit.mode === "both" || isSharedBlock(edit.blockType)) {
-        newContent = { bmc: edit.newContent, lean: edit.newContent };
+        newContent = {
+          bmc: edit.newContent,
+          lean: edit.newContent,
+          items: existing.content.items,
+        };
       } else if (edit.mode === "lean") {
         newContent = { ...newContent, lean: edit.newContent };
       } else {
@@ -1003,7 +751,10 @@ export function CanvasClient({
           // Restore old content
           setBlocks((prev) => {
             const next = new Map(prev);
-            next.set(entry.blockType, { ...existing, content: entry.oldContent });
+            next.set(entry.blockType, {
+              ...existing,
+              content: entry.oldContent,
+            });
             return next;
           });
 
@@ -1024,20 +775,30 @@ export function CanvasClient({
       const seg = await handleSegmentCreate({
         name: proposal.name,
         description: proposal.description,
-        priorityScore: proposal.priority === "high" ? 80 : proposal.priority === "medium" ? 50 : 20,
+        priorityScore:
+          proposal.priority === "high"
+            ? 80
+            : proposal.priority === "medium"
+              ? 50
+              : 20,
       });
       if (!seg) return;
       // Also persist the extra fields
-      await handleSegmentUpdate(seg.id, {
+      await handleSegmentUpdate(seg.$id, {
         demographics: proposal.demographics,
         psychographics: proposal.psychographics,
         behavioral: proposal.behavioral,
         geographic: proposal.geographic,
         estimatedSize: proposal.estimatedSize,
       });
-      await handleSegmentLink(targetBlock, seg.id, seg);
+      await handleSegmentLink(targetBlock, seg.$id, seg);
     },
-    [expandedBlock, handleSegmentCreate, handleSegmentUpdate, handleSegmentLink],
+    [
+      expandedBlock,
+      handleSegmentCreate,
+      handleSegmentUpdate,
+      handleSegmentLink,
+    ],
   );
 
   // Handle accepted block item from AI chat — create as BlockItem (legacy) + Card (normalized)
@@ -1055,10 +816,8 @@ export function CanvasClient({
         createdAt: new Date().toISOString(),
       };
       updateBlockItems(targetBlock, (items) => [...items, newItem]);
-      // Normalized: also create in cards collection
-      handleCardCreate(targetBlock, proposal.name, proposal.description ?? "");
     },
-    [expandedBlock, updateBlockItems, handleCardCreate],
+    [expandedBlock, updateBlockItems],
   );
 
   // Check if any non-shared block has lean content (to show convert button)
@@ -1120,7 +879,11 @@ export function CanvasClient({
           if (!existing) continue;
           next.set(u.blockType as BlockType, {
             ...existing,
-            content: { bmc: u.bmc, lean: u.lean },
+            content: {
+              bmc: u.bmc,
+              lean: u.lean,
+              items: existing.content.items,
+            },
           });
         }
         return next;
@@ -1220,7 +983,7 @@ export function CanvasClient({
           onSegmentClick={(segmentId) => {
             // Find which block owns this segment and expand it
             for (const [bt, block] of blocks) {
-              if (block.linkedSegments?.some((s) => s.id === segmentId)) {
+              if (block.linkedSegments?.some((s) => s.$id === segmentId)) {
                 setExpandedBlock(bt);
                 break;
               }
@@ -1229,7 +992,7 @@ export function CanvasClient({
           onAddSegment={async (name, description) => {
             const seg = await handleSegmentCreate({ name, description });
             if (seg) {
-              await handleSegmentLink("customer_segments", seg.id, seg);
+              await handleSegmentLink("customer_segments", seg.$id, seg);
             }
           }}
           onSegmentUpdate={async (segmentId, updates) => {
@@ -1244,14 +1007,6 @@ export function CanvasClient({
           onItemToggleSegment={handleItemToggleSegment}
           onItemToggleLink={handleItemToggleLink}
           onItemHover={setHoveredItem}
-          onBlockUpdate={handleBlockUpdate}
-          onBlockDelete={handleBlockDelete}
-          onBlockSegmentToggle={(blockId, segmentId) =>
-            handleBlockSegmentToggle(blockId, segmentId)
-          }
-          onBlockHover={(blockId) => {
-            // TODO: Implement block hover visualization when migrating to new architecture
-          }}
         />
       )}
 
@@ -1267,6 +1022,13 @@ export function CanvasClient({
 
       {activeTab === "notes" && (
         <NotesView value={notes} onChange={handleNotesChange} />
+      )}
+
+      {activeTab === "debug" && (
+        <DebugPanel
+          blocks={blocks}
+          segments={Array.from(segments.values())}
+        />
       )}
 
       {/* Block Focus Panel */}
@@ -1314,7 +1076,7 @@ export function CanvasClient({
           <div className="fixed inset-0 z-40 pointer-events-none">
             <div
               className="absolute top-0 bottom-0 left-0 pointer-events-auto overflow-y-auto"
-              style={{ right: '420px' }}
+              style={{ right: "420px" }}
             >
               <div className="p-6 max-w-3xl mx-auto space-y-4">
                 <div className="flex items-center gap-2 mb-2">

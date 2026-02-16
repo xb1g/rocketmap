@@ -13,7 +13,7 @@ interface ConnectionOverlayProps {
   allBlockItems: Map<BlockType, BlockItem[]>;
   segments: Segment[];
   itemRefs: React.RefObject<Map<string, HTMLElement>>;
-  segmentRefs: React.RefObject<Map<number, HTMLElement>>;
+  segmentRefs: React.RefObject<Map<string, HTMLElement>>; // Segment $id (string)
   containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
@@ -74,7 +74,7 @@ export function ConnectionOverlay({
 
     // Segment links (dashed, colored by segment)
     for (const segId of item.linkedSegmentIds) {
-      const seg = segments.find((s) => s.id === segId);
+      const seg = segments.find((s) => s.$id === segId);
       const segEl = segmentRefs.current?.get(segId);
       if (!segEl) continue;
       const targetPos = getCenter(segEl, container);

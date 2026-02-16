@@ -1,5 +1,17 @@
-import { serverDatabases, DATABASE_ID, CANVASES_COLLECTION_ID } from './appwrite';
+import { serverTablesDB, DATABASE_ID, CANVASES_TABLE_ID } from './appwrite';
 import { Query } from 'node-appwrite';
+import type { CanvasData } from './types/canvas';
+
+/**
+ * Extract user ID from Appwrite relationship field
+ * Handles both string ID and nested object formats
+ */
+export function getUserIdFromCanvas(canvas: CanvasData): string {
+  if (typeof canvas.users === 'string') {
+    return canvas.users;
+  }
+  return canvas.users.$id;
+}
 
 /**
  * Generate URL-friendly slug from canvas title
@@ -24,18 +36,21 @@ export async function generateSlug(title: string, userId: string): Promise<strin
   let finalSlug = slug;
   let counter = 2;
 
+  // Index required: canvases collection — composite [users, slug] index
   while (true) {
     try {
-      const existing = await serverDatabases.listDocuments(
-        DATABASE_ID,
-        CANVASES_COLLECTION_ID,
-        [
-          Query.equal('ownerId', userId),
+      const existing = await serverTablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: CANVASES_TABLE_ID,
+        queries: [
+          Query.equal('users', userId),
           Query.equal('slug', finalSlug),
-        ]
-      );
+          Query.select(['$id']),
+          Query.limit(1),
+        ],
+      });
 
-      if (existing.documents.length === 0) {
+      if (existing.rows.length === 0) {
         break; // No collision, we're good
       }
 

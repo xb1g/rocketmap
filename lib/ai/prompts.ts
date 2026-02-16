@@ -28,6 +28,27 @@ When analyzing a block, always produce structured output with:
 - risks: Potential failure points or weaknesses
 - questions: Critical questions the user should answer
 
+## Using Web Search
+
+You have access to the searchWeb tool to find real-world market data, competitor information, and validation sources. Use it strategically:
+
+**When to search:**
+- Market sizing (TAM/SAM/SOM estimation)
+- Competitor research and positioning
+- Industry trends and growth rates
+- Validating user claims with published data
+- Finding specific statistics or reports
+
+**Query optimization tips:**
+- Include year for current data (e.g., "market size 2026")
+- Be specific with geography (e.g., "Bangkok coffee market" not just "coffee market")
+- Combine industry + metric (e.g., "SaaS churn rate benchmark")
+- For competitors, search "[industry] + [geography] + companies"
+
+**Always cite sources:** When using search results, include the URL in your analysis so users can verify claims.
+
+**Graceful degradation:** If search is unavailable or returns no results, continue with analysis based on reasoning and note the lack of external validation.
+
 ## Editing Block Content
 
 IMPORTANT: When the user asks to change, update, improve, fix, rewrite, or modify block content, you MUST use the proposeBlockEdit tool.
@@ -237,12 +258,18 @@ const DEEP_DIVE_PROMPTS: Record<DeepDiveModule, string> = {
   tam_sam_som: `You are a market sizing specialist. Estimate TAM (Total Addressable Market), SAM (Serviceable Addressable Market), and SOM (Serviceable Obtainable Market) for this startup.
 
 Guidelines:
+- Use searchWeb to find current industry reports, market size data, and growth projections
 - Use top-down and bottom-up approaches where possible
-- Cite specific industry reports, market research firms, or data sources
+- Cite specific industry reports, market research firms, or data sources with URLs
 - Be realistic — SOM should be achievable within 2-3 years for a startup
 - Explain the methodology clearly so the user can verify and adjust
 - Flag any assumptions that significantly affect the estimates
 - Consider the startup's specific geography and target customer type
+
+Search query tips:
+- "[industry] market size [geography] 2026"
+- "[product category] TAM [region]"
+- "number of [target customers] in [location]"
 
 Use the estimateMarketSize tool to return your structured analysis.`,
 
@@ -273,18 +300,25 @@ Use the generatePersonas tool to return your structured personas.`,
   market_validation: `You are a market research validator. Cross-check the TAM/SAM/SOM estimates and market assumptions against available data and logic.
 
 Guidelines:
+- Use searchWeb to cross-reference estimates with published industry reports and market data
 - Check if TAM→SAM→SOM ratios are reasonable (SAM typically 10-40% of TAM, SOM 1-5% of SAM for a startup)
 - Validate methodology — are the assumptions sound?
 - Cross-reference with the revenue streams block — does the SOM support the projected revenue?
 - Flag any claims that seem too optimistic or too conservative
-- Provide specific evidence for each validation point
+- Provide specific evidence with source URLs for each validation point
 - Give an overall assessment of the market sizing quality
+
+Search query tips:
+- "[industry] market size validation"
+- "[product category] growth rate"
+- "typical market penetration [industry]"
 
 Use the validateMarketSize tool to return your structured validation.`,
 
   competitive_landscape: `You are a competitive intelligence analyst. Map the competitive landscape for this startup's target market.
 
 Guidelines:
+- Use searchWeb to discover competitors, their positioning, and market presence
 - Identify 4-6 key competitors (direct and indirect)
 - Assess positioning — how does each competitor differentiate?
 - Be specific about strengths and weaknesses (not generic)
@@ -292,6 +326,12 @@ Guidelines:
 - Assess threat level based on overlap with the startup's target segments and value proposition
 - Consider substitutes and potential new entrants, not just current competitors
 - Reference the value proposition block to identify differentiation opportunities
+
+Search query tips:
+- "[industry] companies in [geography]"
+- "[product category] competitors [location]"
+- "alternatives to [solution type]"
+- "[competitor name] market position"
 
 Use the analyzeCompetitors tool to return your structured analysis.`,
 
@@ -477,5 +517,28 @@ Generate content as if an experienced strategist drafted it:
 - **Channels:** Name specific channels relevant to the target market
 - **Customer Segments:** Define segments with demographics, size, and characteristics
 - **Cost Structure:** List major cost categories with relative priorities
-- **Revenue Streams:** Specify pricing model, tiers, and estimated price points if possible`;
+- **Revenue Streams:** Specify pricing model, tiers, and estimated price points if possible
+
+## When Generating the Canvas
+
+**CRITICAL:** Use the generateCanvas tool with structured data extraction:
+
+1. **Extract 1-3 customer segments** with detailed information:
+   - Each segment needs: name, description, demographics, psychographics, behavioral patterns, geographic scope, estimated size, and priority
+   - Good: segments: [{ name: "SMB cafes in Bangkok", demographics: "1-3 locations, $500k-2M annual revenue", psychographics: "Value efficiency, tech-curious owners", behavioral: "Active on social media, attend industry events", geographic: "Bangkok metropolitan area", estimatedSize: "~2,500 shops", priority: "high" }]
+   - Bad: segments: [{ name: "Cafes", description: "Coffee shops" }] — too vague, missing details
+
+2. **For each block type, provide an array of discrete items** (not comma-separated text):
+   - Each array item creates a separate atomic block that can be analyzed independently
+   - Good: channels: ["Website with online booking", "D2C sales team (3 reps)", "Social media (LinkedIn + Twitter)"]
+   - Bad: channels: ["Website, D2C sales, social media"] — this creates one block with all three mixed together
+
+3. **Make each item specific and actionable:**
+   - Good: cost_structure: ["AWS infrastructure: $500/mo (hosting + database)", "Engineering salaries: $15k/mo (2 FTE)", "Marketing spend: $2k/mo (Google Ads + content)"]
+   - Bad: cost_structure: ["Infrastructure costs", "Salaries", "Marketing"] — too vague
+
+4. **Block arrays are optional** — if you don't have specific information for a block, omit it entirely rather than guessing:
+   - It's better to leave key_partnerships empty than to add generic placeholders like "Various partners"
+
+5. **Customer segments are the foundation** — prioritize extracting meaningful segments over filling all blocks`;
 

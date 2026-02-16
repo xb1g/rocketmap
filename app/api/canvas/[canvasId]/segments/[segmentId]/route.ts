@@ -1,52 +1,50 @@
 import { NextResponse } from 'next/server';
-import { Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
 import {
-  serverDatabases,
+  serverTablesDB,
   DATABASE_ID,
-  CANVASES_COLLECTION_ID,
-  SEGMENTS_COLLECTION_ID,
-  BLOCK_SEGMENTS_COLLECTION_ID,
+  CANVASES_TABLE_ID,
+  SEGMENTS_TABLE_ID,
 } from '@/lib/appwrite';
+import { getUserIdFromCanvas } from '@/lib/utils';
+import type { CanvasData } from '@/lib/types/canvas';
 
 interface RouteContext {
   params: Promise<{ canvasId: string; segmentId: string }>;
 }
 
 async function verifyCanvasOwnership(canvasId: string, userId: string) {
-  const canvas = await serverDatabases.getDocument(
-    DATABASE_ID,
-    CANVASES_COLLECTION_ID,
-    canvasId,
-  );
-  if (canvas.ownerId !== userId) {
+  const canvas = await serverTablesDB.getRow({
+    databaseId: DATABASE_ID,
+    tableId: CANVASES_TABLE_ID,
+    rowId: canvasId,
+  }) as unknown as CanvasData;
+  if (getUserIdFromCanvas(canvas) !== userId) {
     throw new Error('Forbidden');
   }
-  return canvas.id as number;
 }
 
-async function findSegmentDoc(segmentId: string, canvasIntId: number) {
-  const result = await serverDatabases.listDocuments(
-    DATABASE_ID,
-    SEGMENTS_COLLECTION_ID,
-    [
-      Query.equal('id', parseInt(segmentId, 10)),
-      Query.equal('canvasId', canvasIntId),
-      Query.limit(1),
-    ],
-  );
-  if (result.documents.length === 0) {
+async function findSegmentDoc(segmentId: string, canvasId: string) {
+  const segment = await serverTablesDB.getRow({
+    databaseId: DATABASE_ID,
+    tableId: SEGMENTS_TABLE_ID,
+    rowId: segmentId,
+  });
+
+  // Verify segment belongs to this canvas
+  if (segment.canvas !== canvasId && (segment.canvas as any)?.$id !== canvasId) {
     throw new Error('Not found');
   }
-  return result.documents[0];
+
+  return segment;
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
     const { canvasId, segmentId } = await context.params;
-    const canvasIntId = await verifyCanvasOwnership(canvasId, user.$id);
-    const doc = await findSegmentDoc(segmentId, canvasIntId);
+    await verifyCanvasOwnership(canvasId, user.$id);
+    const doc = await findSegmentDoc(segmentId, canvasId);
     const body = await request.json();
 
     const allowedFields = [
@@ -60,12 +58,12 @@ export async function PATCH(request: Request, context: RouteContext) {
       }
     }
 
-    const updated = await serverDatabases.updateDocument(
-      DATABASE_ID,
-      SEGMENTS_COLLECTION_ID,
-      doc.$id,
-      updates,
-    );
+    const updated = await serverTablesDB.updateRow({
+      databaseId: DATABASE_ID,
+      tableId: SEGMENTS_TABLE_ID,
+      rowId: doc.$id,
+      data: updates,
+    });
 
     return NextResponse.json({ segment: updated });
   } catch (error: unknown) {
@@ -82,24 +80,14 @@ export async function DELETE(_request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
     const { canvasId, segmentId } = await context.params;
-    const canvasIntId = await verifyCanvasOwnership(canvasId, user.$id);
-    const doc = await findSegmentDoc(segmentId, canvasIntId);
-    const segmentIntId = doc.id as number;
+    await verifyCanvasOwnership(canvasId, user.$id);
+    const doc = await findSegmentDoc(segmentId, canvasId);
 
-    // Cascade delete all block_segments links
-    const links = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      BLOCK_SEGMENTS_COLLECTION_ID,
-      [Query.equal('segmentId', segmentIntId), Query.limit(100)],
-    );
-    await Promise.all(
-      links.documents.map((link) =>
-        serverDatabases.deleteDocument(DATABASE_ID, BLOCK_SEGMENTS_COLLECTION_ID, link.$id),
-      ),
-    );
-
-    // Delete the segment
-    await serverDatabases.deleteDocument(DATABASE_ID, SEGMENTS_COLLECTION_ID, doc.$id);
+    await serverTablesDB.deleteRow({
+      databaseId: DATABASE_ID,
+      tableId: SEGMENTS_TABLE_ID,
+      rowId: doc.$id,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
