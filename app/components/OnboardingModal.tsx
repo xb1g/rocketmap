@@ -119,9 +119,8 @@ export function OnboardingModal({ isOpen, onComplete, onChatToCreate }: Onboardi
           {/* Navigation */}
           <Flex justify="end" gap="3" pt="4">
             {step === 3 && onChatToCreate && (
-              <Button
-                size="3"
-                variant="soft"
+              <button
+                className="quick-launch"
                 onClick={() => {
                   onComplete();
                   onChatToCreate();
@@ -136,12 +135,11 @@ export function OnboardingModal({ isOpen, onComplete, onChatToCreate }: Onboardi
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  style={{ marginRight: '0.5rem' }}
                 >
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
                 Chat to Create
-              </Button>
+              </button>
             )}
             <Button size="3" onClick={handleNext}>
               {step === 3 ? 'Start Blank' : 'Next'}

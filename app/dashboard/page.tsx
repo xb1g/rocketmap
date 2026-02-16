@@ -8,7 +8,6 @@ import {
   BLOCKS_TABLE_ID,
 } from "@/lib/appwrite";
 import { Query } from "node-appwrite";
-import { ID } from "node-appwrite";
 import { DashboardClient } from "./DashboardClient";
 import { getAnthropicUsageStatsFromUser } from "@/lib/ai/user-preferences";
 
@@ -29,10 +28,11 @@ export default async function DashboardPage() {
     });
   } catch {
     try {
+      // Use the Appwrite Auth user ID as the row ID for easy lookups
       userDoc = await serverTablesDB.createRow({
         databaseId: DATABASE_ID,
         tableId: USERS_TABLE_ID,
-        rowId: ID.unique(),
+        rowId: user.$id,
         data: {
           email: user.email,
           name: user.name || "",
