@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, useMemo } from "react";
+import { useRef, useState, useCallback, useMemo } from "react";
 import type {
   BlockData,
   BlockItem,
@@ -88,6 +88,7 @@ export function BMCGrid({
   const containerRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<Map<string, HTMLElement>>(new Map());
   const segmentRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const [hoveredSegmentId, setHoveredSegmentId] = useState<string | null>(null);
 
   const blockRefCallback = useCallback((key: string, el: HTMLElement | null) => {
     if (el) blockRefs.current.set(key, el);
@@ -205,6 +206,8 @@ export function BMCGrid({
                       )
                   : undefined
               }
+              highlightedSegmentId={hoveredSegmentId}
+              onSegmentHover={setHoveredSegmentId}
               blockRefCallback={blockRefCallback}
               segmentRefCallback={segmentRefCallback}
               riskMetrics={riskHeatmap?.[def.type]}

@@ -164,6 +164,8 @@ interface BlockCellProps {
   onBlockDelete?: (blockId: string) => void;
   onBlockToggleSegment?: (blockId: string, segmentId: string) => void;
   onBlockHover?: (blockId: string | null) => void;
+  highlightedSegmentId?: string | null;
+  onSegmentHover?: (segmentId: string | null) => void;
   blockRefCallback?: (blockId: string, el: HTMLElement | null) => void;
   segmentRefCallback?: (segmentId: string, el: HTMLElement | null) => void;
   riskMetrics?: RiskMetrics;
@@ -199,6 +201,8 @@ export function BlockCell({
   onBlockDelete,
   onBlockToggleSegment,
   onBlockHover,
+  highlightedSegmentId,
+  onSegmentHover,
   blockRefCallback,
   segmentRefCallback,
   riskMetrics,
@@ -437,15 +441,15 @@ export function BlockCell({
         )}
       </div>
 
-      <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1 flex-shrink-0">
-        <BlockTooltip definition={definition} mode={mode}>
-          <span className="inline-flex items-center gap-1 font-display-small uppercase tracking-wider text-foreground-muted cursor-help decoration-dotted underline-offset-4 hover:decoration-solid hover:text-foreground transition-all">
+      {/* Content wrapper with overflow handling */}
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1 flex-shrink-0">
+          <span className="inline-flex items-center gap-1 font-display-small uppercase tracking-wider text-foreground-muted">
             <span className="w-4 h-4 rounded-md border border-white/12 bg-white/5 text-foreground-muted/70 shrink-0 inline-flex items-center justify-center">
               <BlockTypeIcon type={definition.type} />
             </span>
             <span>{displayLabel}</span>
           </span>
-        </BlockTooltip>
         {showLeanChip && (
           <span className="text-[8px] font-mono uppercase tracking-wider px-1.5 py-px rounded-full bg-[var(--chroma-indigo)]/10 text-[var(--chroma-indigo)] border border-[var(--chroma-indigo)]/20">
             Lean
@@ -498,8 +502,8 @@ export function BlockCell({
         )}
       </div>
 
-      {/* Block cards - NEW */}
-      {((blocks && blocks.length > 0) || onBlockCreate) && (
+      {/* Block cards - skip for customer_segments (segments are primary) */}
+      {!isSegmentBlock && ((blocks && blocks.length > 0) || onBlockCreate) && (
         <div className="block-items-container">
           {dedupedBlocks.map(({ block, renderKey }) => (
             <BlockCard
@@ -507,11 +511,13 @@ export function BlockCell({
               block={block}
               allSegments={allSegments ?? []}
               allBlockItems={allBlockItems}
+              highlightedSegmentId={highlightedSegmentId}
               onUpdate={(blockId, updates) => onBlockUpdate?.(blockId, updates)}
               onDelete={(blockId) => onBlockDelete?.(blockId)}
               onSegmentToggle={(blockId, segmentId) =>
                 onBlockToggleSegment?.(blockId, segmentId)
               }
+              onSegmentHover={onSegmentHover}
               onMouseEnter={() => onBlockHover?.(block.$id)}
               onMouseLeave={() => onBlockHover?.(null)}
               ref={(el) => blockRefCallback?.(block.$id, el)}
@@ -642,6 +648,21 @@ export function BlockCell({
             )}
           </div>
         )}
+      </div>
+      {/* End content wrapper */}
+
+      {/* Help tooltip - bottom right */}
+      <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+        <BlockTooltip definition={definition} mode={mode}>
+          <button
+            type="button"
+            className="w-4 h-4 rounded-full flex items-center justify-center text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/5 transition-all"
+            aria-label={`Help for ${label}`}
+          >
+            <span className="font-mono text-[9px] font-bold">?</span>
+          </button>
+        </BlockTooltip>
+      </div>
     </div>
   );
 }

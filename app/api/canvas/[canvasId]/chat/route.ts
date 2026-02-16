@@ -75,11 +75,20 @@ export async function POST(request: Request, context: RouteContext) {
       onUsage: (usage) => recordAnthropicUsageForUser(user.$id, usage),
     });
 
-    // Save assistant response (text + tool results) after stream completes
+    // Save assistant response (text + tool calls + tool results) after stream completes
     Promise.resolve(result.steps).then((steps) => {
       const parts: Array<Record<string, unknown>> = [];
       for (const step of steps) {
         if (step.text) parts.push({ type: 'text', text: step.text });
+        for (const tc of step.toolCalls) {
+          const call = tc as unknown as { toolName: string; toolCallId: string; args: unknown };
+          parts.push({
+            type: 'tool-call',
+            toolName: call.toolName,
+            toolCallId: call.toolCallId,
+            args: call.args,
+          });
+        }
         for (const tc of step.toolResults) {
           const tr = tc as unknown as { toolName: string; toolCallId: string; result: unknown };
           parts.push({

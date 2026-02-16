@@ -19,21 +19,25 @@ export function BlockTooltip({
     mode === "lean" ? definition.tooltip.lean : definition.tooltip.bmc;
   const tooltipAI = definition.tooltip.ai;
 
-  const tooltipContent = (
-    <span className="flex flex-col gap-1.5 py-1 max-w-64">
-      <span className="block text-[13px] leading-snug text-white font-medium">
-        {tooltipBody}
-      </span>
-      <span className="flex items-start gap-2 mt-1 pt-1.5 border-t border-white/10">
-        <span className="text-[9px] font-bold px-1 py-px rounded bg-[var(--chroma-cyan)]/20 text-[var(--chroma-cyan)] border border-[var(--chroma-cyan)]/30 uppercase tracking-tighter mt-0.5">
-          AI
+  return (
+    <Tooltip
+      content={
+        <span className="flex flex-col gap-1.5 py-1 max-w-64">
+          <span className="block text-[13px] leading-snug text-white font-medium">
+            {tooltipBody}
+          </span>
+          <span className="flex items-start gap-2 mt-1 pt-1.5 border-t border-white/10">
+            <span className="text-[9px] font-bold px-1 py-px rounded bg-[var(--chroma-cyan)]/20 text-[var(--chroma-cyan)] border border-[var(--chroma-cyan)]/30 uppercase tracking-tighter mt-0.5">
+              AI
+            </span>
+            <span className="text-[11px] italic text-[var(--chroma-cyan)]/90 leading-tight">
+              {tooltipAI}
+            </span>
+          </span>
         </span>
-        <span className="text-[11px] italic text-[var(--chroma-cyan)]/90 leading-tight">
-          {tooltipAI}
-        </span>
-      </span>
-    </span>
+      }
+    >
+      {children}
+    </Tooltip>
   );
-
-  return <Tooltip content={tooltipContent}>{children}</Tooltip>;
 }

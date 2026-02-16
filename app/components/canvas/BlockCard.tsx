@@ -22,16 +22,18 @@ interface BlockCardProps {
   allSegments: Segment[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   allBlockItems?: Map<BlockType, any[]>;
+  highlightedSegmentId?: string | null;
   onUpdate: (blockId: string, updates: { contentJson: string }) => void;
   onDelete: (blockId: string) => void;
   onSegmentToggle: (blockId: string, segmentId: string) => void;
+  onSegmentHover?: (segmentId: string | null) => void;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
 }
 
 export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
   function BlockCard(
-    { block, allSegments, onUpdate, onDelete, onSegmentToggle, onMouseEnter, onMouseLeave },
+    { block, allSegments, onUpdate, onDelete, onSegmentToggle, onSegmentHover, highlightedSegmentId, onMouseEnter, onMouseLeave },
     ref
   ) {
     // Parse contentJson with fallback
@@ -98,6 +100,11 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
       setIsEditing(false);
     }, [editText, content.tags, block.$id, onUpdate]);
 
+    // Whether this card contains the globally-hovered segment
+    const cardHasHighlightedSegment = highlightedSegmentId
+      ? linkedSegmentIds.has(highlightedSegmentId)
+      : false;
+
     // Confidence color
     const confidenceColor =
       block.confidenceScore >= 70 ? 'var(--state-healthy)' :
@@ -107,7 +114,8 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
     return (
       <div
         ref={ref}
-        className="block-item-card"
+        className={`block-item-card${cardHasHighlightedSegment ? ' ring-1 ring-white/25' : ''}`}
+        style={cardHasHighlightedSegment ? { transition: 'box-shadow 150ms ease, ring 150ms ease' } : undefined}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       >
@@ -154,18 +162,28 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
           {/* Linked segments row */}
           {block.segments.length > 0 && (
             <div className="flex items-center gap-1 flex-wrap">
-              {block.segments.map(seg => (
-                <span
-                  key={seg.$id}
-                  className="inline-flex items-center gap-1 text-[8px] px-1.5 py-0.5 rounded-full border border-white/8 text-foreground-muted/70"
-                >
+              {block.segments.map(seg => {
+                const isHighlighted = highlightedSegmentId === seg.$id;
+                return (
                   <span
-                    className="w-1.5 h-1.5 rounded-full shrink-0"
-                    style={{ background: seg.colorHex || 'var(--state-calm)' }}
-                  />
-                  {seg.name}
-                </span>
-              ))}
+                    key={seg.$id}
+                    className={`inline-flex items-center gap-1 text-[8px] px-1.5 py-0.5 rounded-full border transition-all duration-150 cursor-default ${
+                      isHighlighted
+                        ? 'border-white/30 text-foreground/90 bg-white/8'
+                        : 'border-white/8 text-foreground-muted/70'
+                    }`}
+                    style={isHighlighted ? { boxShadow: `0 0 6px ${seg.colorHex || 'var(--state-calm)'}40` } : undefined}
+                    onMouseEnter={() => onSegmentHover?.(seg.$id)}
+                    onMouseLeave={() => onSegmentHover?.(null)}
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ background: seg.colorHex || 'var(--state-calm)' }}
+                    />
+                    {seg.name}
+                  </span>
+                );
+              })}
             </div>
           )}
 
@@ -192,9 +210,9 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
             {/* Confidence score */}
             <span
               className="text-[9px] font-mono ml-auto"
-              style={{ color: confidenceColor }}
+              style={{ color: block.confidenceScore > 0 ? confidenceColor : 'var(--foreground-muted)' }}
             >
-              {block.confidenceScore}%
+              {block.confidenceScore > 0 ? `${block.confidenceScore}%` : '\u2014'}
             </span>
 
             {/* Delete button */}

@@ -32,9 +32,16 @@ export async function POST(_request: Request, context: RouteContext) {
     const tools = getToolsForAgent(config.toolNames);
 
     const targetBlock = blocks.find((b) => b.blockType === blockType);
-    const content = targetBlock
-      ? `${targetBlock.content.bmc}\n${targetBlock.content.lean}`.trim()
-      : '';
+    let content = '';
+    if (targetBlock) {
+      const parts = [targetBlock.content.bmc, targetBlock.content.lean].filter(Boolean);
+      if (targetBlock.content.items?.length) {
+        for (const item of targetBlock.content.items) {
+          parts.push(`• ${item.name}`);
+        }
+      }
+      content = parts.join('\n').trim();
+    }
 
     const { result, usage } = await generateTextWithLogging(
       `analyze:${blockType}`,
@@ -67,18 +74,21 @@ export async function POST(_request: Request, context: RouteContext) {
     for (const step of result.steps) {
       for (const tc of step.toolResults) {
         if (tc.toolName === 'analyzeBlock') {
-          analysis = (tc as unknown as { result: typeof analysis }).result;
+          const toolResult = (tc as unknown as { result: typeof analysis }).result;
+          if (toolResult) {
+            analysis = toolResult;
+          }
         }
         if (tc.toolName === 'identifyAssumptions') {
           const res = (tc as unknown as { result: { assumptions: typeof identifiedAssumptions } }).result;
-          identifiedAssumptions = res.assumptions ?? [];
+          identifiedAssumptions = res?.assumptions ?? [];
         }
       }
     }
 
     // Compute scores
     const hasContent = content.length > 20;
-    const hasDepth = analysis.assumptions.length > 0 && analysis.risks.length > 0;
+    const hasDepth = (analysis?.assumptions?.length ?? 0) > 0 && (analysis?.risks?.length ?? 0) > 0;
     const confidenceScore = hasContent ? (hasDepth ? 0.7 : 0.4) : 0.2;
     const riskScore = Math.min(1, analysis.risks.length * 0.15);
 

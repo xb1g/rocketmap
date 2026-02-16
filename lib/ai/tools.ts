@@ -16,7 +16,7 @@ import { searchBrave } from './brave-search';
 export const analyzeBlock = tool({
   description: 'Analyze a business model canvas block and return structured insights including an improved draft, hidden assumptions, risks, and critical questions.',
   inputSchema: z.object({
-    draft: z.string().describe('An improved, more specific version of the block content'),
+    draft: z.string().describe('An improved, more specific version of this single block card. Do NOT write a bullet list of multiple items — each block is one atomic item. If you want to suggest additional items, use createBlockItems separately.'),
     assumptions: z.array(z.string()).describe('Hidden assumptions the user is making'),
     risks: z.array(z.string()).describe('Potential failure points or weaknesses'),
     questions: z.array(z.string()).describe('Critical questions the user should answer to validate this block'),
@@ -599,7 +599,7 @@ export const runSensitivityAnalysis = tool({
 // ─── Block Editing Tool ──────────────────────────────────────────────────────
 
 export const proposeBlockEdit = tool({
-  description: 'Propose an edit to one or more business model canvas blocks. Use this when the user asks to change, improve, fix, or update block content, or when you detect issues that should be fixed. Always include the current content as oldContent for diff display.',
+  description: 'Propose a text edit to a SINGLE existing block card. Each block is one atomic item — NEVER put multiple items or bullet lists in newContent. If you need to suggest multiple items, use createBlockItems instead. Use this only to reword or refine the text of one existing card.',
   inputSchema: z.object({
     edits: z.array(z.object({
       blockType: z.enum([
@@ -609,9 +609,9 @@ export const proposeBlockEdit = tool({
       ]).describe('Which block to edit'),
       mode: z.enum(['bmc', 'lean', 'both']).describe('Which canvas mode to edit. Use "both" for shared blocks (channels, customer_segments, cost_structure, revenue_streams)'),
       oldContent: z.string().describe('The current content of the block (for diff display)'),
-      newContent: z.string().describe('The proposed new content'),
+      newContent: z.string().describe('The proposed new content for this single card. Must be ONE item, not a list.'),
       reason: z.string().describe('Brief explanation of why this change improves the business model'),
-    })).min(1).describe('One or more block edits to propose'),
+    })).min(1).describe('Block edits to propose — each edit rewrites ONE card'),
   }),
   execute: async (params) => params,
 });

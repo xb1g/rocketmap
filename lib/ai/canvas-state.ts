@@ -7,7 +7,7 @@ import {
   SEGMENTS_TABLE_ID,
 } from '@/lib/appwrite';
 import { BLOCK_DEFINITIONS } from '@/app/components/canvas/constants';
-import type { BlockData, BlockType, BlockContent, MarketResearchData, Segment } from '@/lib/types/canvas';
+import type { BlockData, BlockType, BlockContent, BlockItem, MarketResearchData, Segment } from '@/lib/types/canvas';
 
 function parseContentJson(raw: string | undefined): BlockContent {
   if (!raw) return { bmc: '', lean: '', items: [] };
@@ -57,7 +57,7 @@ export async function getCanvasBlocks(canvasId: string, userId: string): Promise
       queries: [
         Query.equal('canvas', canvasId),
         Query.select(['$id', 'blockType', 'contentJson', 'confidenceScore', 'riskScore', 'deepDiveJson']),
-        Query.limit(25),
+        Query.limit(100),
       ],
     }),
     serverTablesDB.listRows({
@@ -88,40 +88,79 @@ export async function getCanvasBlocks(canvasId: string, userId: string): Promise
     });
   }
 
-  const blockMap = new Map(
-    result.rows.map((d) => [d.blockType as string, d]),
-  );
+  // Group blocks by blockType (multiple rows per type in atomic schema)
+  const blocksByType = new Map<string, Array<Record<string, unknown>>>();
+  for (const doc of result.rows) {
+    const type = doc.blockType as string;
+    if (!blocksByType.has(type)) blocksByType.set(type, []);
+    blocksByType.get(type)!.push(doc);
+  }
+
+  function resolveSegmentIds(doc: Record<string, unknown>): string[] {
+    if (!doc.segments || !Array.isArray(doc.segments)) return [];
+    return (doc.segments as Array<string | { $id: string }>)
+      .map((s) => typeof s === 'string' ? s : s.$id)
+      .filter((id): id is string => Boolean(id) && segmentMap.has(id));
+  }
+
+  function resolveLinkedSegments(doc: Record<string, unknown>): Segment[] {
+    return resolveSegmentIds(doc)
+      .map((id) => segmentMap.get(id))
+      .filter((s): s is Segment => s !== undefined);
+  }
 
   return BLOCK_DEFINITIONS.map((def) => {
-    const doc = blockMap.get(def.type);
-    let deepDiveData: MarketResearchData | null = null;
-    if (doc?.deepDiveJson) {
-      try {
-        deepDiveData = JSON.parse(doc.deepDiveJson as string) as MarketResearchData;
-      } catch { /* ignore parse errors */ }
+    const docsForType = blocksByType.get(def.type) || [];
+
+    if (docsForType.length === 0) {
+      return {
+        blockType: def.type as BlockType,
+        content: { bmc: '', lean: '', items: [] },
+        state: 'calm' as const,
+        aiAnalysis: null,
+        confidenceScore: 0,
+        riskScore: 0,
+        deepDiveData: null,
+        linkedSegments: [],
+      };
     }
 
-    // Get linked segments from the block's segments relationship
-    const linkedSegments: Segment[] = [];
-    if (doc?.segments && Array.isArray(doc.segments)) {
-      for (const seg of doc.segments) {
-        const segId = typeof seg === 'string' ? seg : seg.$id;
-        const segment = segmentMap.get(segId);
-        if (segment) {
-          linkedSegments.push(segment);
-        }
-      }
+    // Use first block as main content
+    const mainDoc = docsForType[0];
+    const content = parseContentJson(mainDoc?.contentJson as string | undefined);
+
+    // Convert remaining blocks to items (matches page.tsx pattern)
+    if (docsForType.length > 1) {
+      const extraItems: BlockItem[] = docsForType.slice(1).map((doc, idx) => {
+        const extraContent = parseContentJson(doc.contentJson as string | undefined);
+        const name = extraContent.bmc || extraContent.lean || `Item ${idx + 1}`;
+        return {
+          id: doc.$id as string,
+          name,
+          linkedSegmentIds: resolveSegmentIds(doc),
+          linkedItemIds: [],
+          createdAt: (doc.$createdAt as string) || new Date().toISOString(),
+        };
+      });
+      content.items = [...(content.items || []), ...extraItems];
+    }
+
+    let deepDiveData: MarketResearchData | null = null;
+    if (mainDoc?.deepDiveJson) {
+      try {
+        deepDiveData = JSON.parse(mainDoc.deepDiveJson as string) as MarketResearchData;
+      } catch { /* ignore parse errors */ }
     }
 
     return {
       blockType: def.type as BlockType,
-      content: parseContentJson(doc?.contentJson as string | undefined),
+      content,
       state: 'calm' as const,
       aiAnalysis: null,
-      confidenceScore: (doc?.confidenceScore as number) ?? 0,
-      riskScore: (doc?.riskScore as number) ?? 0,
+      confidenceScore: (mainDoc?.confidenceScore as number) ?? 0,
+      riskScore: (mainDoc?.riskScore as number) ?? 0,
       deepDiveData,
-      linkedSegments,
+      linkedSegments: resolveLinkedSegments(mainDoc),
     };
   });
 }

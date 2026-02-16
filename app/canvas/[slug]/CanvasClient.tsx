@@ -49,7 +49,7 @@ import { BlockChatSection } from "@/app/components/ai/BlockChatSection";
 import { DeepDiveOverlay } from "@/app/components/blocks/DeepDiveOverlay";
 import { EconomicsView } from "@/app/components/blocks/unit-economics/EconomicsView";
 import { InlineSegmentEval } from "@/app/components/blocks/segment-eval/InlineSegmentEval";
-import { CanvasHelpTooltip } from "@/app/components/canvas/CanvasHelpTooltip";
+import { ExpandedCanvasOverview } from "@/app/components/canvas/ExpandedCanvasOverview";
 
 interface CanvasClientProps {
   canvasId: string;
@@ -1337,32 +1337,45 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
         />
       )}
 
-      {/* Segment Evaluation — main area panel (left of sidebar) */}
-      {expandedBlock === "customer_segments" &&
-        expandedBlockData &&
-        !readOnly &&
-        (expandedBlockData.linkedSegments?.length ?? 0) > 0 && (
+      {/* Canvas Overview — main area panel (left of sidebar) */}
+      {expandedBlock && expandedBlockData && (
           <div className="fixed inset-0 z-40 pointer-events-none">
             <div
               className="absolute top-0 bottom-0 left-0 pointer-events-auto overflow-y-auto"
               style={{ right: "420px" }}
             >
-              <div className="p-6 max-w-3xl mx-auto space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="font-display-small text-xs uppercase tracking-wider text-foreground-muted/70">
-                    Segment Evaluation
-                  </span>
-                  <div className="flex-1 h-px bg-white/5" />
-                </div>
-                <InlineSegmentEval
-                  canvasId={canvasId}
-                  block={expandedBlockData}
-                  segments={expandedBlockData.linkedSegments ?? []}
-                  onDataChange={(data) =>
-                    handleDeepDiveDataChange("customer_segments", data)
-                  }
-                />
-              </div>
+              <ExpandedCanvasOverview
+                blocks={blocks}
+                mode={mode}
+                expandedBlock={expandedBlock}
+                segments={Array.from(segments.values())}
+                canvasId={canvasId}
+                readOnly={readOnly}
+                onBlockSelect={(bt) => setExpandedBlock(bt)}
+                onDeepDiveDataChange={handleDeepDiveDataChange}
+              />
+
+              {/* Segment Evaluation (only for customer_segments) */}
+              {expandedBlock === "customer_segments" &&
+                !readOnly &&
+                (expandedBlockData.linkedSegments?.length ?? 0) > 0 && (
+                  <div className="px-6 pb-6 max-w-4xl mx-auto">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="font-display-small text-xs uppercase tracking-wider text-foreground-muted/70">
+                        Segment Evaluation
+                      </span>
+                      <div className="flex-1 h-px bg-white/5" />
+                    </div>
+                    <InlineSegmentEval
+                      canvasId={canvasId}
+                      block={expandedBlockData}
+                      segments={expandedBlockData.linkedSegments ?? []}
+                      onDataChange={(data) =>
+                        handleDeepDiveDataChange("customer_segments", data)
+                      }
+                    />
+                  </div>
+                )}
             </div>
           </div>
         )}
@@ -1411,9 +1424,6 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
           onDelete={handleDelete}
         />
       )}
-
-      {/* Help Tooltip */}
-      <CanvasHelpTooltip />
     </div>
   );
 }

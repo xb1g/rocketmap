@@ -115,17 +115,9 @@ export async function POST(request: Request, context: RouteContext) {
     } else if (module === 'segment_comparison') {
       userMessage = `Compare these two customer segments using the compareSegments tool.\n\nSegment A: "${inputs?.segmentAName || '(unnamed)'}" — ${inputs?.segmentADescription || '(no description)'}\nSegment B: "${inputs?.segmentBName || '(unnamed)'}" — ${inputs?.segmentBDescription || '(no description)'}\n\nBlock content for context: "${content || '(empty)'}"`;
     } else if (module === 'unit_economics') {
-      userMessage = `You MUST call the estimateUnitEconomics tool with your analysis. Do NOT write text — only call the tool.
-
-Estimate unit economics for all customer segments based on the canvas context above. Include ARPU, CAC, LTV, gross margin, payback period, and churn rate per segment. Flag any impossible economics (CAC > LTV, negative margins). Monthly burn: ${inputs?.monthlyBurn || 'not provided'}.
-
-Block content for context: "${content || '(empty)'}"`;
+      userMessage = `Estimate unit economics for all customer segments. Use the estimateUnitEconomics tool to return your structured analysis with ARPU, CAC, LTV, gross margin, payback period, and churn rate per segment. Flag any impossible economics (CAC > LTV, negative margins). Monthly burn: ${inputs?.monthlyBurn || 'not provided'}. Block content for context: "${content || '(empty)'}"`;
     } else if (module === 'sensitivity_analysis') {
-      userMessage = `You MUST call the runSensitivityAnalysis tool with your analysis. Do NOT write text — only call the tool.
-
-Run sensitivity analysis: What happens if ${inputs?.parameter || 'churn_rate'} changes by ${inputs?.deltaPct || '20'}%?
-
-Block content for context: "${content || '(empty)'}"`;
+      userMessage = `Run sensitivity analysis: What happens if ${inputs?.parameter || 'churn_rate'} changes by ${inputs?.deltaPct || '20'}%? Use the runSensitivityAnalysis tool to return your structured analysis. Block content for context: "${content || '(empty)'}"`;
     } else {
       userMessage = `Perform a deep-dive analysis for the "${blockType}" block. Current content: "${content || '(empty)'}". Use the ${toolName} tool to return your structured analysis.`;
     }
@@ -155,6 +147,10 @@ Block content for context: "${content || '(empty)'}"`;
     }
 
     if (!toolResult) {
+      // Log debug info for troubleshooting
+      const stepCount = result.steps.length;
+      const allToolCalls = result.steps.flatMap(s => s.toolResults.map(tc => tc.toolName));
+      console.error(`[deep-dive] No tool result for ${toolName}. Steps: ${stepCount}, tools called: [${allToolCalls.join(', ')}], text: "${result.text?.slice(0, 200) ?? '(none)'}"`);
       return NextResponse.json({ error: 'AI did not produce a result' }, { status: 500 });
     }
 
