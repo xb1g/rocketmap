@@ -11,7 +11,7 @@ import {
 } from "@/lib/appwrite";
 import { getCanvasBlocks } from "@/lib/ai/canvas-state";
 import { getViabilityPrompt } from "@/lib/ai/prompts";
-import type { BlockType, CanvasData, ViabilityData } from "@/lib/types/canvas";
+import type { BlockData, BlockType, CanvasData, ViabilityData } from "@/lib/types/canvas";
 
 interface RouteContext {
   params: Promise<{ canvasId: string }>;
@@ -34,6 +34,40 @@ const viabilitySchema = z.object({
     })
   ),
 });
+
+function getSegmentsText(block: BlockData): string {
+  if (block.blockType !== "customer_segments" || !block.linkedSegments?.length) {
+    return "";
+  }
+
+  return block.linkedSegments
+    .map((segment) =>
+      [
+        segment.name,
+        segment.description,
+        segment.demographics,
+        segment.psychographics,
+        segment.behavioral,
+        segment.geographic,
+        segment.estimatedSize,
+      ]
+        .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+        .join(" | ")
+    )
+    .filter((line) => line.length > 0)
+    .join(" \n");
+}
+
+function getBlockViabilityText(block: BlockData): string {
+  const baseText = block.content.bmc || block.content.lean || "";
+  const segmentText = getSegmentsText(block);
+
+  if (block.blockType === "customer_segments" && segmentText.length > 0) {
+    return `${baseText}\n${segmentText}`.trim();
+  }
+
+  return baseText;
+}
 
 export async function POST(_request: Request, context: RouteContext) {
   try {
@@ -64,11 +98,14 @@ export async function POST(_request: Request, context: RouteContext) {
     }
 
     for (const block of blocks) {
-      const content = block.content.bmc || block.content.lean || "";
+      const content = getBlockViabilityText(block);
       if (content.trim().length < 10) {
         return NextResponse.json(
           {
-            error: `Block ${block.blockType} must have at least 10 characters`,
+            error:
+              block.blockType === "customer_segments"
+                ? "Block customer_segments must have at least 10 characters in block content or linked segment fields"
+                : `Block ${block.blockType} must have at least 10 characters`,
           },
           { status: 400 }
         );

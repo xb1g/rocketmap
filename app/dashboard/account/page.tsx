@@ -8,6 +8,7 @@ import {
 } from "@/lib/appwrite";
 import { Query } from "node-appwrite";
 import { AccountClient } from "./AccountClient";
+import { listCanvasesByOwner } from "@/lib/utils";
 
 export default async function AccountPage() {
   const user = await getSessionUser();
@@ -22,15 +23,10 @@ export default async function AccountPage() {
   // Index required: canvases.users (key)
   // Index required: blocks.canvasId (key)
   try {
-    const canvasesResult = await serverTablesDB.listRows({
-      databaseId: DATABASE_ID,
-      tableId: CANVASES_TABLE_ID,
-      queries: [
-        Query.equal("users", user.$id),
-        Query.select(["$id"]),
-        Query.limit(100),
-      ],
-    });
+    const canvasesResult = await listCanvasesByOwner(user.$id, [
+      Query.select(["$id"]),
+      Query.limit(100),
+    ]);
     canvasCount = canvasesResult.total;
 
     for (const canvas of canvasesResult.rows) {

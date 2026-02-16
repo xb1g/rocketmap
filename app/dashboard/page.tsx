@@ -10,6 +10,7 @@ import {
 import { Query } from "node-appwrite";
 import { DashboardClient } from "./DashboardClient";
 import { getAnthropicUsageStatsFromUser } from "@/lib/ai/user-preferences";
+import { listCanvasesByOwner } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const user = await getSessionUser();
@@ -45,7 +46,7 @@ export default async function DashboardPage() {
     }
   }
 
-  // Fetch user's canvases with block counts
+    // Fetch user's canvases with block counts
   // Index required: canvases.users + $updatedAt (composite, desc)
   // Index required: blocks.canvasId (key)
   let canvases: {
@@ -57,16 +58,11 @@ export default async function DashboardPage() {
     blocksCount: number;
   }[] = [];
   try {
-    const canvasesResult = await serverTablesDB.listRows({
-      databaseId: DATABASE_ID,
-      tableId: CANVASES_TABLE_ID,
-      queries: [
-        Query.equal("users", user.$id),
+    const canvasesResult = await listCanvasesByOwner(user.$id, [
         Query.orderDesc("$updatedAt"),
         Query.select(["$id", "title", "slug", "$updatedAt", "isPublic"]),
         Query.limit(25),
-      ],
-    });
+    ]);
 
     canvases = await Promise.all(
       canvasesResult.rows.map(async (doc) => {

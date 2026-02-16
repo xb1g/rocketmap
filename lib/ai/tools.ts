@@ -346,14 +346,14 @@ export function createGenerateCanvasTool(userId: string) {
           databaseId: DATABASE_ID,
           tableId: CANVASES_TABLE_ID,
           rowId: ID.unique(),
-          data: {
-            title: title.trim(),
-            slug: await generateSlug(title, userId),
-            description: '',
-            createdAt: now,
-            updatedAt: now,
-            isPublic: false,
-            users: userId, // Appwrite relationship field
+        data: {
+          title: title.trim(),
+          slug: await generateSlug(title, userId),
+          description: '',
+          createdAt: now,
+          updatedAt: now,
+          isPublic: false,
+            user: userId, // Appwrite relationship field
           }
         });
 

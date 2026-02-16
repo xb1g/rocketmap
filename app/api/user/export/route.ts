@@ -2,22 +2,18 @@ import { NextResponse } from 'next/server';
 import { Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
 import { serverTablesDB, DATABASE_ID, CANVASES_TABLE_ID, BLOCKS_TABLE_ID } from '@/lib/appwrite';
+import { listCanvasesByOwner } from '@/lib/utils';
 
 export async function GET() {
   try {
     const user = await requireAuth();
 
     // Index required: users (key), $updatedAt (desc) — composite index recommended
-    const canvasesResult = await serverTablesDB.listRows({
-      databaseId: DATABASE_ID,
-      tableId: CANVASES_TABLE_ID,
-      queries: [
-        Query.equal('users', user.$id),
-        Query.select(['$id', 'title', 'slug', 'createdAt', '$updatedAt']),
-        Query.orderDesc('$updatedAt'),
-        Query.limit(100),
-      ],
-    });
+    const canvasesResult = await listCanvasesByOwner(user.$id, [
+      Query.select(['$id', 'title', 'slug', 'createdAt', '$updatedAt']),
+      Query.orderDesc('$updatedAt'),
+      Query.limit(100),
+    ]);
 
     const canvases = await Promise.all(
       canvasesResult.rows.map(async (canvas) => {

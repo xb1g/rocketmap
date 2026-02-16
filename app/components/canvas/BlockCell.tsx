@@ -213,6 +213,29 @@ export function BlockCell({
     definition.type === "customer_segments" && !!onAddSegment;
   const hasBlocks = !!onBlockCreate;
 
+  const dedupedBlocks = useMemo(() => {
+    if (!blocks) return [];
+    const seenIds = new Set<string>();
+    return blocks.reduce(
+      (
+        acc: Array<{ block: (typeof blocks)[number]; renderKey: string }>,
+        block,
+        index,
+      ) => {
+        const rawId = block.$id?.trim();
+        if (!rawId) {
+          acc.push({ block, renderKey: `block-${index}` });
+          return acc;
+        }
+        if (seenIds.has(rawId)) return acc;
+        seenIds.add(rawId);
+        acc.push({ block, renderKey: rawId });
+        return acc;
+      },
+      [],
+    );
+  }, [blocks]);
+
   const linkedSegmentById = useMemo(
     () =>
       new Map(
@@ -446,9 +469,9 @@ export function BlockCell({
       {/* Block cards - NEW */}
       {((blocks && blocks.length > 0) || onBlockCreate) && (
         <div className="block-items-container">
-          {blocks?.map((block) => (
+          {dedupedBlocks.map(({ block, renderKey }) => (
             <BlockCard
-              key={block.$id}
+              key={renderKey}
               block={block}
               allSegments={allSegments ?? []}
               allBlockItems={allBlockItems}

@@ -22,6 +22,7 @@ import type {
 import { BLOCK_DEFINITIONS } from "@/app/components/canvas/constants";
 import type { AssumptionItem } from "@/app/components/canvas/AssumptionsView";
 import { CanvasClient } from "./CanvasClient";
+import { getUserIdFromCanvasLike, listCanvasesByOwner } from "@/lib/utils";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -207,7 +208,6 @@ export default async function CanvasPage({ params }: PageProps) {
     "slug",
     "description",
     "isPublic",
-    "users",
     "viabilityScore",
     "viabilityDataJson",
     "viabilityCalculatedAt",
@@ -216,16 +216,11 @@ export default async function CanvasPage({ params }: PageProps) {
   let canvas: Record<string, unknown> | null = null;
   try {
     if (user) {
-      const ownerResult = await serverTablesDB.listRows({
-        databaseId: DATABASE_ID,
-        tableId: CANVASES_TABLE_ID,
-        queries: [
-          Query.equal("users", user.$id),
-          Query.equal("slug", slug),
-          Query.select(canvasSelect),
-          Query.limit(1),
-        ],
-      });
+      const ownerResult = await listCanvasesByOwner(user.$id, [
+        Query.equal("slug", slug),
+        Query.select(canvasSelect),
+        Query.limit(1),
+      ]);
 
       if (ownerResult.rows.length > 0) {
         canvas = ownerResult.rows[0];
@@ -328,7 +323,6 @@ export default async function CanvasPage({ params }: PageProps) {
             "category",
             "severityScore",
             "status",
-            "blocks",
           ]),
           Query.orderDesc("severityScore"),
           Query.limit(100),
@@ -489,8 +483,7 @@ export default async function CanvasPage({ params }: PageProps) {
     slug: readString(canvas.slug),
     description: readString(canvas.description),
     isPublic: readBoolean(canvas.isPublic),
-    users: readString((canvas.users as Record<string, unknown>)?.$id) ||
-      readString(canvas.users) || "", // Handle relationship object or ID
+    users: getUserIdFromCanvasLike(canvas as Record<string, unknown>),
     viabilityScore: typeof canvas.viabilityScore === "number" ? canvas.viabilityScore : null,
     viabilityData,
     viabilityCalculatedAt: readString(canvas.viabilityCalculatedAt) || null,

@@ -43,7 +43,7 @@ export async function POST(request: Request) {
         createdAt: now,
         updatedAt: now,
         isPublic: false,
-        users: user.$id,
+        user: user.$id,
       },
     });
 

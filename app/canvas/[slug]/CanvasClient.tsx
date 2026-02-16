@@ -1054,7 +1054,7 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
 
   return (
     <div
-      className="canvas-zoom-root flex flex-col h-screen p-5 gap-3 transition-[padding-right] duration-300 ease-out"
+      className="canvas-zoom-root flex flex-col min-h-screen p-5 pb-28 gap-3 transition-[padding-right] duration-300 ease-out"
       style={
         {
           paddingRight: reservedRightSpace,
