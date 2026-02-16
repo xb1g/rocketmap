@@ -12,7 +12,7 @@ import {
 import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { getToolsForAgent } from '@/lib/ai/tools';
 import { buildDeepDivePrompt, getDeepDiveToolName } from '@/lib/ai/prompts';
-import type { DeepDiveModule, MarketResearchData, CanvasData } from '@/lib/types/canvas';
+import type { DeepDiveModule, MarketResearchData, UnitEconomicsData, CanvasData } from '@/lib/types/canvas';
 import {
   getAnthropicModelForUser,
   recordAnthropicUsageForUser,
@@ -32,6 +32,8 @@ const VALID_MODULES: DeepDiveModule[] = [
   'segment_scoring',
   'segment_comparison',
   'segment_profile',
+  'unit_economics',
+  'sensitivity_analysis',
 ];
 
 // POST — AI generation for a specific deep-dive module
@@ -112,6 +114,18 @@ export async function POST(request: Request, context: RouteContext) {
       userMessage = `Suggest a market definition and buyer structure profile for the customer segment "${name}". ${desc ? `Description: ${desc}` : ''}\n\nUse the suggestSegmentProfile tool to return your structured profile.\n\nBlock content for context: "${content || '(empty)'}"`;
     } else if (module === 'segment_comparison') {
       userMessage = `Compare these two customer segments using the compareSegments tool.\n\nSegment A: "${inputs?.segmentAName || '(unnamed)'}" — ${inputs?.segmentADescription || '(no description)'}\nSegment B: "${inputs?.segmentBName || '(unnamed)'}" — ${inputs?.segmentBDescription || '(no description)'}\n\nBlock content for context: "${content || '(empty)'}"`;
+    } else if (module === 'unit_economics') {
+      userMessage = `You MUST call the estimateUnitEconomics tool with your analysis. Do NOT write text — only call the tool.
+
+Estimate unit economics for all customer segments based on the canvas context above. Include ARPU, CAC, LTV, gross margin, payback period, and churn rate per segment. Flag any impossible economics (CAC > LTV, negative margins). Monthly burn: ${inputs?.monthlyBurn || 'not provided'}.
+
+Block content for context: "${content || '(empty)'}"`;
+    } else if (module === 'sensitivity_analysis') {
+      userMessage = `You MUST call the runSensitivityAnalysis tool with your analysis. Do NOT write text — only call the tool.
+
+Run sensitivity analysis: What happens if ${inputs?.parameter || 'churn_rate'} changes by ${inputs?.deltaPct || '20'}%?
+
+Block content for context: "${content || '(empty)'}"`;
     } else {
       userMessage = `Perform a deep-dive analysis for the "${blockType}" block. Current content: "${content || '(empty)'}". Use the ${toolName} tool to return your structured analysis.`;
     }
@@ -153,6 +167,7 @@ export async function POST(request: Request, context: RouteContext) {
       competitiveLandscape: existingDeepDive?.competitiveLandscape ?? null,
       scorecards: existingDeepDive?.scorecards,
       segmentProfiles: existingDeepDive?.segmentProfiles,
+      unitEconomics: existingDeepDive?.unitEconomics,
     };
 
     // Map module to the correct field
@@ -236,6 +251,59 @@ export async function POST(request: Request, context: RouteContext) {
           ...(updatedDeepDive.segmentProfiles ?? {}),
           [segId]: profileResult,
         };
+        break;
+      }
+      case 'unit_economics': {
+        const economicsResult = toolResult as {
+          segments: UnitEconomicsData['segments'];
+          globalMetrics: UnitEconomicsData['globalMetrics'];
+          alerts: UnitEconomicsData['alerts'];
+        };
+        updatedDeepDive.unitEconomics = {
+          segments: economicsResult.segments,
+          globalMetrics: economicsResult.globalMetrics,
+          alerts: economicsResult.alerts,
+          sensitivityResults: updatedDeepDive.unitEconomics?.sensitivityResults ?? [],
+          lastUpdated: new Date().toISOString(),
+        };
+        break;
+      }
+      case 'sensitivity_analysis': {
+        const sensitivityResult = toolResult as {
+          parameter: string;
+          deltaPct: number;
+          adjustedSegments: UnitEconomicsData['segments'];
+          impact: string;
+          verdict: 'survives' | 'stressed' | 'breaks';
+        };
+        // Build original from existing economics or use empty
+        const existingEconomics = updatedDeepDive.unitEconomics;
+        const originalSegmentMap = new Map(
+          (existingEconomics?.segments ?? []).map((s) => [s.segmentId, s])
+        );
+        const newResult = {
+          parameter: `${sensitivityResult.parameter} ${sensitivityResult.deltaPct >= 0 ? '+' : ''}${sensitivityResult.deltaPct}%`,
+          original: originalSegmentMap.values().next().value ?? sensitivityResult.adjustedSegments[0],
+          adjusted: sensitivityResult.adjustedSegments[0],
+          impact: sensitivityResult.impact,
+          verdict: sensitivityResult.verdict,
+        };
+        const existingResults = existingEconomics?.sensitivityResults ?? [];
+        if (existingEconomics) {
+          updatedDeepDive.unitEconomics = {
+            ...existingEconomics,
+            sensitivityResults: [...existingResults, newResult],
+            lastUpdated: new Date().toISOString(),
+          };
+        } else {
+          updatedDeepDive.unitEconomics = {
+            segments: sensitivityResult.adjustedSegments,
+            globalMetrics: { monthlyBurn: null, runwayMonths: null, blendedArpu: 0, blendedCac: 0, blendedLtv: 0, blendedLtvCacRatio: 0 },
+            alerts: [],
+            sensitivityResults: [newResult],
+            lastUpdated: new Date().toISOString(),
+          };
+        }
         break;
       }
     }

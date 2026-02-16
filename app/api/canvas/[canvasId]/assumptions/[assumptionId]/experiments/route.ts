@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Query } from 'node-appwrite';
+import { ID, Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
 import {
   serverTablesDB,
@@ -46,6 +46,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const experiment = await serverTablesDB.createRow({
       databaseId: DATABASE_ID,
       tableId: EXPERIMENTS_TABLE_ID,
+      rowId: ID.unique(),
       data: {
         assumption: assumptionId,
         type,
@@ -55,8 +56,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
         result: null,
         evidence: '',
         sourceUrl: null,
-        costEstimate: costEstimate ?? null,
-        durationEstimate: durationEstimate ?? null,
+        costEstimate: costEstimate ? String(costEstimate).slice(0, 50) : null,
+        durationEstimate: durationEstimate ? String(durationEstimate).slice(0, 50) : null,
         createdAt: now,
         completedAt: null,
       },
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       databaseId: DATABASE_ID,
       tableId: ASSUMPTIONS_TABLE_ID,
       rowId: assumptionId,
-      data: { status: 'testing', updatedAt: now },
+      data: { status: 'testing' },
     });
 
     return NextResponse.json(experiment, { status: 201 });

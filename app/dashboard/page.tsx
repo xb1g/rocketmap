@@ -93,12 +93,13 @@ export default async function DashboardPage() {
         } catch {
           // Blocks collection might not exist
         }
+        const d = doc as Record<string, unknown>;
         return {
           $id: doc.$id,
-          title: doc.title as string,
-          slug: doc.slug as string,
+          title: d.title as string,
+          slug: d.slug as string,
           $updatedAt: doc.$updatedAt,
-          isPublic: doc.isPublic ?? false,
+          isPublic: (d.isPublic as boolean) ?? false,
           blocksCount,
         };
       }),

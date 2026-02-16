@@ -148,8 +148,7 @@ export function serializeCanvasState(blocks: BlockData[], mode: 'bmc' | 'lean' =
 
       if (b.content.items?.length) {
         for (const item of b.content.items) {
-          const desc = item.description ? ` — ${item.description}` : '';
-          line += `\n  • Item: "${item.name}"${desc}`;
+          line += `\n  • Item: "${item.name}"`;
         }
       }
       if (b.linkedSegments?.length) {
@@ -428,6 +427,43 @@ Use the suggestSegmentProfile tool to return your structured profile.`,
 - If segments are within 0.3 points overall, recommend testing both in parallel
 
 Use the compareSegments tool to return your structured comparison.`,
+
+  unit_economics: `You are a unit economics analyst. Estimate ARPU, CAC, LTV, gross margins, payback periods, and churn rates for each customer segment.
+
+## Guidelines
+- Estimate metrics PER SEGMENT using canvas context (revenue streams, cost structure, customer segments)
+- Use industry benchmarks as reference points:
+  - SaaS: LTV:CAC >= 3 is healthy, payback < 12 months
+  - Marketplace: gross margins 15-30%, focus on take rate
+  - E-commerce: CAC payback < 6 months, watch shipping costs
+- Detect impossible economics:
+  - CAC > LTV → critical alert (unsustainable acquisition)
+  - Gross margin < 0 → critical alert (selling at a loss)
+  - Payback > 24 months → warning (slow recovery)
+  - LTV:CAC < 1 → critical alert (destroying value per customer)
+- Calculate payback period: CAC / (ARPU * grossMarginPct / 100)
+- Calculate LTV: ARPU * grossMarginPct / 100 * (1 / churnRatePct * 100) or ARPU * grossMarginPct / 100 * averageLifespanMonths
+- Compute blended global metrics weighted by segment size
+- Flag alerts for any impossible economics, warnings for marginal metrics, and benchmark comparisons
+- Explain methodology clearly so the founder can verify and adjust assumptions
+- Cross-reference revenue streams block for pricing data and cost structure block for expense data
+
+Use the estimateUnitEconomics tool to return your structured analysis.`,
+
+  sensitivity_analysis: `You are a stress-test analyst. Run sensitivity analysis on the startup's unit economics by adjusting a specific parameter and measuring the impact.
+
+## Guidelines
+- Take the parameter to adjust (e.g., "churn_rate", "cac", "arpu", "gross_margin") and the delta percentage
+- Recalculate ALL segment economics with the adjusted parameter
+- Assess overall impact:
+  - "survives" — all segments remain healthy (LTV:CAC >= 3) after the adjustment
+  - "stressed" — some segments drop to warning (LTV:CAC 1-3) but none break
+  - "breaks" — at least one segment becomes critical (LTV:CAC < 1) or has impossible economics
+- Provide a clear narrative of what happens when the parameter changes
+- Highlight which segments are most fragile to this specific change
+- Consider cascading effects (e.g., higher churn affects LTV which affects LTV:CAC ratio)
+
+Use the runSensitivityAnalysis tool to return your structured analysis.`,
 };
 
 const DEEP_DIVE_TOOL_MAP: Record<DeepDiveModule, string> = {
@@ -439,6 +475,8 @@ const DEEP_DIVE_TOOL_MAP: Record<DeepDiveModule, string> = {
   segment_scoring: 'scoreSegment',
   segment_comparison: 'compareSegments',
   segment_profile: 'suggestSegmentProfile',
+  unit_economics: 'estimateUnitEconomics',
+  sensitivity_analysis: 'runSensitivityAnalysis',
 };
 
 export function getDeepDiveToolName(module: DeepDiveModule): string {
@@ -488,6 +526,13 @@ export function buildDeepDivePrompt(
     }
     if (module === 'segment_comparison' && existingDeepDive.scorecards?.length) {
       contextSection += `\nExisting scorecards:\n${JSON.stringify(existingDeepDive.scorecards, null, 2)}`;
+    }
+    if (module === 'sensitivity_analysis') {
+      // Pass existing unit economics data so sensitivity can adjust from baseline
+      const economicsJson = inputs?.existingEconomics;
+      if (economicsJson) {
+        contextSection += `\nExisting unit economics (baseline for sensitivity):\n${economicsJson}`;
+      }
     }
   }
 

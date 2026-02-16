@@ -114,16 +114,20 @@ Think through the canvas step by step in your reasoning, then list all assumptio
             .filter((id): id is string => !!id);
 
           try {
+            const riskLevel = assumption.severityScore >= 7 ? 'high' : assumption.severityScore >= 4 ? 'medium' : 'low';
+
             const doc = await serverTablesDB.createRow({
               databaseId: DATABASE_ID,
               tableId: ASSUMPTIONS_TABLE_ID,
               rowId: ID.unique(),
               data: {
+                canvas: canvasId,
                 assumptionText: assumption.statement,
                 category: assumption.category,
                 status: 'untested',
+                riskLevel,
                 severityScore: assumption.severityScore,
-                blocks: blockIds,
+                ...(blockIds.length > 0 ? { blocks: blockIds } : {}),
               },
             });
 

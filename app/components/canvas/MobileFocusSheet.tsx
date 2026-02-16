@@ -8,8 +8,8 @@ import type {
   Segment,
 } from "@/lib/types/canvas";
 import { BlockFocusHeader } from "./BlockFocusHeader";
-import { BlockFocusEditor } from "./BlockFocusEditor";
 import { BlockAIResults } from "./BlockAIResults";
+import { BlockCard } from "./BlockCard";
 import { BLOCK_DEFINITIONS, getBlockValue } from "./constants";
 
 type SheetState = "collapsed" | "expanded" | "dismissed";
@@ -27,6 +27,18 @@ interface MobileFocusSheetProps {
   onClose: () => void;
   onAnalyze: () => void;
   onDeepDive?: () => void;
+  onItemCreate?: (blockType: BlockType) => void;
+  onItemUpdate?: (
+    blockType: BlockType,
+    itemId: string,
+    updates: Partial<any>,
+  ) => void;
+  onItemDelete?: (blockType: BlockType, itemId: string) => void;
+  onItemToggleSegment?: (
+    blockType: BlockType,
+    itemId: string,
+    segmentId: string,
+  ) => void;
   chatSection?: React.ReactNode;
 }
 
@@ -40,10 +52,15 @@ export function MobileFocusSheet({
   isAnalyzing,
   allBlocksFilled,
   filledCount,
+  allSegments,
   onChange,
   onClose,
   onAnalyze,
   onDeepDive,
+  onItemCreate,
+  onItemUpdate,
+  onItemDelete,
+  onItemToggleSegment,
   chatSection,
 }: MobileFocusSheetProps) {
   const [sheetState, setSheetState] = useState<SheetState>("collapsed");
@@ -95,7 +112,10 @@ export function MobileFocusSheet({
       const deltaTime = (Date.now() - dragStartTime.current) / 1000;
       const velocity = deltaTime > 0 ? deltaY / deltaTime : 0;
 
-      if (deltaY > DRAG_THRESHOLD || velocity > DISMISS_VELOCITY_THRESHOLD * 1000) {
+      if (
+        deltaY > DRAG_THRESHOLD ||
+        velocity > DISMISS_VELOCITY_THRESHOLD * 1000
+      ) {
         // Swiped down
         if (sheetState === "expanded") {
           setSheetState("collapsed");
@@ -123,11 +143,7 @@ export function MobileFocusSheet({
 
   const sheetClassName = [
     "mobile-focus-sheet",
-    isVisible
-      ? sheetState === "expanded"
-        ? "is-open"
-        : "is-collapsed"
-      : "",
+    isVisible ? (sheetState === "expanded" ? "is-open" : "is-collapsed") : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -175,12 +191,57 @@ export function MobileFocusSheet({
 
         {/* Sheet content */}
         <div className="mobile-sheet-content">
-          {/* Editor */}
-          <BlockFocusEditor
-            value={value}
-            placeholder={`Describe your ${label.toLowerCase()}...`}
-            onChange={onChange}
-          />
+          {/* NEW: Block items (cards) section */}
+          {(onItemCreate ||
+            (block.content.items && block.content.items.length > 0)) && (
+            <div className="px-4 pb-4 space-y-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-display-small text-[10px] uppercase tracking-wider text-foreground-muted/60">
+                  Items
+                </span>
+                {onItemCreate && (
+                  <button
+                    onClick={() => onItemCreate(blockType)}
+                    className="text-[10px] text-foreground-muted/50 hover:text-foreground transition-colors"
+                  >
+                    + Add Card
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2">
+                {(block.content.items ?? []).map((item) => {
+                  const itemSegments = (item.linkedSegmentIds ?? [])
+                    .map((id) => (allSegments ?? []).find((s) => s.$id === id))
+                    .filter((s): s is Segment => s !== undefined);
+
+                  const blockCardData = {
+                    $id: item.id,
+                    blockType,
+                    contentJson: JSON.stringify({ text: item.name, tags: [] }),
+                    confidenceScore: block.confidenceScore,
+                    riskScore: 0,
+                    segments: itemSegments,
+                  };
+
+                  return (
+                    <BlockCard
+                      key={item.id}
+                      block={blockCardData}
+                      allSegments={allSegments ?? []}
+                      onUpdate={(id: string, updates: any) => {
+                        const parsed = JSON.parse(updates.contentJson);
+                        onItemUpdate?.(blockType, id, { name: parsed.text });
+                      }}
+                      onDelete={(id: string) => onItemDelete?.(blockType, id)}
+                      onSegmentToggle={(id: string, segId: string) =>
+                        onItemToggleSegment?.(blockType, id, segId)
+                      }
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Action buttons */}
           <div className="px-4 pb-3 flex gap-2">
@@ -196,7 +257,9 @@ export function MobileFocusSheet({
               {isAnalyzing ? "Analyzing..." : "Analyze with AI"}
             </button>
 
-            {blockType === "customer_segments" &&
+            {(blockType === "customer_segments" ||
+              blockType === "revenue_streams" ||
+              blockType === "cost_structure") &&
               onDeepDive &&
               allBlocksFilled && (
                 <button
@@ -209,7 +272,9 @@ export function MobileFocusSheet({
           </div>
 
           {/* Deep dive gate message */}
-          {blockType === "customer_segments" &&
+          {(blockType === "customer_segments" ||
+            blockType === "revenue_streams" ||
+            blockType === "cost_structure") &&
             onDeepDive &&
             !allBlocksFilled && (
               <div className="px-4 pb-3">
@@ -225,10 +290,7 @@ export function MobileFocusSheet({
             )}
 
           {/* AI Results */}
-          <BlockAIResults
-            analysis={block.aiAnalysis}
-            usage={block.lastUsage}
-          />
+          <BlockAIResults analysis={block.aiAnalysis} usage={block.lastUsage} />
 
           {/* Expand/Collapse button */}
           <div className="px-4 py-2">
@@ -240,9 +302,7 @@ export function MobileFocusSheet({
               }
               className="w-full py-2 rounded-lg border border-white/8 bg-white/3 text-xs text-foreground-muted hover:text-foreground hover:bg-white/5 transition-colors"
             >
-              {sheetState === "expanded"
-                ? "Collapse"
-                : "Expand to Full Screen"}
+              {sheetState === "expanded" ? "Collapse" : "Expand to Full Screen"}
             </button>
           </div>
 

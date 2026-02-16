@@ -69,10 +69,21 @@ The root container for a Business Model Canvas or Lean Canvas.
 ### 5. `assumptions`
 
 - **$id**: String
+- **canvas**: Relationship (Many-to-One with `canvases`, Cascade Delete) - _Required_
 - **assumptionText**: String (Required)
-- **category**: Enum (market, product, ops, legal) (Indexed)
-- **status**: Enum (untested, testing, validated, invalid) (Indexed)
-- **severityScore**: Double (0-10)
+- **category**: Enum (market, product, ops, legal) (Indexed, Default: 'product')
+- **status**: Enum (untested, testing, validated, refuted, inconclusive) (Indexed, Default: 'untested')
+- **riskLevel**: Enum (high, medium, low) (Required, Indexed)
+- **severityScore**: Double (0-10, Default: 0)
+- **confidenceScore**: Double (0-100, Default: 0)
+- **source**: Enum (ai, user) (Default: 'ai')
+- **segmentIds**: String (JSON array, Default: '[]')
+- **linkedValidationItemIds**: String (JSON array, Default: '[]')
+- **suggestedExperiment**: String
+- **suggestedExperimentDuration**: String
+- **createdAt**: DateTime
+- **updatedAt**: DateTime
+- **lastTestedAt**: DateTime
 - **blocks**: Relationship (Many-to-Many with `blocks`, Two-Way)
 
 ### 6. `messages`
@@ -85,3 +96,21 @@ The root container for a Business Model Canvas or Lean Canvas.
 - **createdAt**: String (ISO timestamp)
 - **user**: Relationship (Many-to-One with `users`, Two-Way)
 - **canvas**: Relationship (Many-to-One with `canvases`, Two-Way)
+
+### 7. `experiments`
+
+Stores validation experiments conducted for specific assumptions.
+
+- **$id**: String
+- **assumption**: Relationship (Many-to-One with `assumptions`, Cascade Delete)
+- **type**: Enum (`survey`, `interview`, `mvp`, `ab_test`, `research`, `other`)
+- **description**: LongText
+- **successCriteria**: String (500)
+- **status**: Enum (`planned`, `running`, `completed`) (Default: `planned`)
+- **result**: Enum (`supports`, `contradicts`, `mixed`, `inconclusive`)
+- **evidence**: LongText (Default: `''`)
+- **sourceUrl**: String (500)
+- **costEstimate**: String (50)
+- **durationEstimate**: String (50)
+- **createdAt**: DateTime
+- **completedAt**: DateTime

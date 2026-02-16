@@ -544,6 +544,58 @@ const blockTypeEnum = z.enum([
   'customer_segments', 'cost_structure', 'revenue_streams',
 ]);
 
+// ─── Unit Economics Tools ────────────────────────────────────────────────────
+
+const segmentEconomicsSchema = z.object({
+  segmentId: z.string().describe('Segment identifier'),
+  segmentName: z.string().describe('Segment display name'),
+  arpu: z.number().describe('Average Revenue Per User (monthly, USD)'),
+  cac: z.number().describe('Customer Acquisition Cost (USD)'),
+  grossMarginPct: z.number().min(0).max(100).describe('Gross margin percentage (0-100)'),
+  ltv: z.number().describe('Customer Lifetime Value (USD)'),
+  paybackMonths: z.number().describe('CAC payback period in months'),
+  churnRatePct: z.number().describe('Monthly churn rate percentage'),
+  ltvCacRatio: z.number().describe('LTV:CAC ratio'),
+  status: z.enum(['healthy', 'warning', 'critical']).describe('Economic health: healthy (LTV:CAC >= 3), warning (1-3), critical (< 1)'),
+  methodology: z.string().describe('How these numbers were estimated'),
+});
+
+const economicsAlertSchema = z.object({
+  type: z.enum(['impossible', 'warning', 'benchmark']).describe('Alert type: impossible = CAC > LTV, warning = marginal economics, benchmark = industry comparison'),
+  message: z.string().describe('Human-readable alert message'),
+  severity: z.enum(['critical', 'warning', 'info']).describe('Alert severity level'),
+  segmentId: z.string().optional().describe('Segment this alert applies to, if specific'),
+});
+
+export const estimateUnitEconomics = tool({
+  description: 'Estimate unit economics per customer segment using canvas context, revenue streams, cost structure, and industry benchmarks.',
+  inputSchema: z.object({
+    segments: z.array(segmentEconomicsSchema).describe('Unit economics per customer segment'),
+    globalMetrics: z.object({
+      monthlyBurn: z.number().nullable().describe('Estimated monthly burn rate (USD), null if unknown'),
+      runwayMonths: z.number().nullable().describe('Estimated runway in months, null if unknown'),
+      blendedArpu: z.number().describe('Blended ARPU across all segments'),
+      blendedCac: z.number().describe('Blended CAC across all segments'),
+      blendedLtv: z.number().describe('Blended LTV across all segments'),
+      blendedLtvCacRatio: z.number().describe('Blended LTV:CAC ratio'),
+    }).describe('Global metrics across all segments'),
+    alerts: z.array(economicsAlertSchema).describe('Alerts for impossible economics, warnings, or benchmark comparisons'),
+  }),
+  execute: async (params) => params,
+});
+
+export const runSensitivityAnalysis = tool({
+  description: 'Run sensitivity analysis on unit economics by adjusting a parameter and showing impact.',
+  inputSchema: z.object({
+    parameter: z.string().describe('Parameter being adjusted (e.g., "churn_rate", "cac", "arpu")'),
+    deltaPct: z.number().describe('Percentage change applied (e.g., 20 means +20%)'),
+    adjustedSegments: z.array(segmentEconomicsSchema).describe('Recalculated segment economics after adjustment'),
+    impact: z.string().describe('Human-readable summary of the impact'),
+    verdict: z.enum(['survives', 'stressed', 'breaks']).describe('Overall verdict: survives = still healthy, stressed = marginal, breaks = unsustainable'),
+  }),
+  execute: async (params) => params,
+});
+
 // ─── Block Editing Tool ──────────────────────────────────────────────────────
 
 export const proposeBlockEdit = tool({
@@ -587,6 +639,8 @@ const allTools: Record<string, ReturnType<typeof tool<any, any>>> = {
   scoreSegment,
   compareSegments,
   suggestSegmentProfile,
+  estimateUnitEconomics,
+  runSensitivityAnalysis,
 };
 
 export function getToolsForAgent(

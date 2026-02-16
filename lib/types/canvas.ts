@@ -12,7 +12,7 @@ export type BlockType =
 
 export type CanvasMode = "bmc" | "lean";
 export type BlockState = "calm" | "healthy" | "warning" | "critical" | "ai";
-export type CanvasTab = "canvas" | "analysis" | "assumptions" | "notes" | "debug";
+export type CanvasTab = "canvas" | "analysis" | "assumptions" | "economics" | "notes" | "debug";
 
 export interface BlockContent {
   bmc: string;
@@ -23,7 +23,6 @@ export interface BlockContent {
 export interface BlockItem {
   id: string; // Internal stable ID
   name: string;
-  description?: string;
   linkedSegmentIds: string[]; // List of segment IDs this item is relevant to
   linkedItemIds: string[]; // format: "blockType:itemId" - cross-block item links
   createdAt: string;
@@ -33,7 +32,6 @@ export interface BlockItem {
 export interface BlockCard {
   $id: string;
   name: string;
-  description?: string;
   order: number;
 }
 
@@ -133,7 +131,9 @@ export type DeepDiveModule =
   | "competitive_landscape"
   | "segment_scoring"
   | "segment_comparison"
-  | "segment_profile";
+  | "segment_profile"
+  | "unit_economics"
+  | "sensitivity_analysis";
 
 export interface MarketSizeEstimate {
   value: number;
@@ -235,6 +235,7 @@ export interface MarketResearchData {
   competitiveLandscape: CompetitiveLandscapeData | null;
   scorecards?: SegmentScorecard[];
   segmentProfiles?: Record<string, SegmentProfile>;
+  unitEconomics?: UnitEconomicsData | null;
 }
 
 // ─── Segment Evaluation Scorecard Types ─────────────────────────────────────
@@ -323,7 +324,6 @@ export interface RiskMetrics {
 
 export interface BlockItemProposal {
   name: string;
-  description: string;
 }
 
 // ─── Segment Proposals (AI Copilot → Create Segments) ────────────────────────
@@ -370,4 +370,52 @@ export interface ViabilityData {
   reasoning: string;        // Opus explanation
   validatedAssumptions: ValidatedAssumption[];
   calculatedAt: string;     // ISO timestamp
+}
+
+// ─── Unit Economics Types ─────────────────────────────────────────────────────
+
+export type EconomicsModule = 'unit_economics' | 'sensitivity_analysis';
+
+export interface SegmentEconomics {
+  segmentId: string;
+  segmentName: string;
+  arpu: number;
+  cac: number;
+  grossMarginPct: number;       // 0-100
+  ltv: number;
+  paybackMonths: number;
+  churnRatePct: number;
+  ltvCacRatio: number;
+  status: 'healthy' | 'warning' | 'critical';
+  methodology: string;
+}
+
+export interface SensitivityResult {
+  parameter: string;
+  original: SegmentEconomics;
+  adjusted: SegmentEconomics;
+  impact: string;
+  verdict: 'survives' | 'stressed' | 'breaks';
+}
+
+export interface EconomicsAlert {
+  type: 'impossible' | 'warning' | 'benchmark';
+  message: string;
+  severity: 'critical' | 'warning' | 'info';
+  segmentId?: string;
+}
+
+export interface UnitEconomicsData {
+  segments: SegmentEconomics[];
+  globalMetrics: {
+    monthlyBurn: number | null;
+    runwayMonths: number | null;
+    blendedArpu: number;
+    blendedCac: number;
+    blendedLtv: number;
+    blendedLtvCacRatio: number;
+  };
+  alerts: EconomicsAlert[];
+  sensitivityResults: SensitivityResult[];
+  lastUpdated: string;
 }

@@ -37,8 +37,32 @@ export function ExperimentDesignModal({
     assumption.suggestedExperimentDuration ?? "",
   );
   const [submitting, setSubmitting] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleAISuggest = async () => {
+    if (generating) return;
+    setGenerating(true);
+    try {
+      const res = await fetch(
+        `/api/canvas/${canvasId}/assumptions/${assumption.$id}/suggest-experiment`,
+        { method: "POST" }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setType(data.type);
+        setDescription(data.description);
+        setSuccessCriteria(data.successCriteria);
+        setCostEstimate(data.costEstimate);
+        setDurationEstimate(data.durationEstimate);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!description.trim() || !successCriteria.trim() || submitting) return;
@@ -79,12 +103,25 @@ export function ExperimentDesignModal({
       <div className="w-full max-w-lg mx-4 rounded-xl border border-white/[0.08] bg-[#0a0a0f]/95 backdrop-blur-xl p-6 space-y-5">
         <div className="flex items-center justify-between">
           <h3 className="font-display-small text-base">Design Experiment</h3>
-          <button
-            onClick={onClose}
-            className="text-foreground-muted hover:text-foreground text-sm"
-          >
-            &times;
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleAISuggest}
+              disabled={generating}
+              className={`ui-btn ui-btn-sm ${
+                generating
+                  ? "ui-btn-secondary glow-ai text-[var(--state-ai)]"
+                  : "ui-btn-secondary text-foreground-muted hover:text-foreground"
+              }`}
+            >
+              {generating ? "Generating..." : "✨ AI Suggest"}
+            </button>
+            <button
+              onClick={onClose}
+              className="text-foreground-muted hover:text-foreground text-sm"
+            >
+              &times;
+            </button>
+          </div>
         </div>
 
         {/* Assumption being tested */}

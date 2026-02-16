@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import type { BlockType, DeepDiveModule, MarketResearchData } from '@/lib/types/canvas';
+import type { BlockType, DeepDiveModule, MarketResearchData, UnitEconomicsData } from '@/lib/types/canvas';
 import { BLOCK_DEFINITIONS } from '@/app/components/canvas/constants';
 import { MarketResearchView } from './market-research/MarketResearchView';
+import { EconomicsView } from './unit-economics/EconomicsView';
 
 interface DeepDiveOverlayProps {
   blockType: BlockType;
@@ -15,12 +16,17 @@ interface DeepDiveOverlayProps {
   onClose: () => void;
 }
 
-const MODULE_TABS: { key: DeepDiveModule; label: string }[] = [
+const MARKET_RESEARCH_TABS: { key: DeepDiveModule; label: string }[] = [
   { key: 'tam_sam_som', label: 'TAM / SAM / SOM' },
   { key: 'segmentation', label: 'Segmentation' },
   { key: 'personas', label: 'Personas' },
   { key: 'market_validation', label: 'Validation' },
   { key: 'competitive_landscape', label: 'Competitors' },
+];
+
+const ECONOMICS_TABS: { key: DeepDiveModule; label: string }[] = [
+  { key: 'unit_economics', label: 'Unit Economics' },
+  { key: 'sensitivity_analysis', label: 'Sensitivity' },
 ];
 
 export function DeepDiveOverlay({
@@ -32,11 +38,16 @@ export function DeepDiveOverlay({
   onDataChange,
   onClose,
 }: DeepDiveOverlayProps) {
-  const [activeModule, setActiveModule] = useState<DeepDiveModule>('tam_sam_som');
+  const isEconomicsBlock = blockType === 'revenue_streams' || blockType === 'cost_structure';
+  const moduleTabs = isEconomicsBlock ? ECONOMICS_TABS : MARKET_RESEARCH_TABS;
+  const [activeModule, setActiveModule] = useState<DeepDiveModule>(
+    isEconomicsBlock ? 'unit_economics' : 'tam_sam_som'
+  );
   const [generatingModule, setGeneratingModule] = useState<DeepDiveModule | null>(null);
 
   const def = BLOCK_DEFINITIONS.find((d) => d.type === blockType);
   const label = def?.bmcLabel ?? blockType;
+  const overlayTitle = isEconomicsBlock ? 'Unit Economics' : 'Market Research';
 
   const data: MarketResearchData = deepDiveData ?? {
     tamSamSom: null,
@@ -58,7 +69,7 @@ export function DeepDiveOverlay({
           <div className="flex items-center gap-2 text-sm">
             <span className="text-foreground-muted">{label}</span>
             <span className="text-foreground-muted/40">›</span>
-            <span className="text-foreground font-medium">Market Research</span>
+            <span className="text-foreground font-medium">{overlayTitle}</span>
           </div>
           <button
             onClick={onClose}
@@ -70,7 +81,7 @@ export function DeepDiveOverlay({
 
         {/* Tab bar */}
         <div className="flex gap-2 px-6 py-2 border-b border-white/5 overflow-x-auto">
-          {MODULE_TABS.map((tab) => (
+          {moduleTabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveModule(tab.key)}
@@ -107,6 +118,16 @@ export function DeepDiveOverlay({
               aiEnabled={allBlocksFilled ?? false}
               onGeneratingChange={setGeneratingModule}
               onDataChange={onDataChange}
+            />
+          )}
+          {(blockType === 'revenue_streams' || blockType === 'cost_structure') && (
+            <EconomicsView
+              activeModule={activeModule === 'sensitivity_analysis' ? 'sensitivity_analysis' : 'unit_economics'}
+              economicsData={(deepDiveData as unknown as UnitEconomicsData) ?? null}
+              canvasId={canvasId}
+              blockType={blockType}
+              aiEnabled={allBlocksFilled ?? false}
+              onDataChange={(d) => onDataChange(d as unknown as MarketResearchData)}
             />
           )}
         </div>

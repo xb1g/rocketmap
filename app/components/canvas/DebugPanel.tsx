@@ -96,11 +96,6 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                             <div className="font-semibold text-white">
                               {item.name}
                             </div>
-                            {item.description && (
-                              <div className="text-foreground-muted text-xs">
-                                {item.description}
-                              </div>
-                            )}
                             {item.linkedSegmentIds.length > 0 && (
                               <div className="flex gap-1 flex-wrap">
                                 <span className="text-[10px] text-foreground-muted">
@@ -233,11 +228,6 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                             <div className="font-semibold text-white text-sm">
                               {card.name}
                             </div>
-                            {card.description && (
-                              <div className="text-foreground-muted text-xs">
-                                {card.description}
-                              </div>
-                            )}
                             <div className="text-[10px] text-foreground-muted">
                               Order: {card.order} | ID: {card.$id.slice(0, 8)}
                             </div>

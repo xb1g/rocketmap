@@ -7,10 +7,12 @@ import type {
   BlockEditProposal,
   CanvasMode,
   Segment,
+  UnitEconomicsData,
 } from "@/lib/types/canvas";
 import { BlockFocusHeader } from "./BlockFocusHeader";
 import { BlockFocusEditor } from "./BlockFocusEditor";
 import { BlockAIResults } from "./BlockAIResults";
+import { BlockCard } from "./BlockCard";
 import { BLOCK_DEFINITIONS, getBlockValue } from "./constants";
 
 interface BlockFocusPanelProps {
@@ -43,6 +45,23 @@ interface BlockFocusPanelProps {
     segmentOverride?: Segment,
   ) => Promise<void>;
   onSegmentUnlink?: (segmentId: string) => Promise<void>;
+  onItemCreate?: (blockType: BlockType) => void;
+  onItemUpdate?: (
+    blockType: BlockType,
+    itemId: string,
+    updates: Partial<any>,
+  ) => void;
+  onItemDelete?: (blockType: BlockType, itemId: string) => void;
+  onItemToggleSegment?: (
+    blockType: BlockType,
+    itemId: string,
+    segmentId: string,
+  ) => void;
+  onItemToggleLink?: (
+    blockType: BlockType,
+    itemId: string,
+    linkedItemId: string,
+  ) => void;
   chatSection?: React.ReactNode;
 }
 
@@ -98,9 +117,7 @@ function SegmentEditCard({
             className="w-2.5 h-2.5 rounded-full shrink-0"
             style={{ background: priorityColor(priority) }}
           />
-          <div className="font-medium text-sm text-foreground">
-            {name}
-          </div>
+          <div className="font-medium text-sm text-foreground">{name}</div>
           <button
             onClick={onClose}
             className="text-foreground-muted/40 hover:text-foreground text-xs shrink-0"
@@ -514,7 +531,8 @@ function LinkedSegmentsSection({
         </div>
       ) : !creatingSegment && !showLinkPicker ? (
         <div className="text-[11px] text-foreground-muted/40 py-2 text-center">
-          No segments linked. Use &quot;+ Link&quot; to connect segments to this block.
+          No segments linked. Use &quot;+ Link&quot; to connect segments to this
+          block.
         </div>
       ) : null}
     </div>
@@ -563,7 +581,9 @@ function BlockRiskSection({
       }
     }
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [canvasId]);
 
   // Filter assumptions that affect this block
@@ -594,7 +614,8 @@ function BlockRiskSection({
               className="text-[10px] font-mono px-1.5 py-px rounded"
               style={{
                 color: "var(--state-critical)",
-                background: "color-mix(in srgb, var(--state-critical) 15%, transparent)",
+                background:
+                  "color-mix(in srgb, var(--state-critical) 15%, transparent)",
               }}
             >
               {highCount} high
@@ -605,7 +626,8 @@ function BlockRiskSection({
               className="text-[10px] font-mono px-1.5 py-px rounded"
               style={{
                 color: "var(--state-warning)",
-                background: "color-mix(in srgb, var(--state-warning) 15%, transparent)",
+                background:
+                  "color-mix(in srgb, var(--state-warning) 15%, transparent)",
               }}
             >
               {medCount} med
@@ -666,6 +688,91 @@ function BlockRiskSection({
   );
 }
 
+function formatCurrencyCompact(value: number): string {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
+  return `$${value.toFixed(0)}`;
+}
+
+function BlockEconomicsSection({
+  blockType,
+  block,
+  onDeepDive,
+}: {
+  blockType: BlockType;
+  block: BlockData;
+  onDeepDive?: () => void;
+}) {
+  const [collapsed, setCollapsed] = useState(true);
+
+  if (blockType !== "revenue_streams" && blockType !== "cost_structure") return null;
+
+  const economics = (block.deepDiveData as any)?.unitEconomics as UnitEconomicsData | undefined;
+
+  return (
+    <div className="px-4 pb-3">
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="flex items-center justify-between w-full mb-2"
+      >
+        <span className="font-display-small text-[10px] uppercase tracking-wider text-foreground-muted/60 flex items-center gap-1.5">
+          Unit Economics
+          {economics && (
+            <span className="font-mono text-foreground-muted/40">
+              ({economics.segments.length} segment{economics.segments.length !== 1 ? "s" : ""})
+            </span>
+          )}
+        </span>
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`text-foreground-muted/40 transition-transform duration-200 ${collapsed ? "" : "rotate-180"}`}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      {!collapsed && (
+        <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+          {economics?.globalMetrics ? (
+            <div className="grid grid-cols-3 gap-2 text-[11px]">
+              <div className="px-2.5 py-2 rounded-lg bg-white/2 border border-white/5">
+                <div className="text-foreground-muted/50 text-[9px] uppercase tracking-wider">LTV/CAC</div>
+                <div className="text-foreground font-medium">{economics.globalMetrics.blendedLtvCacRatio.toFixed(1)}x</div>
+              </div>
+              <div className="px-2.5 py-2 rounded-lg bg-white/2 border border-white/5">
+                <div className="text-foreground-muted/50 text-[9px] uppercase tracking-wider">ARPU</div>
+                <div className="text-foreground font-medium">{formatCurrencyCompact(economics.globalMetrics.blendedArpu)}/mo</div>
+              </div>
+              <div className="px-2.5 py-2 rounded-lg bg-white/2 border border-white/5">
+                <div className="text-foreground-muted/50 text-[9px] uppercase tracking-wider">CAC</div>
+                <div className="text-foreground font-medium">{formatCurrencyCompact(economics.globalMetrics.blendedCac)}</div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-[11px] text-foreground-muted/40 py-2 text-center">
+              No economics data yet.
+            </div>
+          )}
+          {onDeepDive && (
+            <button
+              onClick={onDeepDive}
+              className="ui-btn ui-btn-sm ui-btn-block ui-btn-secondary font-display-small text-[11px] uppercase tracking-wider text-foreground-muted hover:text-foreground"
+            >
+              Economics Deep Dive
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function BlockFocusPanel({
   blockType,
   block,
@@ -685,6 +792,11 @@ export function BlockFocusPanel({
   onSegmentDelete,
   onSegmentLink,
   onSegmentUnlink,
+  onItemCreate,
+  onItemUpdate,
+  onItemDelete,
+  onItemToggleSegment,
+  onItemToggleLink,
   chatSection,
 }: BlockFocusPanelProps) {
   const def = BLOCK_DEFINITIONS.find((d) => d.type === blockType);
@@ -796,9 +908,13 @@ export function BlockFocusPanel({
           )}
 
           {/* Risk signals for this block */}
-          <BlockRiskSection
-            canvasId={canvasId}
+          <BlockRiskSection canvasId={canvasId} blockType={blockType} />
+
+          {/* Unit Economics summary for revenue/cost blocks */}
+          <BlockEconomicsSection
             blockType={blockType}
+            block={block}
+            onDeepDive={onDeepDive}
           />
 
           {/* Collapsible content section */}
@@ -809,12 +925,63 @@ export function BlockFocusPanel({
                 : "max-h-[2000px] opacity-100"
             }`}
           >
-            <BlockFocusEditor
-              value={value}
-              placeholder={`Describe your ${label.toLowerCase()}...`}
-              readOnly={readOnly}
-              onChange={onChange}
-            />
+            {/* NEW: Block items (cards) section */}
+            {(onItemCreate ||
+              (block.content.items && block.content.items.length > 0)) && (
+              <div className="px-4 pb-4 space-y-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="font-display-small text-[10px] uppercase tracking-wider text-foreground-muted/60">
+                    Items
+                  </span>
+                  {!readOnly && onItemCreate && (
+                    <button
+                      onClick={() => onItemCreate(blockType)}
+                      className="text-[10px] text-foreground-muted/50 hover:text-foreground transition-colors"
+                    >
+                      + Add Card
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  {(block.content.items ?? []).map((item) => {
+                    // Adapt BlockItem to BlockCard internal block prop
+                    const itemSegments = (item.linkedSegmentIds ?? [])
+                      .map((id) =>
+                        (allSegments ?? []).find((s) => s.$id === id),
+                      )
+                      .filter((s): s is Segment => s !== undefined);
+
+                    const blockCardData = {
+                      $id: item.id,
+                      blockType,
+                      contentJson: JSON.stringify({
+                        text: item.name,
+                        tags: [],
+                      }),
+                      confidenceScore: block.confidenceScore,
+                      riskScore: 0,
+                      segments: itemSegments,
+                    };
+
+                    return (
+                      <BlockCard
+                        key={item.id}
+                        block={blockCardData}
+                        allSegments={allSegments ?? []}
+                        onUpdate={(id: string, updates: any) => {
+                          const parsed = JSON.parse(updates.contentJson);
+                          onItemUpdate?.(blockType, id, { name: parsed.text });
+                        }}
+                        onDelete={(id: string) => onItemDelete?.(blockType, id)}
+                        onSegmentToggle={(id: string, segId: string) =>
+                          onItemToggleSegment?.(blockType, id, segId)
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Action buttons */}
             {!readOnly && (
@@ -831,7 +998,9 @@ export function BlockFocusPanel({
                   {isAnalyzing ? "Analyzing..." : "Analyze with AI"}
                 </button>
 
-                {blockType === "customer_segments" &&
+                {(blockType === "customer_segments" ||
+                  blockType === "revenue_streams" ||
+                  blockType === "cost_structure") &&
                   onDeepDive &&
                   allBlocksFilled && (
                     <button
@@ -846,7 +1015,9 @@ export function BlockFocusPanel({
 
             {/* Deep dive gate message */}
             {!readOnly &&
-              blockType === "customer_segments" &&
+              (blockType === "customer_segments" ||
+                blockType === "revenue_streams" ||
+                blockType === "cost_structure") &&
               onDeepDive &&
               !allBlocksFilled && (
                 <div className="px-4 pb-3">
@@ -861,43 +1032,43 @@ export function BlockFocusPanel({
                 </div>
               )}
 
-              {/* AI Results */}
-              <BlockAIResults
-                analysis={block.aiAnalysis}
-                usage={block.lastUsage}
-              />
-            </div>
+            {/* AI Results */}
+            <BlockAIResults
+              analysis={block.aiAnalysis}
+              usage={block.lastUsage}
+            />
           </div>
+        </div>
 
-          {/* Divider with collapse toggle */}
-          <div className="shrink-0 relative flex items-center px-4 py-1.5">
-            <div className="flex-1 h-px bg-white/5" />
-            <button
-              onClick={() => setContentCollapsed(!contentCollapsed)}
-              className="ui-btn ui-btn-xs ui-btn-ghost font-display-small text-[10px] uppercase tracking-wider text-foreground-muted/70"
+        {/* Divider with collapse toggle */}
+        <div className="shrink-0 relative flex items-center px-4 py-1.5">
+          <div className="flex-1 h-px bg-white/5" />
+          <button
+            onClick={() => setContentCollapsed(!contentCollapsed)}
+            className="ui-btn ui-btn-xs ui-btn-ghost font-display-small text-[10px] uppercase tracking-wider text-foreground-muted/70"
+          >
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`transition-transform duration-200 ${contentCollapsed ? "rotate-180" : ""}`}
             >
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={`transition-transform duration-200 ${contentCollapsed ? "rotate-180" : ""}`}
-              >
-                <polyline points="18 15 12 9 6 15" />
-              </svg>
-              {contentCollapsed ? "Show content" : "Copilot Perspective"}
-            </button>
-            <div className="flex-1 h-px bg-white/5" />
-          </div>
+              <polyline points="18 15 12 9 6 15" />
+            </svg>
+            {contentCollapsed ? "Show content" : "Copilot Perspective"}
+          </button>
+          <div className="flex-1 h-px bg-white/5" />
+        </div>
 
-            {/* Chat — fills all remaining space */}
-          {!readOnly && chatSection && (
-            <div className="flex-1 min-h-45 flex flex-col">{chatSection}</div>
-          )}
+        {/* Chat — fills all remaining space */}
+        {!readOnly && chatSection && (
+          <div className="flex-1 min-h-45 flex flex-col">{chatSection}</div>
+        )}
       </div>
     </>
   );

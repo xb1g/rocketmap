@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { stepCountIs } from 'ai';
 import { generateTextWithLogging } from '@/lib/ai/logger';
-import { Query } from 'node-appwrite';
+import { ID, Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
 import {
   serverTablesDB,
@@ -138,6 +138,7 @@ export async function POST(_request: Request, context: RouteContext) {
           return serverTablesDB.createRow({
             databaseId: DATABASE_ID,
             tableId: ASSUMPTIONS_TABLE_ID,
+            rowId: ID.unique(),
             data: {
               canvas: canvasId,
               assumptionText: assumption.statement,

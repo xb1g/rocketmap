@@ -131,7 +131,7 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
           ) : (
             <button
               onClick={() => setIsEditing(true)}
-              className="text-[10px] text-foreground/80 hover:text-foreground text-left w-full transition-colors whitespace-pre-wrap"
+              className="text-[10px] text-foreground/80 hover:text-foreground text-left w-full transition-colors whitespace-pre-wrap break-words leading-relaxed"
             >
               {content.text || 'Enter block content...'}
             </button>

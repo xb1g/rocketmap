@@ -765,11 +765,6 @@ function ItemProposalCard({
           <span className="text-[11px] font-medium text-foreground/80">
             {item.name}
           </span>
-          {item.description && (
-            <p className="text-[10px] text-foreground-muted/50 leading-relaxed mt-0.5">
-              {item.description}
-            </p>
-          )}
         </div>
 
         {/* Inline actions */}

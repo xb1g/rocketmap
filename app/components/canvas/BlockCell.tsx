@@ -343,6 +343,12 @@ export function BlockCell({
         gridColumn: definition.gridCol,
         gridRow: definition.gridRow,
       }}
+      onClick={(e) => {
+        // Only trigger focus if not clicking an action button or card
+        if (e.target === e.currentTarget) {
+          onFocus();
+        }
+      }}
     >
       <div className={`block-cell-actions ${showActions ? "is-visible" : ""} `}>
         <button
@@ -446,30 +452,36 @@ export function BlockCell({
           </span>
         )}
         <div className="flex-1" />
-        {riskMetrics && (riskMetrics.untestedHighRisk > 0 || riskMetrics.untestedMediumRisk > 0) && (
-          <span
-            className="inline-flex items-center gap-0.5 text-[8px] font-mono px-1 py-px rounded-full shrink-0"
-            style={{
-              backgroundColor: riskMetrics.riskScore >= 70
-                ? "color-mix(in srgb, var(--state-critical) 15%, transparent)"
-                : "color-mix(in srgb, var(--state-warning) 15%, transparent)",
-              color: riskMetrics.riskScore >= 70
-                ? "var(--state-critical)"
-                : "var(--state-warning)",
-            }}
-            title={`Risk: ${riskMetrics.riskScore}% | ${riskMetrics.untestedHighRisk} high, ${riskMetrics.untestedMediumRisk} med untested`}
-          >
+        {riskMetrics &&
+          (riskMetrics.untestedHighRisk > 0 ||
+            riskMetrics.untestedMediumRisk > 0) && (
             <span
-              className="w-1 h-1 rounded-full shrink-0"
+              className="inline-flex items-center gap-0.5 text-[8px] font-mono px-1 py-px rounded-full shrink-0"
               style={{
-                background: riskMetrics.riskScore >= 70
-                  ? "var(--state-critical)"
-                  : "var(--state-warning)",
+                backgroundColor:
+                  riskMetrics.riskScore >= 70
+                    ? "color-mix(in srgb, var(--state-critical) 15%, transparent)"
+                    : "color-mix(in srgb, var(--state-warning) 15%, transparent)",
+                color:
+                  riskMetrics.riskScore >= 70
+                    ? "var(--state-critical)"
+                    : "var(--state-warning)",
               }}
-            />
-            {riskMetrics.confidenceScore > 0 && `${riskMetrics.confidenceScore}%`}
-          </span>
-        )}
+              title={`Risk: ${riskMetrics.riskScore}% | ${riskMetrics.untestedHighRisk} high, ${riskMetrics.untestedMediumRisk} med untested`}
+            >
+              <span
+                className="w-1 h-1 rounded-full shrink-0"
+                style={{
+                  background:
+                    riskMetrics.riskScore >= 70
+                      ? "var(--state-critical)"
+                      : "var(--state-warning)",
+                }}
+              />
+              {riskMetrics.confidenceScore > 0 &&
+                `${riskMetrics.confidenceScore}%`}
+            </span>
+          )}
         {hasAnalysis && (
           <span
             className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -485,17 +497,6 @@ export function BlockCell({
           />
         )}
       </div>
-      {/* Text content — shrink for segment blocks so cards fit */}
-      <textarea
-        className={`bmc-cell-textarea ${isSegmentBlock ? "!flex-none !min-h-[2.5rem] !max-h-[4rem]" : hasBlocks ? "bmc-cell-textarea-auto" : ""}`}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        placeholder={`Describe your ${label.toLowerCase()}...`}
-        readOnly={readOnly}
-        spellCheck={false}
-      />
 
       {/* Block cards - NEW */}
       {((blocks && blocks.length > 0) || onBlockCreate) && (

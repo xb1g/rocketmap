@@ -39,10 +39,11 @@ export async function GET() {
         } catch {
           // skip
         }
+        const c = canvas as Record<string, unknown>;
         return {
-          title: canvas.title,
-          slug: canvas.slug,
-          createdAt: canvas.createdAt,
+          title: c.title as string,
+          slug: c.slug as string,
+          createdAt: c.createdAt as string,
           updatedAt: canvas.$updatedAt,
           blocks,
         };

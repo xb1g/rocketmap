@@ -22,6 +22,7 @@ import type {
   AIAnalysis,
   AIUsage,
   MarketResearchData,
+  UnitEconomicsData,
   RiskMetrics,
   Segment,
   ViabilityData,
@@ -46,6 +47,7 @@ import { DebugPanel } from "@/app/components/canvas/DebugPanel";
 import { ChatBar } from "@/app/components/ai/ChatBar";
 import { BlockChatSection } from "@/app/components/ai/BlockChatSection";
 import { DeepDiveOverlay } from "@/app/components/blocks/DeepDiveOverlay";
+import { EconomicsView } from "@/app/components/blocks/unit-economics/EconomicsView";
 import { InlineSegmentEval } from "@/app/components/blocks/segment-eval/InlineSegmentEval";
 import { CanvasHelpTooltip } from "@/app/components/canvas/CanvasHelpTooltip";
 
@@ -124,10 +126,18 @@ export function CanvasClient({
   });
   const [hoveredItem, setHoveredItem] = useState<HoveredItem | null>(null);
   const [viabilityData, setViabilityData] = useState<ViabilityData | null>(
-    initialViabilityData ?? null
+    initialViabilityData ?? null,
   );
   const [viabilityOutdated, setViabilityOutdated] = useState(false);
-  const [riskHeatmap, setRiskHeatmap] = useState<Record<BlockType, RiskMetrics> | null>(null);
+  const [riskHeatmap, setRiskHeatmap] = useState<Record<
+    BlockType,
+    RiskMetrics
+  > | null>(null);
+  const [economicsData, setEconomicsData] = useState<UnitEconomicsData | null>(() => {
+    const revenueBlock = initialBlocks.find((b) => b.blockType === "revenue_streams");
+    const dd = revenueBlock?.deepDiveData;
+    return (dd as any)?.unitEconomics ?? null;
+  });
 
   const saveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
@@ -151,9 +161,9 @@ export function CanvasClient({
 
   useEffect(() => {
     fetch(`/api/canvas/${canvasId}/risk-heatmap`)
-      .then(res => res.json())
-      .then(data => setRiskHeatmap(data))
-      .catch(err => console.error('Risk heatmap fetch error:', err));
+      .then((res) => res.json())
+      .then((data) => setRiskHeatmap(data))
+      .catch((err) => console.error("Risk heatmap fetch error:", err));
   }, [canvasId]);
 
   useEffect(() => {
@@ -922,7 +932,6 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
       const newItem: BlockItem = {
         id: crypto.randomUUID(),
         name: proposal.name,
-        description: proposal.description || undefined,
         linkedSegmentIds: [],
         linkedItemIds: [],
         createdAt: new Date().toISOString(),
@@ -1220,8 +1229,19 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
         />
       )}
 
-      {activeTab === "assumptions" && (
-        <AssumptionsView canvasId={canvasId} />
+      {activeTab === "assumptions" && <AssumptionsView canvasId={canvasId} />}
+
+      {activeTab === "economics" && (
+        <div className="flex-1 overflow-y-auto p-4 md:p-6">
+          <EconomicsView
+            activeModule="unit_economics"
+            economicsData={economicsData}
+            canvasId={canvasId}
+            blockType="revenue_streams"
+            aiEnabled={allBlocksFilled}
+            onDataChange={(data) => setEconomicsData(data)}
+          />
+        </div>
       )}
 
       {activeTab === "notes" && (
@@ -1251,6 +1271,10 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
           onClose={() => setMobileSheetBlock(null)}
           onAnalyze={() => handleAnalyze(mobileSheetBlock)}
           onDeepDive={() => setDeepDiveBlock(mobileSheetBlock)}
+          onItemCreate={handleItemCreate}
+          onItemUpdate={handleItemUpdate}
+          onItemDelete={handleItemDelete}
+          onItemToggleSegment={handleItemToggleSegment}
           chatSection={
             <BlockChatSection
               canvasId={canvasId}
@@ -1292,6 +1316,11 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
           onSegmentUnlink={(segmentId) =>
             handleSegmentUnlink(expandedBlock, segmentId)
           }
+          onItemCreate={handleItemCreate}
+          onItemUpdate={handleItemUpdate}
+          onItemDelete={handleItemDelete}
+          onItemToggleSegment={handleItemToggleSegment}
+          onItemToggleLink={handleItemToggleLink}
           chatSection={
             !readOnly ? (
               <BlockChatSection

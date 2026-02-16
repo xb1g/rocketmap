@@ -89,7 +89,7 @@ export async function POST(_request: Request, context: RouteContext) {
     // 2. Load all blocks (reuse existing canvas-state helper which verifies ownership)
     const blocks = await getCanvasBlocks(canvasId, user.$id);
 
-    // 3. Verify all 9 blocks are filled (>=10 chars each)
+    // 3. Verify all 9 blocks exist — content depth is evaluated by AI, not gated here
     if (blocks.length < 9) {
       return NextResponse.json(
         { error: "All 9 blocks must exist" },
@@ -97,19 +97,16 @@ export async function POST(_request: Request, context: RouteContext) {
       );
     }
 
-    for (const block of blocks) {
-      const content = getBlockViabilityText(block);
-      if (content.trim().length < 10) {
-        return NextResponse.json(
-          {
-            error:
-              block.blockType === "customer_segments"
-                ? "Block customer_segments must have at least 10 characters in block content or linked segment fields"
-                : `Block ${block.blockType} must have at least 10 characters`,
-          },
-          { status: 400 }
-        );
-      }
+    // Require at least some content across the canvas (any block with text counts)
+    const totalContent = blocks.reduce(
+      (sum, b) => sum + getBlockViabilityText(b).trim().length,
+      0
+    );
+    if (totalContent < 50) {
+      return NextResponse.json(
+        { error: "Canvas needs more content before calculating viability" },
+        { status: 400 }
+      );
     }
 
     // 4. Call Opus 4.6 with viability prompt

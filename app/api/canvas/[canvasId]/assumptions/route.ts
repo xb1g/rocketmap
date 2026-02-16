@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Query } from 'node-appwrite';
+import { ID, Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
 import {
   serverTablesDB,
@@ -107,6 +107,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const row = await serverTablesDB.createRow({
       databaseId: DATABASE_ID,
       tableId: ASSUMPTIONS_TABLE_ID,
+      rowId: ID.unique(),
       data: {
         canvas: canvasId,
         assumptionText: statement,
