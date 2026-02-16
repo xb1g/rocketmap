@@ -267,32 +267,54 @@ export interface SegmentScorecard {
 // ─── Assumption Types ─────────────────────────────────────────────────────────
 
 export type AssumptionStatus = 'untested' | 'testing' | 'validated' | 'refuted' | 'inconclusive';
-export type AssumptionPriority = 'low' | 'medium' | 'high';
+export type AssumptionRiskLevel = 'high' | 'medium' | 'low';
+export type ExperimentType = 'survey' | 'interview' | 'mvp' | 'ab_test' | 'research' | 'other';
+export type ExperimentStatus = 'planned' | 'running' | 'completed';
+export type ExperimentResult = 'supports' | 'contradicts' | 'mixed' | 'inconclusive';
 
 export interface Assumption {
   $id: string;
   canvasId: string;
   statement: string;
+  category: 'market' | 'product' | 'ops' | 'legal';
   status: AssumptionStatus;
-  priority: AssumptionPriority;
+  riskLevel: AssumptionRiskLevel;
+  severityScore: number; // 0-10 (legacy, kept for backward compat)
+  confidenceScore: number; // 0-100
   source: 'ai' | 'user';
   blockTypes: BlockType[];
   segmentIds: string[];
   linkedValidationItemIds: string[];
+  suggestedExperiment?: string;
+  suggestedExperimentDuration?: string;
   createdAt: string;
   updatedAt: string;
   lastTestedAt?: string;
 }
 
-export interface AssumptionTest {
+export interface Experiment {
   $id: string;
   assumptionId: string;
-  method: string;
+  type: ExperimentType;
+  description: string;
   successCriteria: string;
-  result: 'supports' | 'contradicts' | 'mixed' | 'inconclusive';
+  status: ExperimentStatus;
+  result?: ExperimentResult;
   evidence: string;
   sourceUrl?: string;
+  costEstimate?: string;
+  durationEstimate?: string;
   createdAt: string;
+  completedAt?: string;
+}
+
+export interface RiskMetrics {
+  riskScore: number; // 0-100
+  confidenceScore: number; // 0-100
+  untestedHighRisk: number;
+  untestedMediumRisk: number;
+  untestedLowRisk: number;
+  topRisks: string[]; // Top 3 risky assumption statements
 }
 
 // ─── Block Item Proposals (AI Copilot → Create Items) ────────────────────────

@@ -35,6 +35,7 @@ export const MESSAGES_TABLE_ID = "messages";
 export const SEGMENTS_TABLE_ID = "segments";
 export const BLOCK_SEGMENTS_TABLE_ID = "block_segments";
 export const ASSUMPTIONS_TABLE_ID = "assumptions";
+export const EXPERIMENTS_TABLE_ID = "experiments";
 
 // Backward-compatible aliases (legacy "collection" naming)
 export const USERS_COLLECTION_ID = USERS_TABLE_ID;
