@@ -194,6 +194,38 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
               + tag
             </button>
           )}
+
+          {/* Footer: Segments, Confidence, Actions */}
+          <div className="flex items-center gap-1 mt-1.5 pt-1 border-t border-white/5">
+            {/* Segment color badges */}
+            {block.segments && block.segments.length > 0 && (
+              <div className="flex items-center gap-0.5 shrink-0">
+                {block.segments.slice(0, 3).map((seg) => (
+                  <span
+                    key={seg.$id}
+                    className="segment-badge"
+                    style={{ background: seg.colorHex ?? "#6366f1" }}
+                    title={seg.name}
+                  />
+                ))}
+                {block.segments.length > 3 && (
+                  <span className="text-[7px] text-foreground-muted/40">
+                    +{block.segments.length - 3}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Confidence score */}
+            {block.confidenceScore > 0 && (
+              <span
+                className="text-[7px] font-mono px-1 py-px rounded bg-green-400/10 text-green-400/70 shrink-0"
+                title={`Confidence: ${block.confidenceScore}%`}
+              >
+                {Math.round(block.confidenceScore)}%
+              </span>
+            )}
+          </div>
         </div>
       </div>
     );
