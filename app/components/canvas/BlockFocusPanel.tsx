@@ -709,11 +709,12 @@ export function BlockFocusPanel({
                 </div>
               )}
 
-            {/* AI Results */}
-            <BlockAIResults
-              analysis={block.aiAnalysis}
-              usage={block.lastUsage}
-            />
+              {/* AI Results */}
+              <BlockAIResults
+                analysis={block.aiAnalysis}
+                usage={block.lastUsage}
+              />
+            </div>
           </div>
 
           {/* Divider with collapse toggle */}
@@ -745,7 +746,6 @@ export function BlockFocusPanel({
           {!readOnly && chatSection && (
             <div className="flex-1 min-h-45 flex flex-col">{chatSection}</div>
           )}
-        </div>
       </div>
     </>
   );

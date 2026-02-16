@@ -36,12 +36,15 @@ import { CanvasTabs } from "@/app/components/canvas/CanvasTabs";
 import { NotesView } from "@/app/components/canvas/NotesView";
 import { CanvasSettingsModal } from "@/app/components/canvas/CanvasSettingsModal";
 import { BlockFocusPanel } from "@/app/components/canvas/BlockFocusPanel";
+import { MobileCanvasCarousel } from "@/app/components/canvas/MobileCanvasCarousel";
+import { MobileFocusSheet } from "@/app/components/canvas/MobileFocusSheet";
 import { AnalysisView } from "@/app/components/canvas/AnalysisView";
 import { DebugPanel } from "@/app/components/canvas/DebugPanel";
 import { ChatBar } from "@/app/components/ai/ChatBar";
 import { BlockChatSection } from "@/app/components/ai/BlockChatSection";
 import { DeepDiveOverlay } from "@/app/components/blocks/DeepDiveOverlay";
 import { InlineSegmentEval } from "@/app/components/blocks/segment-eval/InlineSegmentEval";
+import { CanvasHelpTooltip } from "@/app/components/canvas/CanvasHelpTooltip";
 
 interface CanvasClientProps {
   canvasId: string;
@@ -92,6 +95,10 @@ export function CanvasClient({
   );
   const [chatDocked, setChatDocked] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileSheetBlock, setMobileSheetBlock] = useState<BlockType | null>(
+    null,
+  );
   const [activeTab, setActiveTab] = useState<CanvasTab>("canvas");
   const [canvasData, setCanvasData] = useState<CanvasData>(initialCanvasData);
   const [showSettings, setShowSettings] = useState(false);
@@ -119,6 +126,14 @@ export function CanvasClient({
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
     const apply = () => setIsDesktop(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => setIsMobile(mq.matches);
     apply();
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
@@ -627,7 +642,12 @@ export function CanvasClient({
         const next = new Map(prev);
         const block = next.get(blockType);
         if (!block) return prev;
-        const items = updater(block.content.items ?? []);
+        const updatedItems = updater(block.content.items ?? []);
+        // Deduplicate items by ID (prevent React Strict Mode double-creation)
+        const items = updatedItems.filter(
+          (item, index, arr) =>
+            arr.findIndex((i) => i.id === item.id) === index,
+        );
         const newContent = { ...block.content, items };
         next.set(blockType, { ...block, content: newContent });
         debouncedSaveItems(blockType, newContent);
@@ -990,7 +1010,8 @@ export function CanvasClient({
             border: "1px solid rgba(99,102,241,0.3)",
             borderRadius: "10px",
             padding: "0.5rem 0.75rem",
-            background: "linear-gradient(90deg, rgba(99,102,241,0.16), rgba(236,72,153,0.1))",
+            background:
+              "linear-gradient(90deg, rgba(99,102,241,0.16), rgba(236,72,153,0.1))",
             color: "#f8fafc",
             fontSize: "0.8rem",
             display: "flex",
@@ -999,9 +1020,7 @@ export function CanvasClient({
             gap: "0.6rem",
           }}
         >
-          <span>
-            You are viewing this shared canvas in read-only mode.
-          </span>
+          <span>You are viewing this shared canvas in read-only mode.</span>
           <span
             className="mode-badge mode-badge-lean"
             style={{ padding: "0.2rem 0.45rem", fontSize: "0.68rem" }}
@@ -1017,16 +1036,19 @@ export function CanvasClient({
         readOnly={readOnly}
         onModeChange={setMode}
         onTitleChange={(title) => saveCanvas({ title })}
-        onSettingsOpen={() => setShowSettings(true)}
         onConvertLeanToBmc={handleConvertLeanToBmc}
         hasLeanContent={hasLeanContent}
         isConverting={isConverting}
       />
 
-      <CanvasTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      <CanvasTabs
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onSettingsClick={() => setShowSettings(true)}
+      />
 
       {/* Tab content */}
-      {activeTab === "canvas" && (
+      {activeTab === "canvas" && !isMobile && (
         <BMCGrid
           mode={mode}
           blocks={blocks}
@@ -1073,6 +1095,48 @@ export function CanvasClient({
         />
       )}
 
+      {activeTab === "canvas" && isMobile && (
+        <MobileCanvasCarousel
+          mode={mode}
+          blocks={blocks}
+          focusedBlock={mobileSheetBlock}
+          analyzingBlock={analyzingBlock}
+          chatTargetBlock={activeChatBlock}
+          allSegments={Array.from(segments.values())}
+          onBlockChange={handleBlockChange}
+          onBlockFocus={setFocusedBlock}
+          onBlockBlur={() => setFocusedBlock(null)}
+          onBlockTap={setMobileSheetBlock}
+          onBlockAddToChat={setChatTargetBlock}
+          onBlockAnalyze={handleAnalyze}
+          onSegmentClick={(segmentId) => {
+            for (const [bt, block] of blocks) {
+              if (block.linkedSegments?.some((s) => s.$id === segmentId)) {
+                setMobileSheetBlock(bt);
+                break;
+              }
+            }
+          }}
+          onAddSegment={async (name, description) => {
+            const seg = await handleSegmentCreate({ name, description });
+            if (seg) {
+              await handleSegmentLink("customer_segments", seg.$id, seg);
+            }
+          }}
+          onSegmentUpdate={async (segmentId, updates) => {
+            await handleSegmentUpdate(segmentId, updates);
+          }}
+          onSegmentFocus={(segmentId) => {
+            setMobileSheetBlock("customer_segments");
+          }}
+          onItemCreate={handleItemCreate}
+          onItemUpdate={handleItemUpdate}
+          onItemDelete={handleItemDelete}
+          onItemToggleSegment={handleItemToggleSegment}
+          onItemToggleLink={handleItemToggleLink}
+        />
+      )}
+
       {activeTab === "analysis" && !readOnly && (
         <AnalysisView
           blocks={blocks}
@@ -1084,18 +1148,48 @@ export function CanvasClient({
       )}
 
       {activeTab === "notes" && (
-        <NotesView value={notes} readOnly={readOnly} onChange={handleNotesChange} />
-      )}
-
-      {activeTab === "debug" && (
-        <DebugPanel
-          blocks={blocks}
-          segments={Array.from(segments.values())}
+        <NotesView
+          value={notes}
+          readOnly={readOnly}
+          onChange={handleNotesChange}
         />
       )}
 
-      {/* Block Focus Panel */}
-      {expandedBlock && expandedBlockData && (
+      {activeTab === "debug" && (
+        <DebugPanel blocks={blocks} segments={Array.from(segments.values())} />
+      )}
+
+      {/* Mobile Focus Sheet */}
+      {isMobile && mobileSheetBlock && blocks.get(mobileSheetBlock) && (
+        <MobileFocusSheet
+          blockType={mobileSheetBlock}
+          block={blocks.get(mobileSheetBlock)!}
+          mode={mode}
+          canvasId={canvasId}
+          isAnalyzing={analyzingBlock === mobileSheetBlock}
+          allBlocksFilled={allBlocksFilled}
+          filledCount={filledCount}
+          allSegments={Array.from(segments.values())}
+          onChange={(value) => handleBlockChange(mobileSheetBlock, value)}
+          onClose={() => setMobileSheetBlock(null)}
+          onAnalyze={() => handleAnalyze(mobileSheetBlock)}
+          onDeepDive={() => setDeepDiveBlock(mobileSheetBlock)}
+          chatSection={
+            <BlockChatSection
+              canvasId={canvasId}
+              blockType={mobileSheetBlock}
+              onAcceptEdit={handleAcceptEdit}
+              onRejectEdit={handleRejectEdit}
+              onRevertEdit={handleRevertEdit}
+              onAcceptSegment={handleAcceptSegment}
+              onAcceptItem={handleAcceptItem}
+            />
+          }
+        />
+      )}
+
+      {/* Block Focus Panel (Desktop) */}
+      {!isMobile && expandedBlock && expandedBlockData && (
         <BlockFocusPanel
           blockType={expandedBlock}
           block={expandedBlockData}
@@ -1211,6 +1305,9 @@ export function CanvasClient({
           onDelete={handleDelete}
         />
       )}
+
+      {/* Help Tooltip */}
+      <CanvasHelpTooltip />
     </div>
   );
 }

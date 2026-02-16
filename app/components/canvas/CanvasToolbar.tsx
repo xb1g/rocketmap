@@ -13,7 +13,6 @@ interface CanvasToolbarProps {
   readOnly: boolean;
   onModeChange: (mode: CanvasMode) => void;
   onTitleChange: (title: string) => void;
-  onSettingsOpen: () => void;
   onConvertLeanToBmc: () => void;
   hasLeanContent: boolean;
   isConverting: boolean;
@@ -26,23 +25,24 @@ export function CanvasToolbar({
   readOnly,
   onModeChange,
   onTitleChange,
-  onSettingsOpen,
   onConvertLeanToBmc,
   hasLeanContent,
   isConverting,
 }: CanvasToolbarProps) {
   return (
     <div className="flex items-center justify-between px-2 py-2">
-      {/* Left: back + title + settings */}
-      <div className="flex items-center gap-3">
+      {/* Left: back + title */}
+      <div className="flex items-center gap-3 min-w-0">
         <Link
           href="/dashboard"
-          className="text-foreground-muted hover:text-foreground transition-colors text-sm"
+          className="text-foreground-muted hover:text-foreground transition-colors text-sm shrink-0"
           aria-label="Back to dashboard"
         >
           &larr;
         </Link>
-        <InlineEditableTitle value={title} readOnly={readOnly} onSave={onTitleChange} />
+        <div className="min-w-0 max-w-[200px] md:max-w-none">
+          <InlineEditableTitle value={title} readOnly={readOnly} onSave={onTitleChange} />
+        </div>
         {readOnly ? (
           <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-full bg-white/10 text-foreground-muted border border-white/15">
             Read-only
@@ -72,8 +72,8 @@ export function CanvasToolbar({
         )}
       </div>
 
-      {/* Center: mode toggle + convert */}
-      <div className="flex items-center gap-2">
+      {/* Center: mode toggle + convert (hidden on mobile) */}
+      <div className="hidden md:flex items-center gap-2">
         <div className="ui-segmented">
           <button
             onClick={() => onModeChange("bmc")}
@@ -119,23 +119,23 @@ export function CanvasToolbar({
       </div>
 
       {/* Right: save status */}
-      <div className="flex items-center gap-1.5 font-mono text-[10px] text-foreground-muted min-w-20 justify-end">
+      <div className="flex items-center gap-1.5 font-mono text-[10px] text-foreground-muted min-w-12 md:min-w-20 justify-end shrink-0">
         {saveStatus === "saved" && (
           <>
             <span className="text-(--state-healthy)">&#10003;</span>
-            <span className="uppercase tracking-wider">Saved</span>
+            <span className="uppercase tracking-wider hidden md:inline">Saved</span>
           </>
         )}
         {saveStatus === "saving" && (
           <>
             <span className="animate-spin inline-block w-2.5 h-2.5 border border-foreground-muted border-t-transparent rounded-full" />
-            <span className="uppercase tracking-wider">Saving</span>
+            <span className="uppercase tracking-wider hidden md:inline">Saving</span>
           </>
         )}
         {saveStatus === "unsaved" && (
           <>
             <span className="w-1.5 h-1.5 rounded-full bg-(--state-warning)" />
-            <span className="uppercase tracking-wider">Unsaved</span>
+            <span className="uppercase tracking-wider hidden md:inline">Unsaved</span>
           </>
         )}
       </div>
