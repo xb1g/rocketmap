@@ -22,6 +22,7 @@ import type {
   AIAnalysis,
   AIUsage,
   MarketResearchData,
+  RiskMetrics,
   Segment,
   ViabilityData,
 } from "@/lib/types/canvas";
@@ -40,7 +41,7 @@ import { BlockFocusPanel } from "@/app/components/canvas/BlockFocusPanel";
 import { MobileCanvasCarousel } from "@/app/components/canvas/MobileCanvasCarousel";
 import { MobileFocusSheet } from "@/app/components/canvas/MobileFocusSheet";
 import { AnalysisView } from "@/app/components/canvas/AnalysisView";
-import { AssumptionsView, type AssumptionItem } from "@/app/components/canvas/AssumptionsView";
+import { AssumptionsView } from "@/app/components/canvas/AssumptionsView";
 import { DebugPanel } from "@/app/components/canvas/DebugPanel";
 import { ChatBar } from "@/app/components/ai/ChatBar";
 import { BlockChatSection } from "@/app/components/ai/BlockChatSection";
@@ -55,7 +56,6 @@ interface CanvasClientProps {
   initialSegments?: Segment[];
   readOnly: boolean;
   initialViabilityData?: ViabilityData | null;
-  initialAssumptions?: AssumptionItem[];
 }
 
 type SaveStatus = "saved" | "saving" | "unsaved";
@@ -82,7 +82,6 @@ export function CanvasClient({
   initialSegments = [],
   readOnly,
   initialViabilityData,
-  initialAssumptions = [],
 }: CanvasClientProps) {
   const router = useRouter();
   const [mode, setMode] = useState<CanvasMode>("bmc");
@@ -128,6 +127,7 @@ export function CanvasClient({
     initialViabilityData ?? null
   );
   const [viabilityOutdated, setViabilityOutdated] = useState(false);
+  const [riskHeatmap, setRiskHeatmap] = useState<Record<BlockType, RiskMetrics> | null>(null);
 
   const saveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
@@ -148,6 +148,13 @@ export function CanvasClient({
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
   }, []);
+
+  useEffect(() => {
+    fetch(`/api/canvas/${canvasId}/risk-heatmap`)
+      .then(res => res.json())
+      .then(data => setRiskHeatmap(data))
+      .catch(err => console.error('Risk heatmap fetch error:', err));
+  }, [canvasId]);
 
   useEffect(() => {
     if (expandedBlock) {
@@ -1156,6 +1163,7 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
           onItemToggleSegment={handleItemToggleSegment}
           onItemToggleLink={handleItemToggleLink}
           onItemHover={setHoveredItem}
+          riskHeatmap={riskHeatmap}
         />
       )}
 
@@ -1205,6 +1213,7 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
         <AnalysisView
           blocks={blocks}
           mode={mode}
+          canvasId={canvasId}
           consistencyData={consistencyData}
           isCheckingConsistency={isCheckingConsistency}
           onRunConsistencyCheck={handleConsistencyCheck}
@@ -1212,10 +1221,7 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
       )}
 
       {activeTab === "assumptions" && (
-        <AssumptionsView
-          canvasId={canvasId}
-          initialAssumptions={initialAssumptions}
-        />
+        <AssumptionsView canvasId={canvasId} />
       )}
 
       {activeTab === "notes" && (

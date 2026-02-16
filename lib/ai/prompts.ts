@@ -235,12 +235,41 @@ When suggesting specific resources, ALWAYS use the createBlockItems tool (never 
 When suggesting specific partners, ALWAYS use the createBlockItems tool (never markdown lists).`,
 };
 
-export function buildSystemPrompt(agentType: AgentType, blocks: BlockData[]): string {
+export interface AssumptionContext {
+  statement: string;
+  status: string;
+  riskLevel: string;
+  confidenceScore: number;
+  blockTypes: string[];
+}
+
+export function buildSystemPrompt(agentType: AgentType, blocks: BlockData[], assumptions?: AssumptionContext[]): string {
   const canvasState = serializeCanvasState(blocks);
   const blockPrompt = agentType !== 'general' ? BLOCK_PROMPTS[agentType] : '';
-  const focusInstruction = agentType === 'general'
-    ? `You are the system-level AI performing cross-block reasoning. Analyze the ENTIRE canvas for contradictions, missing links, and logical gaps between blocks.`
-    : `${blockPrompt}\n\nFocus on this block while cross-referencing other blocks for consistency.`;
+
+  let focusInstruction: string;
+  if (agentType === 'general') {
+    focusInstruction = `You are the system-level AI performing cross-block reasoning. Analyze the ENTIRE canvas for contradictions, missing links, and logical gaps between blocks.`;
+
+    if (assumptions && assumptions.length > 0) {
+      focusInstruction += `\n\nAdditionally, review the tracked assumptions below and:
+- Flag contradictions between assumptions and block content
+- Identify refuted assumptions still reflected in blocks
+- Recommend which untested high-risk assumptions to validate first
+- Note if validated assumptions increase confidence in specific blocks`;
+    }
+  } else {
+    focusInstruction = `${blockPrompt}\n\nFocus on this block while cross-referencing other blocks for consistency.`;
+  }
+
+  let assumptionSection = '';
+  if (assumptions && assumptions.length > 0) {
+    const lines = assumptions.map((a) => {
+      const blocks = a.blockTypes.length > 0 ? ` (affects: ${a.blockTypes.join(', ')})` : '';
+      return `[${a.status.toUpperCase()} | ${a.riskLevel.toUpperCase()} RISK] ${a.statement}${blocks} - Confidence: ${a.confidenceScore}%`;
+    });
+    assumptionSection = `\n\n## Tracked Assumptions:\n${lines.join('\n')}`;
+  }
 
   return `${BASE_SYSTEM_PROMPT}
 
@@ -249,7 +278,7 @@ ${focusInstruction}
 The canvas supports two modes: BMC (Business Model Canvas) and Lean Canvas. Some blocks are shared between both modes (Channels, Customer Segments, Cost Structure, Revenue Streams). Non-shared blocks may have different content in each mode — both are shown below.
 
 Current canvas state:
-${canvasState}`;
+${canvasState}${assumptionSection}`;
 }
 
 // ─── Deep Dive Prompts ───────────────────────────────────────────────────────

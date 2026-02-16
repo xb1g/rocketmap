@@ -521,10 +521,156 @@ function LinkedSegmentsSection({
   );
 }
 
+interface BlockAssumption {
+  $id: string;
+  statement: string;
+  riskLevel: "high" | "medium" | "low";
+  status: string;
+  confidenceScore: number;
+  blockTypes: string[];
+}
+
+function getRiskColor(level: string): string {
+  if (level === "high") return "var(--state-critical)";
+  if (level === "medium") return "var(--state-warning)";
+  return "var(--state-healthy)";
+}
+
+function BlockRiskSection({
+  canvasId,
+  blockType,
+}: {
+  canvasId: string;
+  blockType: BlockType;
+}) {
+  const [collapsed, setCollapsed] = useState(true);
+  const [assumptions, setAssumptions] = useState<BlockAssumption[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch(`/api/canvas/${canvasId}/assumptions`);
+        if (!res.ok || cancelled) return;
+        const data: BlockAssumption[] = await res.json();
+        if (!cancelled) {
+          setAssumptions(data);
+          setLoaded(true);
+        }
+      } catch {
+        if (!cancelled) setLoaded(true);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [canvasId]);
+
+  // Filter assumptions that affect this block
+  const relevant = assumptions.filter(
+    (a) => a.blockTypes.includes(blockType) && a.status !== "validated",
+  );
+
+  if (!loaded || relevant.length === 0) return null;
+
+  const highCount = relevant.filter((a) => a.riskLevel === "high").length;
+  const medCount = relevant.filter((a) => a.riskLevel === "medium").length;
+
+  return (
+    <div className="px-4 pb-3">
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="flex items-center justify-between w-full mb-2"
+      >
+        <span className="font-display-small text-[10px] uppercase tracking-wider text-foreground-muted/60 flex items-center gap-1.5">
+          Risk Signals
+          <span className="font-mono text-foreground-muted/40">
+            ({relevant.length})
+          </span>
+        </span>
+        <div className="flex items-center gap-2">
+          {highCount > 0 && (
+            <span
+              className="text-[10px] font-mono px-1.5 py-px rounded"
+              style={{
+                color: "var(--state-critical)",
+                background: "color-mix(in srgb, var(--state-critical) 15%, transparent)",
+              }}
+            >
+              {highCount} high
+            </span>
+          )}
+          {medCount > 0 && (
+            <span
+              className="text-[10px] font-mono px-1.5 py-px rounded"
+              style={{
+                color: "var(--state-warning)",
+                background: "color-mix(in srgb, var(--state-warning) 15%, transparent)",
+              }}
+            >
+              {medCount} med
+            </span>
+          )}
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`text-foreground-muted/40 transition-transform duration-200 ${collapsed ? "" : "rotate-180"}`}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+      </button>
+      {!collapsed && (
+        <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+          {relevant.map((a) => (
+            <div
+              key={a.$id}
+              className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-white/2 border border-white/5"
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5"
+                style={{ background: getRiskColor(a.riskLevel) }}
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-foreground/80 leading-snug">
+                  {a.statement}
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span
+                    className="text-[9px] font-mono uppercase"
+                    style={{ color: getRiskColor(a.riskLevel) }}
+                  >
+                    {a.riskLevel}
+                  </span>
+                  <span className="text-[9px] text-foreground-muted/40">
+                    {a.status}
+                  </span>
+                  {a.confidenceScore > 0 && (
+                    <span className="text-[9px] font-mono text-foreground-muted/40">
+                      {a.confidenceScore}%
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function BlockFocusPanel({
   blockType,
   block,
   mode,
+  canvasId,
   readOnly = false,
   isAnalyzing,
   allBlocksFilled,
@@ -648,6 +794,12 @@ export function BlockFocusPanel({
               onSegmentUnlink={onSegmentUnlink}
             />
           )}
+
+          {/* Risk signals for this block */}
+          <BlockRiskSection
+            canvasId={canvasId}
+            blockType={blockType}
+          />
 
           {/* Collapsible content section */}
           <div

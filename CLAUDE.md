@@ -280,6 +280,14 @@ The codebase currently has:
 - ✅ Deep-dive AI gated behind all 9 blocks filled (≥10 chars each)
 - ✅ Deep-dive data persisted via `deepDiveJson` column on blocks collection
 - ✅ Consistency checker receives deep-dive summaries in canvas state
+- ✅ Risk Engine (Assumption → Experiment → Evidence)
+  - Risk-first kanban board (6 columns by risk level and status)
+  - Manual and AI-powered assumption creation
+  - Experiment design with AI suggestions
+  - Evidence collection with auto-status updates
+  - Canvas risk heatmap (risk-based block borders)
+  - Block Focus Panel risk analysis section
+  - Analysis tab risk overview
 
 Next implementation steps:
 
@@ -347,6 +355,7 @@ See [docs/plans/2026-02-13-radix-chromatic-theme-design.md](docs/plans/2026-02-1
 - **Appwrite `deepDiveJson` column**: Must be added manually in Appwrite console (longtext, not required)
 - **AI tool pattern**: `tool({ inputSchema: z.object({...}), execute: async (params) => params })` — tool acts as structured output extractor, result via `step.toolResults[].result` with `unknown` cast
 - **Deep-dive AI gating**: All 9 blocks must have ≥10 chars content before deep-dive AI buttons are enabled
+- **Experiments table**: Must be created manually in Appwrite console (see docs/plans/2026-02-16-risk-engine-implementation.md Task 1)
 
 ## Demo Flow (3-minute pitch)
 

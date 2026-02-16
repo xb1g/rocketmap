@@ -1,13 +1,25 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import type { BlockData, BlockType, CanvasMode } from "@/lib/types/canvas";
 import { BLOCK_DEFINITIONS } from "./constants";
 import { ConsistencyReport, type ConsistencyData } from "./ConsistencyReport";
 import { BlockTooltip } from "./BlockTooltip";
 
+interface RiskSummary {
+  total: number;
+  high: number;
+  medium: number;
+  low: number;
+  untested: number;
+  validated: number;
+  refuted: number;
+}
+
 interface AnalysisViewProps {
   blocks: Map<BlockType, BlockData>;
   mode: CanvasMode;
+  canvasId: string;
   consistencyData: ConsistencyData | null;
   isCheckingConsistency: boolean;
   onRunConsistencyCheck: () => void;
@@ -67,9 +79,109 @@ function BlockSummary({ block, mode }: { block: BlockData; mode: CanvasMode }) {
   );
 }
 
+function RiskOverview({ canvasId }: { canvasId: string }) {
+  const [summary, setSummary] = useState<RiskSummary | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch(`/api/canvas/${canvasId}/assumptions`);
+        if (!res.ok || cancelled) return;
+        const data: Array<{ riskLevel: string; status: string }> = await res.json();
+        if (cancelled) return;
+        const s: RiskSummary = {
+          total: data.length,
+          high: data.filter((a) => a.riskLevel === "high").length,
+          medium: data.filter((a) => a.riskLevel === "medium").length,
+          low: data.filter((a) => a.riskLevel === "low").length,
+          untested: data.filter((a) => a.status === "untested").length,
+          validated: data.filter((a) => a.status === "validated").length,
+          refuted: data.filter((a) => a.status === "refuted").length,
+        };
+        setSummary(s);
+      } catch {
+        /* silent */
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [canvasId]);
+
+  if (!summary || summary.total === 0) return null;
+
+  const riskScore = summary.total > 0
+    ? Math.round(((summary.high * 3 + summary.medium * 1.5) / (summary.total * 3)) * 100)
+    : 0;
+
+  const riskColor =
+    riskScore >= 60 ? "var(--state-critical)" :
+    riskScore >= 30 ? "var(--state-warning)" :
+    "var(--state-healthy)";
+
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-[10px] uppercase tracking-wider text-foreground-muted font-medium">
+        Risk Overview
+      </span>
+      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-4 space-y-3">
+        {/* Risk score bar */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-foreground-muted">Risk Score</span>
+          <span
+            className="text-sm font-mono font-medium"
+            style={{ color: riskColor }}
+          >
+            {riskScore}/100
+          </span>
+        </div>
+        <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{
+              width: `${riskScore}%`,
+              background: riskColor,
+            }}
+          />
+        </div>
+
+        {/* Risk level breakdown */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="text-center p-2 rounded bg-white/3">
+            <div className="text-lg font-mono font-medium" style={{ color: "var(--state-critical)" }}>
+              {summary.high}
+            </div>
+            <div className="text-[10px] text-foreground-muted/60 uppercase tracking-wider">High</div>
+          </div>
+          <div className="text-center p-2 rounded bg-white/3">
+            <div className="text-lg font-mono font-medium" style={{ color: "var(--state-warning)" }}>
+              {summary.medium}
+            </div>
+            <div className="text-[10px] text-foreground-muted/60 uppercase tracking-wider">Medium</div>
+          </div>
+          <div className="text-center p-2 rounded bg-white/3">
+            <div className="text-lg font-mono font-medium" style={{ color: "var(--state-healthy)" }}>
+              {summary.low}
+            </div>
+            <div className="text-[10px] text-foreground-muted/60 uppercase tracking-wider">Low</div>
+          </div>
+        </div>
+
+        {/* Status breakdown */}
+        <div className="flex items-center gap-3 text-[10px] text-foreground-muted pt-1 border-t border-white/5">
+          <span>{summary.untested} untested</span>
+          <span className="text-[var(--state-healthy)]">{summary.validated} validated</span>
+          <span className="text-[var(--state-critical)]">{summary.refuted} refuted</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AnalysisView({
   blocks,
   mode,
+  canvasId,
   consistencyData,
   isCheckingConsistency,
   onRunConsistencyCheck,
@@ -119,6 +231,9 @@ export function AnalysisView({
           })}
         </div>
       </div>
+
+      {/* Risk Overview */}
+      <RiskOverview canvasId={canvasId} />
 
       {/* Consistency Report */}
       <div>
