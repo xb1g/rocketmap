@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['node-appwrite'],
   turbopack: {},
   webpack: (config) => {
     config.resolve.alias = {

@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     // Exchange the token for a session
     const { account } = createAdminClient();
-    const session = await account.createSession({ userId, secret });
+    const session = await account.createSession(userId, secret);
 
     // Set session cookie on our domain
     const cookieStore = await cookies();
