@@ -2,6 +2,7 @@
 
 import { useState, useCallback, forwardRef, useEffect } from "react";
 import type { BlockType, Segment, BlockContent } from "@/lib/types/canvas";
+import { LinkPicker } from "./LinkPicker";
 
 interface BlockCardProps {
   block: {
@@ -289,6 +290,20 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Link Picker for Segments */}
+        {showLinkPicker && (
+          <div className="relative">
+            <LinkPicker
+              currentSegmentIds={block.segments.map(s => s.$id)}
+              allSegments={allSegments}
+              onToggleSegment={(segmentId) => {
+                onSegmentToggle(block.$id, segmentId);
+              }}
+              onClose={() => setShowLinkPicker(false)}
+            />
           </div>
         )}
       </div>
