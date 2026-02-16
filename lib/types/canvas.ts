@@ -16,17 +16,8 @@ export type CanvasTab = "canvas" | "analysis" | "notes" | "debug";
 
 /** Content stored as JSON in contentJson column */
 export interface BlockContent {
-  bmc: string;
-  lean: string;
-  items: BlockItem[];
-}
-
-export interface BlockItem {
-  id: string; // Internal stable ID
-  name: string;
-  description?: string;
-  linkedItemIds: string[]; // format: "blockType:itemId" - cross-block item links
-  createdAt: string;
+  text: string;      // Main content (multiline)
+  tags?: string[];   // Optional categorization tags
 }
 
 export interface BlockCard {
@@ -81,16 +72,16 @@ export interface BlockSegmentLink {
 }
 
 export interface BlockData {
+  $id: string;              // Appwrite row ID (required)
   blockType: BlockType;
-  content: BlockContent;
+  contentJson: string;      // JSON.stringify(BlockContent)
   state: BlockState;
-  cards?: BlockCard[];
+  segments: Segment[];      // M:M relationship (auto-loaded by Appwrite)
   aiAnalysis: AIAnalysis | null;
-  confidenceScore: number;
-  riskScore: number;
+  confidenceScore: number;  // 0-100
+  riskScore: number;        // 0-100
   deepDiveData: MarketResearchData | null;
   lastUsage?: AIUsage | null;
-  linkedSegments?: Segment[];
 }
 
 export interface CanvasData {
