@@ -102,7 +102,7 @@ export interface CanvasData {
   slug: string;
   description: string;
   isPublic: boolean;
-  users: string | { $id: string }; // Appwrite relationship - can be ID string or nested object
+  user: string | { $id: string }; // Appwrite relationship - can be ID string or nested object
 }
 
 export interface BlockDefinition {

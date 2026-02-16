@@ -7,10 +7,10 @@ import type { CanvasData } from './types/canvas';
  * Handles both string ID and nested object formats
  */
 export function getUserIdFromCanvas(canvas: CanvasData): string {
-  if (typeof canvas.users === 'string') {
-    return canvas.users;
+  if (typeof canvas.user === 'string') {
+    return canvas.user;
   }
-  return canvas.users.$id;
+  return canvas.user.$id;
 }
 
 /**
@@ -36,14 +36,14 @@ export async function generateSlug(title: string, userId: string): Promise<strin
   let finalSlug = slug;
   let counter = 2;
 
-  // Index required: canvases collection — composite [users, slug] index
+  // Index required: canvases collection — composite [user, slug] index
   while (true) {
     try {
       const existing = await serverTablesDB.listRows({
         databaseId: DATABASE_ID,
         tableId: CANVASES_TABLE_ID,
         queries: [
-          Query.equal('users', userId),
+          Query.equal('user', userId),
           Query.equal('slug', finalSlug),
           Query.select(['$id']),
           Query.limit(1),

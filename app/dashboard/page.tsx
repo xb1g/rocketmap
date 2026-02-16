@@ -46,7 +46,7 @@ export default async function DashboardPage() {
   }
 
   // Fetch user's canvases with block counts
-  // Index required: canvases.users + $updatedAt (composite, desc)
+  // Index required: canvases.user + $updatedAt (composite, desc)
   // Index required: blocks.canvasId (key)
   let canvases: {
     $id: string;
@@ -60,7 +60,7 @@ export default async function DashboardPage() {
       databaseId: DATABASE_ID,
       tableId: CANVASES_TABLE_ID,
       queries: [
-        Query.equal("users", user.$id),
+        Query.equal("user", user.$id),
         Query.orderDesc("$updatedAt"),
         Query.select(["$id", "title", "slug", "$updatedAt"]),
         Query.limit(25),

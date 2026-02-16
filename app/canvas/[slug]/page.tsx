@@ -346,7 +346,7 @@ export default async function CanvasPage({ params }: PageProps) {
     slug: canvas.slug,
     description: canvas.description ?? "",
     isPublic: canvas.isPublic ?? false,
-    users: canvas.users?.$id || canvas.users || "", // Handle relationship object or ID
+    user: canvas.user?.$id || canvas.user || "", // Handle relationship object or ID
   };
 
   return (

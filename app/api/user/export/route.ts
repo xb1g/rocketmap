@@ -7,12 +7,12 @@ export async function GET() {
   try {
     const user = await requireAuth();
 
-    // Index required: users (key), $updatedAt (desc) — composite index recommended
+    // Index required: user (key), $updatedAt (desc) — composite index recommended
     const canvasesResult = await serverTablesDB.listRows({
       databaseId: DATABASE_ID,
       tableId: CANVASES_TABLE_ID,
       queries: [
-        Query.equal('users', user.$id),
+        Query.equal('user', user.$id),
         Query.select(['$id', 'title', 'slug', 'createdAt', '$updatedAt']),
         Query.orderDesc('$updatedAt'),
         Query.limit(100),

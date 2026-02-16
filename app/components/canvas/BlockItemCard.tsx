@@ -20,7 +20,6 @@ export const BlockItemCard = forwardRef<HTMLDivElement, BlockItemCardProps>(
   ) {
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(item.name);
-    const [editDesc, setEditDesc] = useState(item.description ?? "");
 
     const linkedSegments = segments.filter(seg => item.linkedSegmentIds.includes(seg.$id));
 
@@ -28,11 +27,9 @@ export const BlockItemCard = forwardRef<HTMLDivElement, BlockItemCardProps>(
       if (!editName.trim()) return;
       const updates: Partial<BlockItem> = {};
       if (editName.trim() !== item.name) updates.name = editName.trim();
-      const newDesc = editDesc.trim() || undefined;
-      if (newDesc !== (item.description || undefined)) updates.description = newDesc;
       if (Object.keys(updates).length > 0) onUpdate(updates);
       setIsEditing(false);
-    }, [editName, editDesc, item, onUpdate]);
+    }, [editName, item, onUpdate]);
 
     if (isEditing) {
       return (
@@ -51,17 +48,6 @@ export const BlockItemCard = forwardRef<HTMLDivElement, BlockItemCardProps>(
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSave();
-                if (e.key === "Escape") setIsEditing(false);
-              }}
-              onFocus={(e) => e.stopPropagation()}
-            />
-            <textarea
-              value={editDesc}
-              onChange={(e) => setEditDesc(e.target.value)}
-              className="w-full bg-white/5 rounded px-1.5 py-0.5 text-[10px] text-foreground-muted outline-none border border-white/12 focus:border-white/25 resize-none"
-              placeholder="Description..."
-              rows={2}
-              onKeyDown={(e) => {
                 if (e.key === "Escape") setIsEditing(false);
               }}
               onFocus={(e) => e.stopPropagation()}
@@ -105,18 +91,12 @@ export const BlockItemCard = forwardRef<HTMLDivElement, BlockItemCardProps>(
               <button
                 onClick={() => {
                   setEditName(item.name);
-                  setEditDesc(item.description ?? "");
                   setIsEditing(true);
                 }}
                 className="text-[10px] font-medium text-foreground/80 hover:text-foreground text-left w-full truncate transition-colors"
               >
                 {item.name}
               </button>
-              {item.description && (
-                <p className="text-[9px] text-foreground-muted/50 line-clamp-2 mt-0.5 leading-tight">
-                  {item.description}
-                </p>
-              )}
               {/* Segment tags */}
               {linkedSegments.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1">
