@@ -36,6 +36,8 @@ import { CanvasTabs } from "@/app/components/canvas/CanvasTabs";
 import { NotesView } from "@/app/components/canvas/NotesView";
 import { CanvasSettingsModal } from "@/app/components/canvas/CanvasSettingsModal";
 import { BlockFocusPanel } from "@/app/components/canvas/BlockFocusPanel";
+import { MobileCanvasCarousel } from "@/app/components/canvas/MobileCanvasCarousel";
+import { MobileFocusSheet } from "@/app/components/canvas/MobileFocusSheet";
 import { AnalysisView } from "@/app/components/canvas/AnalysisView";
 import { DebugPanel } from "@/app/components/canvas/DebugPanel";
 import { ChatBar } from "@/app/components/ai/ChatBar";
@@ -90,6 +92,10 @@ export function CanvasClient({
   );
   const [chatDocked, setChatDocked] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileSheetBlock, setMobileSheetBlock] = useState<BlockType | null>(
+    null,
+  );
   const [activeTab, setActiveTab] = useState<CanvasTab>("canvas");
   const [canvasData, setCanvasData] = useState<CanvasData>(initialCanvasData);
   const [showSettings, setShowSettings] = useState(false);
@@ -117,6 +123,14 @@ export function CanvasClient({
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
     const apply = () => setIsDesktop(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => setIsMobile(mq.matches);
     apply();
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
@@ -964,7 +978,7 @@ export function CanvasClient({
       <CanvasTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Tab content */}
-      {activeTab === "canvas" && (
+      {activeTab === "canvas" && !isMobile && (
         <BMCGrid
           mode={mode}
           blocks={blocks}
@@ -1010,6 +1024,48 @@ export function CanvasClient({
         />
       )}
 
+      {activeTab === "canvas" && isMobile && (
+        <MobileCanvasCarousel
+          mode={mode}
+          blocks={blocks}
+          focusedBlock={mobileSheetBlock}
+          analyzingBlock={analyzingBlock}
+          chatTargetBlock={activeChatBlock}
+          allSegments={Array.from(segments.values())}
+          onBlockChange={handleBlockChange}
+          onBlockFocus={setFocusedBlock}
+          onBlockBlur={() => setFocusedBlock(null)}
+          onBlockTap={setMobileSheetBlock}
+          onBlockAddToChat={setChatTargetBlock}
+          onBlockAnalyze={handleAnalyze}
+          onSegmentClick={(segmentId) => {
+            for (const [bt, block] of blocks) {
+              if (block.linkedSegments?.some((s) => s.$id === segmentId)) {
+                setMobileSheetBlock(bt);
+                break;
+              }
+            }
+          }}
+          onAddSegment={async (name, description) => {
+            const seg = await handleSegmentCreate({ name, description });
+            if (seg) {
+              await handleSegmentLink("customer_segments", seg.$id, seg);
+            }
+          }}
+          onSegmentUpdate={async (segmentId, updates) => {
+            await handleSegmentUpdate(segmentId, updates);
+          }}
+          onSegmentFocus={(segmentId) => {
+            setMobileSheetBlock("customer_segments");
+          }}
+          onItemCreate={handleItemCreate}
+          onItemUpdate={handleItemUpdate}
+          onItemDelete={handleItemDelete}
+          onItemToggleSegment={handleItemToggleSegment}
+          onItemToggleLink={handleItemToggleLink}
+        />
+      )}
+
       {activeTab === "analysis" && (
         <AnalysisView
           blocks={blocks}
@@ -1031,8 +1087,37 @@ export function CanvasClient({
         />
       )}
 
-      {/* Block Focus Panel */}
-      {expandedBlock && expandedBlockData && (
+      {/* Mobile Focus Sheet */}
+      {isMobile && mobileSheetBlock && blocks.get(mobileSheetBlock) && (
+        <MobileFocusSheet
+          blockType={mobileSheetBlock}
+          block={blocks.get(mobileSheetBlock)!}
+          mode={mode}
+          canvasId={canvasId}
+          isAnalyzing={analyzingBlock === mobileSheetBlock}
+          allBlocksFilled={allBlocksFilled}
+          filledCount={filledCount}
+          allSegments={Array.from(segments.values())}
+          onChange={(value) => handleBlockChange(mobileSheetBlock, value)}
+          onClose={() => setMobileSheetBlock(null)}
+          onAnalyze={() => handleAnalyze(mobileSheetBlock)}
+          onDeepDive={() => setDeepDiveBlock(mobileSheetBlock)}
+          chatSection={
+            <BlockChatSection
+              canvasId={canvasId}
+              blockType={mobileSheetBlock}
+              onAcceptEdit={handleAcceptEdit}
+              onRejectEdit={handleRejectEdit}
+              onRevertEdit={handleRevertEdit}
+              onAcceptSegment={handleAcceptSegment}
+              onAcceptItem={handleAcceptItem}
+            />
+          }
+        />
+      )}
+
+      {/* Block Focus Panel (Desktop) */}
+      {!isMobile && expandedBlock && expandedBlockData && (
         <BlockFocusPanel
           blockType={expandedBlock}
           block={expandedBlockData}
