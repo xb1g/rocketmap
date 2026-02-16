@@ -56,6 +56,43 @@ export const extractAssumptions = tool({
   execute: async (params) => params,
 });
 
+export const identifyAssumptions = tool({
+  description: 'Identify hidden assumptions in a block with risk assessment and impact analysis. Use this alongside analyzeBlock to extract structured assumptions with risk levels.',
+  inputSchema: z.object({
+    assumptions: z.array(z.object({
+      statement: z.string().describe('The assumption being made — specific and testable'),
+      riskLevel: z.enum(['high', 'medium', 'low']).describe('How bad if this assumption is wrong: high=business fails, medium=delays/pivots, low=minor adjustment'),
+      reasoning: z.string().describe('Why this risk level was assigned'),
+      affectedBlocks: z.array(z.string()).describe('Which block types fail if this is wrong (e.g. "value_prop", "revenue_streams")')
+    }))
+  }),
+  execute: async (params) => params
+});
+
+export const suggestExperiment = tool({
+  description: 'Suggest the cheapest/fastest experiment to validate a specific assumption. Prioritize free/low-cost methods and short timelines.',
+  inputSchema: z.object({
+    experimentType: z.enum(['survey', 'interview', 'mvp', 'ab_test', 'research', 'other']),
+    description: z.string().describe('Step-by-step instructions for running the experiment'),
+    successCriteria: z.string().describe('How to know if the assumption is validated (specific, measurable)'),
+    costEstimate: z.string().describe('$0, $50, $500, etc.'),
+    durationEstimate: z.string().describe('5 min, 1 week, 1 month, etc.'),
+    reasoning: z.string().describe('Why this is the cheapest/fastest validation method')
+  }),
+  execute: async (params) => params
+});
+
+export const calculateConfidence = tool({
+  description: 'Calculate confidence score (0-100) based on experiment evidence quality. Consider sample size, methodology rigor, and relevance.',
+  inputSchema: z.object({
+    confidenceScore: z.number().min(0).max(100),
+    reasoning: z.string().describe('Why this confidence level based on evidence'),
+    evidenceQuality: z.enum(['strong', 'moderate', 'weak']),
+    recommendedNextSteps: z.array(z.string()).describe('What else to test to increase confidence')
+  }),
+  execute: async (params) => params
+});
+
 export const searchWeb = tool({
   description: 'Search the web for real-world market data, competitor information, industry reports, and validation data. Use this to ground market research in current facts and sources. Always cite URLs in your analysis.',
   inputSchema: z.object({
@@ -534,6 +571,9 @@ const allTools: Record<string, ReturnType<typeof tool<any, any>>> = {
   analyzeBlock,
   checkConsistency,
   extractAssumptions,
+  identifyAssumptions,
+  suggestExperiment,
+  calculateConfidence,
   searchWeb,
   proposeBlockEdit,
   createBlockItems,

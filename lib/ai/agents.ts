@@ -1,11 +1,11 @@
 import type { AgentType, AgentConfig } from '@/lib/types/ai';
 import type { BlockData } from '@/lib/types/canvas';
-import { buildSystemPrompt } from './prompts';
+import { buildSystemPrompt, type AssumptionContext } from './prompts';
 
-export function getAgentConfig(agentType: AgentType, blocks: BlockData[]): AgentConfig {
-  const systemPrompt = buildSystemPrompt(agentType, blocks);
+export function getAgentConfig(agentType: AgentType, blocks: BlockData[], assumptions?: AssumptionContext[]): AgentConfig {
+  const systemPrompt = buildSystemPrompt(agentType, blocks, assumptions);
 
-  const toolNames: string[] = ['analyzeBlock', 'proposeBlockEdit', 'createBlockItems', 'createSegments'];
+  const toolNames: string[] = ['analyzeBlock', 'identifyAssumptions', 'proposeBlockEdit', 'createBlockItems', 'createSegments'];
 
   if (agentType === 'general') {
     toolNames.push('checkConsistency', 'searchWeb');
