@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const user = await requireAuth();
 
-    // Index required: users (key), $updatedAt (desc) — composite index recommended
+    // Index required: user (key), $updatedAt (desc) — composite index recommended
     const canvasesResult = await listCanvasesByOwner(user.$id, [
       Query.select(['$id', 'title', 'slug', 'createdAt', '$updatedAt']),
       Query.orderDesc('$updatedAt'),

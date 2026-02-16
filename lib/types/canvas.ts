@@ -102,8 +102,8 @@ export interface CanvasData {
   slug: string;
   description: string;
   isPublic: boolean;
-  users?: string | { $id: string }; // Legacy/legacy-compatible: Appwrite relationship - can be ID string or nested object
   user?: string | { $id: string }; // Appwrite relationship field in current schema
+  users?: string | { $id: string }; // Legacy field for backward compatibility
   userId?: string; // Alternate schema variant
   viabilityScore?: number | null;
   viabilityData?: ViabilityData | null;

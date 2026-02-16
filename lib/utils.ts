@@ -95,7 +95,7 @@ export async function generateSlug(title: string, userId: string): Promise<strin
   let finalSlug = slug;
   let counter = 2;
 
-  // Index required: canvases collection — composite [users, slug] index
+  // Index required: canvases collection — composite [user, slug] index
   while (true) {
     try {
       const existing = await listCanvasesByOwner(userId, [

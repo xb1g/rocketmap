@@ -20,7 +20,7 @@ export default async function AccountPage() {
   let canvasCount = 0;
   let totalBlocksFilled = 0;
 
-  // Index required: canvases.users (key)
+  // Index required: canvases.user (key)
   // Index required: blocks.canvasId (key)
   try {
     const canvasesResult = await listCanvasesByOwner(user.$id, [

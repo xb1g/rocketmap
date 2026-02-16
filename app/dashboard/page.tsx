@@ -46,8 +46,8 @@ export default async function DashboardPage() {
     }
   }
 
-    // Fetch user's canvases with block counts
-  // Index required: canvases.users + $updatedAt (composite, desc)
+  // Fetch user's canvases with block counts
+  // Index required: canvases.user + $updatedAt (composite, desc)
   // Index required: blocks.canvasId (key)
   let canvases: {
     $id: string;
@@ -59,9 +59,9 @@ export default async function DashboardPage() {
   }[] = [];
   try {
     const canvasesResult = await listCanvasesByOwner(user.$id, [
-        Query.orderDesc("$updatedAt"),
-        Query.select(["$id", "title", "slug", "$updatedAt", "isPublic"]),
-        Query.limit(25),
+      Query.orderDesc("$updatedAt"),
+      Query.select(["$id", "title", "slug", "$updatedAt", "isPublic"]),
+      Query.limit(25),
     ]);
 
     canvases = await Promise.all(
