@@ -14,12 +14,14 @@ import { SEGMENT_COLORS } from '@/lib/types/canvas';
 import { searchBrave } from './brave-search';
 
 export const analyzeBlock = tool({
-  description: 'Analyze a business model canvas block and return structured insights including an improved draft, hidden assumptions, risks, and critical questions.',
+  description: 'Analyze a business model canvas block and return structured insights including an improved draft, hidden assumptions, risks, and critical questions. Also score how confident we should be in this block.',
   inputSchema: z.object({
     draft: z.string().describe('An improved, more specific version of this single block card. Do NOT write a bullet list of multiple items — each block is one atomic item. If you want to suggest additional items, use createBlockItems separately.'),
     assumptions: z.array(z.string()).describe('Hidden assumptions the user is making'),
     risks: z.array(z.string()).describe('Potential failure points or weaknesses'),
     questions: z.array(z.string()).describe('Critical questions the user should answer to validate this block'),
+    confidenceScore: z.number().min(0).max(100).describe('How confident are we in this block (0-100)? Consider: specificity of content (vague=low), evidence/data backing claims, number of untested assumptions, severity of risks, completeness of the block relative to the business model. 80+ = well-validated with data, 50-79 = reasonable but has gaps, 20-49 = speculative or vague, <20 = placeholder or empty'),
+    riskScore: z.number().min(0).max(100).describe('Overall risk level for this block (0-100). Consider: number and severity of risks, how many assumptions are untested, dependency on external factors. 70+ = critical risks, 40-69 = moderate, <40 = manageable'),
   }),
   execute: async (params) => params,
 });

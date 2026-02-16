@@ -63,7 +63,14 @@ export async function POST(_request: Request, context: RouteContext) {
     );
 
     // Extract tool call results
-    let analysis = { draft: '', assumptions: [] as string[], risks: [] as string[], questions: [] as string[] };
+    let analysis: {
+      draft: string;
+      assumptions: string[];
+      risks: string[];
+      questions: string[];
+      confidenceScore?: number;
+      riskScore?: number;
+    } = { draft: '', assumptions: [], risks: [], questions: [] };
     let identifiedAssumptions: Array<{
       statement: string;
       riskLevel: 'high' | 'medium' | 'low';
@@ -86,11 +93,15 @@ export async function POST(_request: Request, context: RouteContext) {
       }
     }
 
-    // Compute scores
-    const hasContent = content.length > 20;
-    const hasDepth = (analysis?.assumptions?.length ?? 0) > 0 && (analysis?.risks?.length ?? 0) > 0;
-    const confidenceScore = hasContent ? (hasDepth ? 0.7 : 0.4) : 0.2;
-    const riskScore = Math.min(1, analysis.risks.length * 0.15);
+    // Use AI-calculated scores (0-100), normalize to 0-1 for storage
+    const aiConfidence = typeof analysis.confidenceScore === 'number' ? analysis.confidenceScore : null;
+    const aiRisk = typeof analysis.riskScore === 'number' ? analysis.riskScore : null;
+    const confidenceScore = aiConfidence !== null
+      ? aiConfidence / 100
+      : (content.length > 20 ? 0.4 : 0.2);
+    const riskScore = aiRisk !== null
+      ? aiRisk / 100
+      : Math.min(1, analysis.risks.length * 0.15);
 
     // Persist to Appwrite — canvas ownership already verified by getCanvasBlocks above
     // Find existing block doc — only need $id for update target

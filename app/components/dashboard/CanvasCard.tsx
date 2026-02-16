@@ -2,15 +2,20 @@
 
 import Link from "next/link";
 import { DropdownMenu } from "@radix-ui/themes";
+import type { BlockType } from "@/lib/types/canvas";
 
 interface CanvasCardProps {
   canvas: {
     $id: string;
     title: string;
     slug: string;
+    description: string;
     isPublic: boolean;
     $updatedAt: string;
+    $createdAt: string;
     blocksCount: number;
+    filledBlocks: BlockType[];
+    viabilityScore: number | null;
   };
   onShare: (slug: string) => void;
   onTogglePublic: (canvasId: string, isPublic: boolean) => void;
@@ -32,6 +37,35 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(days / 30)}mo ago`;
 }
 
+// BMC grid positions for the mini grid — matches standard BMC layout
+const MINI_GRID_BLOCKS: {
+  type: BlockType;
+  col: string;
+  row: string;
+}[] = [
+  { type: "key_partnerships", col: "1 / 3", row: "1 / 3" },
+  { type: "key_activities", col: "3 / 5", row: "1 / 2" },
+  { type: "key_resources", col: "3 / 5", row: "2 / 3" },
+  { type: "value_prop", col: "5 / 7", row: "1 / 3" },
+  { type: "customer_relationships", col: "7 / 9", row: "1 / 2" },
+  { type: "channels", col: "7 / 9", row: "2 / 3" },
+  { type: "customer_segments", col: "9 / 11", row: "1 / 3" },
+  { type: "cost_structure", col: "1 / 6", row: "3 / 4" },
+  { type: "revenue_streams", col: "6 / 11", row: "3 / 4" },
+];
+
+function getViabilityColor(score: number): string {
+  if (score < 50) return "#f43f5e";
+  if (score < 75) return "#f59e0b";
+  return "#10b981";
+}
+
+function getViabilityLabel(score: number): string {
+  if (score < 50) return "Low";
+  if (score < 75) return "Medium";
+  return "High";
+}
+
 export function CanvasCard({
   canvas,
   onShare,
@@ -39,14 +73,13 @@ export function CanvasCard({
   onDuplicate,
   onDelete,
 }: CanvasCardProps) {
-  const filledBlocks = canvas.blocksCount;
-  const progressPct = Math.round((filledBlocks / 9) * 100);
+  const filledSet = new Set(canvas.filledBlocks);
+  const progressPct = Math.round((canvas.blocksCount / 9) * 100);
+  const hasViability = canvas.viabilityScore != null;
+  const viabilityScore = canvas.viabilityScore ?? 0;
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't navigate if clicking the dropdown menu area
-    if ((e.target as HTMLElement).closest(".canvas-card-menu")) {
-      return;
-    }
+    if ((e.target as HTMLElement).closest(".canvas-card-menu")) return;
     window.location.href = `/canvas/${canvas.slug}`;
   };
 
@@ -56,105 +89,143 @@ export function CanvasCard({
       style={{ position: "relative", cursor: "pointer" }}
       onClick={handleCardClick}
     >
+      {/* Header: title + menu */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
-          marginBottom: "0.75rem",
-          paddingRight: "2rem", // Add space for the absolute menu
+          marginBottom: "0.5rem",
+          paddingRight: "2rem",
         }}
       >
-        <div style={{ flex: 1, minWidth: 0, paddingRight: "1rem" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div className="canvas-card-title">{canvas.title}</div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              marginTop: "0.25rem",
-            }}
-          >
-            <span className={`mode-badge ${canvas.isPublic ? "mode-badge-lean" : "mode-badge-bmc"}`}>
-              {canvas.isPublic ? "Public" : "Private"}
-            </span>
-            <span className="mode-badge mode-badge-bmc">BMC</span>
-            <span className="canvas-card-meta">
-              {timeAgo(canvas.$updatedAt)}
-            </span>
-          </div>
+          {canvas.description && (
+            <div className="canvas-card-desc">{canvas.description}</div>
+          )}
         </div>
+      </div>
+
+      {/* Middle: Mini BMC grid + viability score */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "1rem",
+          marginBottom: "0.75rem",
+        }}
+      >
+        {/* Accurate mini BMC grid */}
         <div
-          className="canvas-blocks-mini"
           style={{
-            marginTop: "1.25rem",
             display: "grid",
             gridTemplateColumns: "repeat(10, 1fr)",
             gridTemplateRows: "repeat(2, 1fr) 0.65fr",
             gap: "2px",
-            width: "70px",
-            height: "45px",
+            width: "80px",
+            height: "48px",
             flexShrink: 0,
-            alignSelf: "flex-start",
           }}
         >
-          {/* Key Partners */}
+          {MINI_GRID_BLOCKS.map((block) => (
+            <div
+              key={block.type}
+              className={`canvas-blocks-mini-cell ${filledSet.has(block.type) ? "filled" : ""}`}
+              style={{ gridColumn: block.col, gridRow: block.row }}
+            />
+          ))}
+        </div>
+
+        {/* Viability score */}
+        {hasViability ? (
+          <div className="canvas-card-viability">
+            <div
+              className="canvas-card-viability-ring"
+              style={
+                {
+                  "--viability-color": getViabilityColor(viabilityScore),
+                  "--viability-pct": `${viabilityScore}%`,
+                } as React.CSSProperties
+              }
+            >
+              <span className="canvas-card-viability-value">
+                {Math.round(viabilityScore)}
+              </span>
+            </div>
+            <span
+              className="canvas-card-viability-label"
+              style={{ color: getViabilityColor(viabilityScore) }}
+            >
+              {getViabilityLabel(viabilityScore)}
+            </span>
+          </div>
+        ) : (
+          <div className="canvas-card-viability canvas-card-viability--empty">
+            <div className="canvas-card-viability-ring canvas-card-viability-ring--empty">
+              <span className="canvas-card-viability-value" style={{ opacity: 0.3 }}>
+                —
+              </span>
+            </div>
+            <span
+              className="canvas-card-viability-label"
+              style={{ opacity: 0.35 }}
+            >
+              Not scored
+            </span>
+          </div>
+        )}
+
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+
+        {/* Block count + progress */}
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
           <div
-            className={`canvas-blocks-mini-cell ${0 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "1 / 3", gridRow: "1 / 3" }}
-          />
-          {/* Key Activities */}
-          <div
-            className={`canvas-blocks-mini-cell ${1 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "3 / 5", gridRow: "1 / 2" }}
-          />
-          {/* Key Resources */}
-          <div
-            className={`canvas-blocks-mini-cell ${2 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "3 / 5", gridRow: "2 / 3" }}
-          />
-          {/* Value Propositions */}
-          <div
-            className={`canvas-blocks-mini-cell ${3 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "5 / 7", gridRow: "1 / 3" }}
-          />
-          {/* Customer Relationships */}
-          <div
-            className={`canvas-blocks-mini-cell ${4 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "7 / 9", gridRow: "1 / 2" }}
-          />
-          {/* Channels */}
-          <div
-            className={`canvas-blocks-mini-cell ${5 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "7 / 9", gridRow: "2 / 3" }}
-          />
-          {/* Customer Segments */}
-          <div
-            className={`canvas-blocks-mini-cell ${6 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "9 / 11", gridRow: "1 / 3" }}
-          />
-          {/* Cost Structure */}
-          <div
-            className={`canvas-blocks-mini-cell ${7 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "1 / 6", gridRow: "3 / 4" }}
-          />
-          {/* Revenue Streams */}
-          <div
-            className={`canvas-blocks-mini-cell ${8 < filledBlocks ? "filled" : ""}`}
-            style={{ gridColumn: "6 / 11", gridRow: "3 / 4" }}
-          />
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.75rem",
+              color: "var(--foreground-muted)",
+              marginBottom: "0.25rem",
+            }}
+          >
+            {canvas.blocksCount}/9 blocks
+          </div>
+          <div className="canvas-progress" style={{ width: "64px" }}>
+            <div
+              className="canvas-progress-bar"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
         </div>
       </div>
-      <div className="canvas-progress" style={{ marginTop: "1rem" }}>
-        <div
-          className="canvas-progress-bar"
-          style={{ width: `${progressPct}%` }}
-        />
+
+      {/* Footer: badges + time */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+        }}
+      >
+        <span
+          className={`mode-badge ${canvas.isPublic ? "mode-badge-lean" : "mode-badge-bmc"}`}
+        >
+          {canvas.isPublic ? "Public" : "Private"}
+        </span>
+        <span className="mode-badge mode-badge-bmc">BMC</span>
+        <span className="canvas-card-meta">{timeAgo(canvas.$updatedAt)}</span>
       </div>
 
+      {/* Dropdown menu */}
       <div
         className="canvas-card-menu"
-        style={{ position: "absolute", top: "1rem", right: "1rem", zIndex: 10 }}
+        style={{
+          position: "absolute",
+          top: "1rem",
+          right: "1rem",
+          zIndex: 10,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <DropdownMenu.Root>
@@ -183,9 +254,7 @@ export function CanvasCard({
                 Open
               </Link>
             </DropdownMenu.Item>
-            <DropdownMenu.Item
-              onSelect={() => onShare(canvas.slug)}
-            >
+            <DropdownMenu.Item onSelect={() => onShare(canvas.slug)}>
               Copy link
             </DropdownMenu.Item>
             <DropdownMenu.Item

@@ -11,6 +11,7 @@ import { Query } from "node-appwrite";
 import { DashboardClient } from "./DashboardClient";
 import { getAnthropicUsageStatsFromUser } from "@/lib/ai/user-preferences";
 import { listCanvasesByOwner } from "@/lib/utils";
+import type { BlockType } from "@/lib/types/canvas";
 
 export default async function DashboardPage() {
   const user = await getSessionUser();
@@ -46,50 +47,67 @@ export default async function DashboardPage() {
     }
   }
 
-  // Fetch user's canvases with block counts
+  // Fetch user's canvases with block details
   // Index required: canvases.user + $updatedAt (composite, desc)
   // Index required: blocks.canvasId (key)
   let canvases: {
     $id: string;
     title: string;
     slug: string;
+    description: string;
     $updatedAt: string;
+    $createdAt: string;
     isPublic: boolean;
     blocksCount: number;
+    filledBlocks: BlockType[];
+    viabilityScore: number | null;
   }[] = [];
   try {
     const canvasesResult = await listCanvasesByOwner(user.$id, [
       Query.orderDesc("$updatedAt"),
-      Query.select(["$id", "title", "slug", "$updatedAt", "isPublic"]),
+      Query.select([
+        "$id",
+        "title",
+        "slug",
+        "description",
+        "$updatedAt",
+        "$createdAt",
+        "isPublic",
+        "viabilityScore",
+      ]),
       Query.limit(25),
     ]);
 
     canvases = await Promise.all(
       canvasesResult.rows.map(async (doc) => {
-        let blocksCount = 0;
+        const filledBlocks: BlockType[] = [];
         try {
           const blocksResult = await serverTablesDB.listRows({
             databaseId: DATABASE_ID,
             tableId: BLOCKS_TABLE_ID,
             queries: [
               Query.equal("canvasId", doc.$id),
-              Query.select(["$id", "contentJson"]),
+              Query.select(["$id", "blockType", "contentJson"]),
               Query.limit(9),
             ],
           });
-          blocksCount = blocksResult.rows.filter((block) => {
+          for (const block of blocksResult.rows) {
             const content = block.contentJson as string;
-            if (!content) return false;
+            if (!content) continue;
             try {
               const parsed = JSON.parse(content);
-              return (
+              if (
                 (parsed.bmc && parsed.bmc.trim() !== "") ||
                 (parsed.lean && parsed.lean.trim() !== "")
-              );
+              ) {
+                filledBlocks.push(block.blockType as BlockType);
+              }
             } catch {
-              return content.trim() !== "";
+              if (content.trim() !== "") {
+                filledBlocks.push(block.blockType as BlockType);
+              }
             }
-          }).length;
+          }
         } catch {
           // Blocks collection might not exist
         }
@@ -98,9 +116,13 @@ export default async function DashboardPage() {
           $id: doc.$id,
           title: d.title as string,
           slug: d.slug as string,
+          description: (d.description as string) || "",
           $updatedAt: doc.$updatedAt,
+          $createdAt: doc.$createdAt,
           isPublic: (d.isPublic as boolean) ?? false,
-          blocksCount,
+          blocksCount: filledBlocks.length,
+          filledBlocks,
+          viabilityScore: (d.viabilityScore as number) ?? null,
         };
       }),
     );

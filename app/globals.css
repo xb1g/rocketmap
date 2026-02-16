@@ -1258,10 +1258,77 @@ body {
   margin-bottom: 0.25rem;
 }
 
+.canvas-card-desc {
+  font-size: 0.78rem;
+  color: var(--foreground-muted);
+  margin-top: 0.2rem;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.35;
+}
+
 .canvas-card-meta {
   font-family: var(--font-mono);
   font-size: 0.7rem;
   color: var(--foreground-muted);
+}
+
+/* Viability score ring on canvas cards */
+.canvas-card-viability {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.canvas-card-viability-ring {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(
+    var(--viability-color, rgba(255, 255, 255, 0.1)) 0% var(--viability-pct, 0%),
+    rgba(255, 255, 255, 0.06) var(--viability-pct, 0%) 100%
+  );
+  position: relative;
+}
+
+.canvas-card-viability-ring::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: rgba(14, 20, 29, 0.95);
+}
+
+.canvas-card-viability-ring--empty {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.canvas-card-viability-ring--empty::after {
+  background: rgba(14, 20, 29, 0.85);
+}
+
+.canvas-card-viability-value {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.canvas-card-viability-label {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .canvas-blocks-mini {

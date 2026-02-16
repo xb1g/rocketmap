@@ -7,6 +7,7 @@ import { QuickStats } from "../components/dashboard/QuickStats";
 import { CanvasCard } from "../components/dashboard/CanvasCard";
 import { AIGuidedModal } from "../components/dashboard/AIGuidedModal";
 import { Heading, Text } from "@radix-ui/themes";
+import type { BlockType } from "@/lib/types/canvas";
 
 interface DashboardClientProps {
   user: {
@@ -19,9 +20,13 @@ interface DashboardClientProps {
     $id: string;
     title: string;
     slug: string;
+    description: string;
     isPublic: boolean;
     $updatedAt: string;
+    $createdAt: string;
     blocksCount: number;
+    filledBlocks: BlockType[];
+    viabilityScore: number | null;
   }[];
   stats: {
     totalCanvases: number;
