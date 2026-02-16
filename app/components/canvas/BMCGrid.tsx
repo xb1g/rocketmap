@@ -31,6 +31,11 @@ interface BMCGridProps {
   onItemToggleSegment?: (blockType: BlockType, itemId: string, segmentId: number) => void;
   onItemToggleLink?: (blockType: BlockType, itemId: string, linkedItemId: string) => void;
   onItemHover?: (hoveredItem: HoveredItem | null) => void;
+  // New block handlers for multi-block architecture
+  onBlockUpdate?: (blockId: string, updates: { contentJson: string }) => void;
+  onBlockDelete?: (blockId: string) => void;
+  onBlockSegmentToggle?: (blockId: string, segmentId: number) => void;
+  onBlockHover?: (blockId: string | null) => void;
 }
 
 export function BMCGrid({
@@ -58,6 +63,10 @@ export function BMCGrid({
   onItemToggleSegment,
   onItemToggleLink,
   onItemHover,
+  onBlockUpdate,
+  onBlockDelete,
+  onBlockSegmentToggle,
+  onBlockHover,
 }: BMCGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -121,6 +130,10 @@ export function BMCGrid({
               onItemToggleSegment={onItemToggleSegment ? (itemId, segId) => onItemToggleSegment(def.type, itemId, segId) : undefined}
               onItemToggleLink={onItemToggleLink ? (itemId, linkedId) => onItemToggleLink(def.type, itemId, linkedId) : undefined}
               onItemHover={onItemHover ? (itemId) => onItemHover(itemId ? { blockType: def.type, itemId } : null) : undefined}
+              onBlockUpdate={onBlockUpdate}
+              onBlockDelete={onBlockDelete}
+              onBlockSegmentToggle={onBlockSegmentToggle}
+              onBlockHover={onBlockHover}
               itemRefCallback={itemRefCallback}
               segmentRefCallback={segmentRefCallback}
             />

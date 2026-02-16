@@ -164,7 +164,7 @@ interface BlockCellProps {
   onItemHover?: (itemId: string | null) => void;
   onBlockUpdate?: (blockId: string, updates: { contentJson: string }) => void;
   onBlockDelete?: (blockId: string) => void;
-  onBlockSegmentToggle?: (blockId: string, segmentId: string) => void;
+  onBlockSegmentToggle?: (blockId: string, segmentId: number) => void;
   onBlockHover?: (blockId: string | null) => void;
   itemRefCallback?: (itemId: string, el: HTMLElement | null) => void;
   segmentRefCallback?: (segmentId: number, el: HTMLElement | null) => void;

@@ -172,20 +172,23 @@ export default async function CanvasPage({ params }: PageProps) {
     blockCardsMap.set(card.blockId, existing);
   }
 
-  // Build initial blocks with defaults for missing ones
-  const blockMap = new Map(blockDocs.map((d) => [d.blockType as string, d]));
-  const initialBlocks: BlockData[] = BLOCK_DEFINITIONS.map((def) => {
-    const doc = blockMap.get(def.type);
-    const blockIntId = doc?.id as number | undefined;
-    const linkedSegmentIds = blockIntId ? (blockSegmentLinks.get(blockIntId) ?? []) : [];
+  // Build blocks grouped by blockType (supporting multiple blocks per type)
+  const blocksByType = new Map<BlockType, BlockData[]>();
+
+  for (const doc of blockDocs) {
+    const blockIntId = doc.id as number;
+    const blockType = doc.blockType as BlockType;
+    const linkedSegmentIds = blockSegmentLinks.get(blockIntId) ?? [];
     const linkedSegments = linkedSegmentIds
       .map((sid) => segmentMap.get(sid))
       .filter((s): s is Segment => !!s);
 
-    const cards = blockIntId ? (blockCardsMap.get(blockIntId) ?? []) : [];
+    const cards = blockCardsMap.get(blockIntId) ?? [];
 
-    return {
-      blockType: def.type as BlockType,
+    const blockData: BlockData = {
+      $id: doc.$id as string,
+      id: blockIntId,
+      blockType,
       content: parseContentJson(doc?.contentJson as string | undefined),
       state: 'calm' as const,
       aiAnalysis: parseAiAnalysis(doc?.aiAnalysisJson as string | undefined),
@@ -194,6 +197,31 @@ export default async function CanvasPage({ params }: PageProps) {
       deepDiveData: parseDeepDiveJson(doc?.deepDiveJson as string | undefined),
       linkedSegments,
       cards,
+    };
+
+    if (!blocksByType.has(blockType)) {
+      blocksByType.set(blockType, []);
+    }
+    blocksByType.get(blockType)!.push(blockData);
+  }
+
+  // Create legacy format (single block per type) for backward compatibility
+  const initialBlocks: BlockData[] = BLOCK_DEFINITIONS.map((def) => {
+    const blocks = blocksByType.get(def.type);
+    // Use first block if exists, otherwise create empty placeholder
+    if (blocks && blocks.length > 0) {
+      return blocks[0];
+    }
+    return {
+      blockType: def.type as BlockType,
+      content: { bmc: '', lean: '' },
+      state: 'calm' as const,
+      aiAnalysis: null,
+      confidenceScore: 0,
+      riskScore: 0,
+      deepDiveData: null,
+      linkedSegments: [],
+      cards: [],
     };
   });
 
@@ -216,6 +244,7 @@ export default async function CanvasPage({ params }: PageProps) {
         initialCanvasData={canvasData}
         initialBlocks={initialBlocks}
         initialSegments={initialSegments}
+        initialBlocksByType={blocksByType}
       />
     </div>
   );

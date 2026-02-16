@@ -38,6 +38,7 @@ interface CanvasClientProps {
   initialCanvasData: CanvasData;
   initialBlocks: BlockData[];
   initialSegments?: Segment[];
+  initialBlocksByType?: Map<BlockType, BlockData[]>;
 }
 
 type SaveStatus = "saved" | "saving" | "unsaved";
@@ -62,6 +63,7 @@ export function CanvasClient({
   initialCanvasData,
   initialBlocks,
   initialSegments = [],
+  initialBlocksByType,
 }: CanvasClientProps) {
   const router = useRouter();
   const [mode, setMode] = useState<CanvasMode>("bmc");
@@ -99,6 +101,20 @@ export function CanvasClient({
     return map;
   });
   const [hoveredItem, setHoveredItem] = useState<HoveredItem | null>(null);
+  const [blocksByType, setBlocksByType] = useState<
+    Map<BlockType, BlockData[]>
+  >(() => {
+    if (initialBlocksByType) return initialBlocksByType;
+    // Fallback: create empty map
+    const map = new Map<BlockType, BlockData[]>();
+    for (const block of initialBlocks) {
+      if (!map.has(block.blockType)) {
+        map.set(block.blockType, []);
+      }
+      map.get(block.blockType)!.push(block);
+    }
+    return map;
+  });
 
   const saveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
@@ -659,6 +675,178 @@ export function CanvasClient({
     [updateBlockItems],
   );
 
+  // ─── Block Handlers (New Architecture) ─────────────────────────────────────
+
+  /**
+   * Update a single block's contentJson field
+   */
+  const handleBlockUpdate = useCallback(
+    async (blockId: string, updates: { contentJson: string }) => {
+      try {
+        const res = await fetch(`/api/blocks/${blockId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        });
+        if (!res.ok) {
+          console.error("Failed to update block");
+          return;
+        }
+        // Update local blocksByType state
+        setBlocksByType((prev) => {
+          const next = new Map(prev);
+          for (const [blockType, blocksArray] of next) {
+            const blockIndex = blocksArray.findIndex((b) => b.$id === blockId);
+            if (blockIndex !== -1) {
+              const updatedBlocks = [...blocksArray];
+              updatedBlocks[blockIndex] = {
+                ...updatedBlocks[blockIndex],
+                // TODO: Parse contentJson when fully migrated
+                // For now, keep existing structure
+              };
+              next.set(blockType, updatedBlocks);
+              break;
+            }
+          }
+          return next;
+        });
+      } catch (error) {
+        console.error("Failed to update block:", error);
+      }
+    },
+    [],
+  );
+
+  /**
+   * Delete a single block
+   */
+  const handleBlockDelete = useCallback(
+    async (blockId: string) => {
+      try {
+        const res = await fetch(`/api/blocks/${blockId}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) {
+          console.error("Failed to delete block");
+          return;
+        }
+        // Update local blocksByType state
+        setBlocksByType((prev) => {
+          const next = new Map(prev);
+          for (const [blockType, blocksArray] of next) {
+            const filtered = blocksArray.filter((b) => b.$id !== blockId);
+            if (filtered.length !== blocksArray.length) {
+              next.set(blockType, filtered);
+              break;
+            }
+          }
+          return next;
+        });
+        // Also remove from legacy blocks map if present
+        setBlocks((prev) => {
+          const next = new Map(prev);
+          for (const [blockType, block] of next) {
+            if (block.$id === blockId) {
+              // Don't delete the blockType entry, just clear its content
+              next.set(blockType, {
+                ...block,
+                content: { bmc: "", lean: "" },
+                aiAnalysis: null,
+                confidenceScore: 0,
+                riskScore: 0,
+              });
+              break;
+            }
+          }
+          return next;
+        });
+      } catch (error) {
+        console.error("Failed to delete block:", error);
+      }
+    },
+    [],
+  );
+
+  /**
+   * Toggle segment link for a single block (M:M relationship)
+   */
+  const handleBlockSegmentToggle = useCallback(
+    async (blockId: string, segmentId: number) => {
+      try {
+        const res = await fetch(`/api/blocks/${blockId}/segments`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ segmentId }),
+        });
+        if (!res.ok) {
+          console.error("Failed to toggle segment");
+          return;
+        }
+        const { action } = await res.json();
+        const segment = segments.get(segmentId);
+        if (!segment) return;
+
+        // Update local blocksByType state
+        setBlocksByType((prev) => {
+          const next = new Map(prev);
+          for (const [blockType, blocksArray] of next) {
+            const blockIndex = blocksArray.findIndex((b) => b.$id === blockId);
+            if (blockIndex !== -1) {
+              const updatedBlocks = [...blocksArray];
+              const block = updatedBlocks[blockIndex];
+              const linkedSegments = block.linkedSegments ?? [];
+
+              if (action === "linked") {
+                updatedBlocks[blockIndex] = {
+                  ...block,
+                  linkedSegments: [...linkedSegments, segment],
+                };
+              } else {
+                updatedBlocks[blockIndex] = {
+                  ...block,
+                  linkedSegments: linkedSegments.filter(
+                    (s) => s.id !== segmentId,
+                  ),
+                };
+              }
+              next.set(blockType, updatedBlocks);
+              break;
+            }
+          }
+          return next;
+        });
+
+        // Also update legacy blocks map
+        setBlocks((prev) => {
+          const next = new Map(prev);
+          for (const [blockType, block] of next) {
+            if (block.$id === blockId) {
+              const linkedSegments = block.linkedSegments ?? [];
+              if (action === "linked") {
+                next.set(blockType, {
+                  ...block,
+                  linkedSegments: [...linkedSegments, segment],
+                });
+              } else {
+                next.set(blockType, {
+                  ...block,
+                  linkedSegments: linkedSegments.filter(
+                    (s) => s.id !== segmentId,
+                  ),
+                });
+              }
+              break;
+            }
+          }
+          return next;
+        });
+      } catch (error) {
+        console.error("Failed to toggle segment:", error);
+      }
+    },
+    [segments],
+  );
+
   // ─── Card Handlers (Normalized Collection) ─────────────────────────────────
 
   const handleCardCreate = useCallback(
@@ -1056,6 +1244,14 @@ export function CanvasClient({
           onItemToggleSegment={handleItemToggleSegment}
           onItemToggleLink={handleItemToggleLink}
           onItemHover={setHoveredItem}
+          onBlockUpdate={handleBlockUpdate}
+          onBlockDelete={handleBlockDelete}
+          onBlockSegmentToggle={(blockId, segmentId) =>
+            handleBlockSegmentToggle(blockId, segmentId)
+          }
+          onBlockHover={(blockId) => {
+            // TODO: Implement block hover visualization when migrating to new architecture
+          }}
         />
       )}
 
