@@ -259,6 +259,37 @@ export interface SegmentScorecard {
   lastUpdated: string;
 }
 
+// ─── Assumption Types ─────────────────────────────────────────────────────────
+
+export type AssumptionStatus = 'untested' | 'testing' | 'validated' | 'refuted' | 'inconclusive';
+export type AssumptionPriority = 'low' | 'medium' | 'high';
+
+export interface Assumption {
+  $id: string;
+  canvasId: string;
+  statement: string;
+  status: AssumptionStatus;
+  priority: AssumptionPriority;
+  source: 'ai' | 'user';
+  blockTypes: BlockType[];
+  segmentIds: string[];
+  linkedValidationItemIds: string[];
+  createdAt: string;
+  updatedAt: string;
+  lastTestedAt?: string;
+}
+
+export interface AssumptionTest {
+  $id: string;
+  assumptionId: string;
+  method: string;
+  successCriteria: string;
+  result: 'supports' | 'contradicts' | 'mixed' | 'inconclusive';
+  evidence: string;
+  sourceUrl?: string;
+  createdAt: string;
+}
+
 // ─── Block Item Proposals (AI Copilot → Create Items) ────────────────────────
 
 export interface BlockItemProposal {
