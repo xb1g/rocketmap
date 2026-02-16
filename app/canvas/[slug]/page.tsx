@@ -16,6 +16,7 @@ import type {
   AIAnalysis,
   MarketResearchData,
   Segment,
+  ViabilityData,
 } from "@/lib/types/canvas";
 import { BLOCK_DEFINITIONS } from "@/app/components/canvas/constants";
 import { CanvasClient } from "./CanvasClient";
@@ -28,10 +29,18 @@ function parseContentJson(raw: string | undefined): BlockContent {
   if (!raw) return { bmc: "", lean: "", items: [] };
   try {
     const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    const record = isRecord(parsed) ? parsed : {};
+    const atomicText = readString(record.text);
+    const bmc = readString(record.bmc);
+    const lean = readString(record.lean);
+    const items = Array.isArray(record.items)
+      ? (record.items as BlockContent["items"])
+      : [];
+
     return {
-      bmc: parsed.bmc ?? "",
-      lean: parsed.lean ?? "",
-      items: parsed.items ?? [],
+      bmc: bmc || atomicText,
+      lean: lean || atomicText,
+      items,
     };
   } catch {
     return { bmc: String(raw), lean: "", items: [] };
@@ -177,6 +186,9 @@ export default async function CanvasPage({ params }: PageProps) {
     "description",
     "isPublic",
     "users",
+    "viabilityScore",
+    "viabilityDataJson",
+    "viabilityCalculatedAt",
   ];
 
   let canvas: Record<string, unknown> | null = null;
@@ -336,12 +348,17 @@ export default async function CanvasPage({ params }: PageProps) {
         const description = extraContent.bmc !== extraContent.lean && extraContent.lean
           ? extraContent.lean
           : "";
+        const linkedSegmentIds = Array.isArray(doc.segments)
+          ? (doc.segments as SegmentRef[])
+              .map((s) => normalizeSegmentRef(s, segmentById)?.$id)
+              .filter((id): id is string => Boolean(id))
+          : [];
 
         return {
           id: readString(doc.$id),
           name,
           description,
-          linkedSegmentIds: [],
+          linkedSegmentIds,
           linkedItemIds: [],
           createdAt: readString(doc.$createdAt) || new Date().toISOString(),
         };
@@ -370,6 +387,17 @@ export default async function CanvasPage({ params }: PageProps) {
     };
   });
 
+  // Parse viability data from canvas row
+  let viabilityData: ViabilityData | null = null;
+  const viabilityDataJsonRaw = readString(canvas.viabilityDataJson);
+  if (viabilityDataJsonRaw) {
+    try {
+      viabilityData = JSON.parse(viabilityDataJsonRaw) as ViabilityData;
+    } catch {
+      // ignore parse errors
+    }
+  }
+
   const canvasData: CanvasData = {
     $id: canvas.$id as string,
     title: readString(canvas.title),
@@ -378,6 +406,9 @@ export default async function CanvasPage({ params }: PageProps) {
     isPublic: readBoolean(canvas.isPublic),
     users: readString((canvas.users as Record<string, unknown>)?.$id) ||
       readString(canvas.users) || "", // Handle relationship object or ID
+    viabilityScore: typeof canvas.viabilityScore === "number" ? canvas.viabilityScore : null,
+    viabilityData,
+    viabilityCalculatedAt: readString(canvas.viabilityCalculatedAt) || null,
   };
 
   return (
@@ -388,6 +419,7 @@ export default async function CanvasPage({ params }: PageProps) {
         initialBlocks={initialBlocks}
         initialSegments={initialSegments}
         readOnly={isReadOnly}
+        initialViabilityData={canvasData.viabilityData}
       />
     </div>
   );

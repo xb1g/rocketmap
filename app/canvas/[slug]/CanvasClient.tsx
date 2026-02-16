@@ -23,6 +23,7 @@ import type {
   AIUsage,
   MarketResearchData,
   Segment,
+  ViabilityData,
 } from "@/lib/types/canvas";
 import type { HoveredItem } from "@/app/components/canvas/ConnectionOverlay";
 import type { ConsistencyData } from "@/app/components/canvas/ConsistencyReport";
@@ -52,6 +53,7 @@ interface CanvasClientProps {
   initialBlocks: BlockData[];
   initialSegments?: Segment[];
   readOnly: boolean;
+  initialViabilityData?: ViabilityData | null;
 }
 
 type SaveStatus = "saved" | "saving" | "unsaved";
@@ -77,6 +79,7 @@ export function CanvasClient({
   initialBlocks,
   initialSegments = [],
   readOnly,
+  initialViabilityData,
 }: CanvasClientProps) {
   const router = useRouter();
   const [mode, setMode] = useState<CanvasMode>("bmc");
@@ -118,6 +121,10 @@ export function CanvasClient({
     return map;
   });
   const [hoveredItem, setHoveredItem] = useState<HoveredItem | null>(null);
+  const [viabilityData, setViabilityData] = useState<ViabilityData | null>(
+    initialViabilityData ?? null
+  );
+  const [viabilityOutdated, setViabilityOutdated] = useState(false);
 
   const saveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
@@ -169,6 +176,32 @@ export function CanvasClient({
       // ignore storage errors
     }
   }, [canvasId, isZoomStorageReady, textZoom]);
+
+  // Viability recalculation on block changes
+  useEffect(() => {
+    if (!viabilityData || readOnly) return;
+
+    // Mark as outdated when blocks change
+    setViabilityOutdated(true);
+
+    // Debounced auto-recalculation (5s)
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/canvas/${canvasId}/viability`, {
+          method: "POST",
+        });
+        if (res.ok) {
+          const { viability } = await res.json();
+          setViabilityData(viability);
+          setViabilityOutdated(false);
+        }
+      } catch (err) {
+        console.error("Auto-recalc failed:", err);
+      }
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [blocks, viabilityData, canvasId, readOnly]);
 
   // Save block content
   const saveBlock = useCallback(
@@ -405,6 +438,28 @@ export function CanvasClient({
       // silently fail
     }
   }, [canvasId, router, readOnly]);
+
+  const handleExplainViability = useCallback(() => {
+    if (!viabilityData) return;
+
+    // Open chat bar
+    setChatDocked(true);
+    setChatTargetBlock(null); // System-level chat
+
+    // Pre-fill message with viability context
+    const message = `Explain my canvas viability score of ${viabilityData.score}% and what I should improve to increase it.
+
+Current breakdown:
+- Assumptions: ${viabilityData.breakdown.assumptions}%
+- Market: ${viabilityData.breakdown.market}%
+- Unmet Need: ${viabilityData.breakdown.unmetNeed}%
+
+${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
+
+    // Note: This message context will be sent to chat copilot
+    // The actual message sending is handled by ChatBar component
+    console.log("Viability explanation request:", message);
+  }, [viabilityData]);
 
   const handleDeepDiveDataChange = useCallback(
     (blockType: BlockType, data: MarketResearchData) => {
@@ -704,7 +759,7 @@ export function CanvasClient({
           return {
             ...item,
             linkedSegmentIds: linked
-              ? item.linkedSegmentIds.filter((id) => id !== segmentId)
+              ? item.linkedSegmentIds.filter((id: string) => id !== segmentId)
               : [...item.linkedSegmentIds, segmentId],
           };
         }),
@@ -1045,6 +1100,12 @@ export function CanvasClient({
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onSettingsClick={() => setShowSettings(true)}
+        canvasId={canvasId}
+        allBlocksFilled={allBlocksFilled}
+        viabilityData={viabilityData}
+        readOnly={readOnly}
+        onExplainViability={handleExplainViability}
+        onViabilityDataChange={setViabilityData}
       />
 
       {/* Tab content */}

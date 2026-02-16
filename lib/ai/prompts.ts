@@ -530,15 +530,86 @@ Generate content as if an experienced strategist drafted it:
 
 2. **For each block type, provide an array of discrete items** (not comma-separated text):
    - Each array item creates a separate atomic block that can be analyzed independently
-   - Good: channels: ["Website with online booking", "D2C sales team (3 reps)", "Social media (LinkedIn + Twitter)"]
-   - Bad: channels: ["Website, D2C sales, social media"] — this creates one block with all three mixed together
+   - Good: channels: [{ text: "Website with online booking", tags: ["owned"] }, { text: "D2C sales team (3 reps)", tags: ["outbound"] }, { text: "Social media (LinkedIn + Twitter)", tags: ["social"] }]
+   - Bad: channels: [{ text: "Website, D2C sales, social media" }] — this creates one mixed block
 
 3. **Make each item specific and actionable:**
-   - Good: cost_structure: ["AWS infrastructure: $500/mo (hosting + database)", "Engineering salaries: $15k/mo (2 FTE)", "Marketing spend: $2k/mo (Google Ads + content)"]
-   - Bad: cost_structure: ["Infrastructure costs", "Salaries", "Marketing"] — too vague
+   - Good: cost_structure: [{ text: "AWS infrastructure: $500/mo (hosting + database)", tags: ["infra"] }, { text: "Engineering salaries: $15k/mo (2 FTE)", tags: ["payroll"] }, { text: "Marketing spend: $2k/mo (Google Ads + content)", tags: ["growth"] }]
+   - Bad: cost_structure: [{ text: "Infrastructure costs" }, { text: "Salaries" }, { text: "Marketing" }] — too vague
 
 4. **Block arrays are optional** — if you don't have specific information for a block, omit it entirely rather than guessing:
    - It's better to leave key_partnerships empty than to add generic placeholders like "Various partners"
 
-5. **Customer segments are the foundation** — prioritize extracting meaningful segments over filling all blocks`;
+5. **Customer segments are the foundation** — prioritize extracting meaningful segments over filling all blocks.
 
+6. **Use \`segmentRefs\` to link items to segments when clear**:
+   - Reference extracted segment names exactly (or "1", "2", "3" by order)
+   - Example: value_prop: [{ text: "Cut churn by 30% for high-volume cafes", segmentRefs: ["SMB cafes in Bangkok"] }]`;
+
+/**
+ * Generate viability analysis prompt for Opus 4.6
+ * Analyzes business model across 3 factors: tested assumptions, market validation, unmet need
+ */
+export function getViabilityPrompt(blocks: BlockData[]): string {
+  return `You are analyzing a startup's Business Model Canvas for viability.
+
+CANVAS CONTEXT:
+${blocks.map(b => `
+Block: ${b.blockType}
+Content: ${b.content.bmc || b.content.lean}
+AI Analysis: ${b.aiAnalysis ? JSON.stringify(b.aiAnalysis) : 'None'}
+Confidence: ${b.confidenceScore}, Risk: ${b.riskScore}
+`).join('\n')}
+
+YOUR TASK:
+Grade viability (0-100%) across THREE factors:
+
+1. TESTED ASSUMPTIONS (0-100%):
+   - Review all assumptions from the 9 blocks
+   - Identify which are validated vs untested vs invalidated
+   - Score = (validated / total) * quality_weight
+   - Critical assumptions (customer need, pricing) weighted higher
+   - Look for evidence of testing (customer interviews, MVP results, etc.)
+
+2. MARKET VALIDATION (0-100%):
+   - TAM/SAM/SOM estimates quality (if available)
+   - Customer segment definition clarity and specificity
+   - Competitive landscape understanding
+   - Evidence of market research and data sources
+   - Market size supports revenue projections
+
+3. UNMET NEED (0-100%):
+   - Value proposition strength and clarity
+   - Problem-solution fit articulation
+   - Customer pain points depth
+   - Differentiation from competitors
+   - Willingness to pay indicators
+
+SCORING RULES:
+- Be critical and evidence-based
+- Untested assumptions reduce score significantly
+- Vague statements reduce score
+- Contradictions between blocks reduce score
+- Evidence of validation increases score
+
+RETURN JSON (strictly follow this structure):
+{
+  "score": 73,
+  "breakdown": {
+    "assumptions": 80,
+    "market": 70,
+    "unmetNeed": 69
+  },
+  "reasoning": "Detailed explanation of the score...",
+  "validatedAssumptions": [
+    {
+      "blockType": "customer_segments",
+      "assumption": "Early adopters are willing to pay",
+      "status": "validated",
+      "evidence": "Customer interviews confirm..."
+    }
+  ]
+}
+
+WEIGHTING: assumptions (40%), market (30%), unmetNeed (30%)`;
+}

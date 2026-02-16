@@ -24,6 +24,7 @@ export interface BlockItem {
   id: string; // Internal stable ID
   name: string;
   description?: string;
+  linkedSegmentIds: string[]; // List of segment IDs this item is relevant to
   linkedItemIds: string[]; // format: "blockType:itemId" - cross-block item links
   createdAt: string;
 }
@@ -101,6 +102,9 @@ export interface CanvasData {
   description: string;
   isPublic: boolean;
   users: string | { $id: string }; // Appwrite relationship - can be ID string or nested object
+  viabilityScore?: number | null;
+  viabilityData?: ViabilityData | null;
+  viabilityCalculatedAt?: string | null;
 }
 
 export interface BlockDefinition {
@@ -287,4 +291,27 @@ export interface BlockEditProposal {
   oldContent: string;
   newContent: string;
   reason: string;
+}
+
+// ─── Viability Score Types ────────────────────────────────────────────────
+
+export interface ViabilityBreakdown {
+  assumptions: number;      // 0-100
+  market: number;           // 0-100
+  unmetNeed: number;        // 0-100
+}
+
+export interface ValidatedAssumption {
+  blockType: BlockType;
+  assumption: string;
+  status: 'validated' | 'invalidated' | 'untested';
+  evidence: string;
+}
+
+export interface ViabilityData {
+  score: number;            // 0-100 overall
+  breakdown: ViabilityBreakdown;
+  reasoning: string;        // Opus explanation
+  validatedAssumptions: ValidatedAssumption[];
+  calculatedAt: string;     // ISO timestamp
 }
