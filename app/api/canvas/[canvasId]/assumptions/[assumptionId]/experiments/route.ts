@@ -9,13 +9,13 @@ import {
 } from '@/lib/appwrite';
 
 interface RouteContext {
-  params: Promise<{ canvasId: string; id: string }>;
+  params: Promise<{ canvasId: string; assumptionId: string }>;
 }
 
 export async function GET(_request: NextRequest, context: RouteContext) {
   try {
     await requireAuth();
-    const { id: assumptionId } = await context.params;
+    const { assumptionId } = await context.params;
 
     const result = await serverTablesDB.listRows({
       databaseId: DATABASE_ID,
@@ -33,7 +33,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
     await requireAuth();
-    const { id: assumptionId } = await context.params;
+    const { assumptionId } = await context.params;
     const body = await request.json();
 
     const { type, description, successCriteria, costEstimate, durationEstimate } = body;

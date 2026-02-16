@@ -7,13 +7,13 @@ import {
 } from '@/lib/appwrite';
 
 interface RouteContext {
-  params: Promise<{ canvasId: string; id: string }>;
+  params: Promise<{ canvasId: string; assumptionId: string }>;
 }
 
 export async function GET(_request: NextRequest, context: RouteContext) {
   try {
     await requireAuth();
-    const { id } = await context.params;
+    const { assumptionId: id } = await context.params;
 
     const row = await serverTablesDB.getRow({
       databaseId: DATABASE_ID,
@@ -31,7 +31,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
     await requireAuth();
-    const { id } = await context.params;
+    const { assumptionId: id } = await context.params;
     const body = await request.json();
 
     const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
@@ -62,7 +62,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 export async function DELETE(_request: NextRequest, context: RouteContext) {
   try {
     await requireAuth();
-    const { id } = await context.params;
+    const { assumptionId: id } = await context.params;
 
     await serverTablesDB.deleteRow({
       databaseId: DATABASE_ID,
