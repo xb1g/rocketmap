@@ -32,18 +32,20 @@ export function CanvasToolbar({
   return (
     <div className="flex items-center justify-between px-2 py-2">
       {/* Left: back + title + settings */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         <Link
           href="/dashboard"
-          className="text-foreground-muted hover:text-foreground transition-colors text-sm"
+          className="text-foreground-muted hover:text-foreground transition-colors text-sm shrink-0"
           aria-label="Back to dashboard"
         >
           &larr;
         </Link>
-        <InlineEditableTitle value={title} onSave={onTitleChange} />
+        <div className="min-w-0 max-w-[200px] md:max-w-none">
+          <InlineEditableTitle value={title} onSave={onTitleChange} />
+        </div>
         <button
           onClick={onSettingsOpen}
-          className="ui-btn ui-btn-xs ui-btn-ghost"
+          className="ui-btn ui-btn-xs ui-btn-ghost shrink-0"
           aria-label="Canvas settings"
           title="Settings"
         >
@@ -64,8 +66,8 @@ export function CanvasToolbar({
         </button>
       </div>
 
-      {/* Center: mode toggle + convert */}
-      <div className="flex items-center gap-2">
+      {/* Center: mode toggle + convert (hidden on mobile) */}
+      <div className="hidden md:flex items-center gap-2">
         <div className="ui-segmented">
           <button
             onClick={() => onModeChange("bmc")}
@@ -111,23 +113,23 @@ export function CanvasToolbar({
       </div>
 
       {/* Right: save status */}
-      <div className="flex items-center gap-1.5 font-mono text-[10px] text-foreground-muted min-w-20 justify-end">
+      <div className="flex items-center gap-1.5 font-mono text-[10px] text-foreground-muted min-w-12 md:min-w-20 justify-end shrink-0">
         {saveStatus === "saved" && (
           <>
             <span className="text-(--state-healthy)">&#10003;</span>
-            <span className="uppercase tracking-wider">Saved</span>
+            <span className="uppercase tracking-wider hidden md:inline">Saved</span>
           </>
         )}
         {saveStatus === "saving" && (
           <>
             <span className="animate-spin inline-block w-2.5 h-2.5 border border-foreground-muted border-t-transparent rounded-full" />
-            <span className="uppercase tracking-wider">Saving</span>
+            <span className="uppercase tracking-wider hidden md:inline">Saving</span>
           </>
         )}
         {saveStatus === "unsaved" && (
           <>
             <span className="w-1.5 h-1.5 rounded-full bg-(--state-warning)" />
-            <span className="uppercase tracking-wider">Unsaved</span>
+            <span className="uppercase tracking-wider hidden md:inline">Unsaved</span>
           </>
         )}
       </div>
