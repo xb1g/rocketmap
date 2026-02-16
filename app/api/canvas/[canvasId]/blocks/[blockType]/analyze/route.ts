@@ -7,6 +7,7 @@ import {
   serverTablesDB,
   DATABASE_ID,
   BLOCKS_TABLE_ID,
+  ASSUMPTIONS_TABLE_ID,
 } from '@/lib/appwrite';
 import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { getAgentConfig } from '@/lib/ai/agents';
@@ -43,7 +44,7 @@ export async function POST(_request: Request, context: RouteContext) {
         messages: [
           {
             role: 'user',
-            content: `Analyze the "${blockType}" block. Current content: "${content || '(empty)'}". Use the analyzeBlock tool to provide your structured analysis.`,
+            content: `Analyze the "${blockType}" block. Current content: "${content || '(empty)'}". Use the analyzeBlock tool to provide your structured analysis. Also use the identifyAssumptions tool to extract hidden assumptions with risk levels.`,
           },
         ],
         tools,
@@ -54,12 +55,23 @@ export async function POST(_request: Request, context: RouteContext) {
       },
     );
 
-    // Extract tool call result
+    // Extract tool call results
     let analysis = { draft: '', assumptions: [] as string[], risks: [] as string[], questions: [] as string[] };
+    let identifiedAssumptions: Array<{
+      statement: string;
+      riskLevel: 'high' | 'medium' | 'low';
+      reasoning: string;
+      affectedBlocks: string[];
+    }> = [];
+
     for (const step of result.steps) {
       for (const tc of step.toolResults) {
         if (tc.toolName === 'analyzeBlock') {
           analysis = (tc as unknown as { result: typeof analysis }).result;
+        }
+        if (tc.toolName === 'identifyAssumptions') {
+          const res = (tc as unknown as { result: { assumptions: typeof identifiedAssumptions } }).result;
+          identifiedAssumptions = res.assumptions ?? [];
         }
       }
     }
@@ -98,10 +110,59 @@ export async function POST(_request: Request, context: RouteContext) {
       });
     }
 
+    // Persist identified assumptions to the assumptions table
+    if (identifiedAssumptions.length > 0) {
+      // Resolve block type strings to block $ids for M:M relationship
+      const blocksLookup = await serverTablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: BLOCKS_TABLE_ID,
+        queries: [
+          Query.equal('canvas', canvasId),
+          Query.select(['$id', 'blockType']),
+          Query.limit(100),
+        ],
+      });
+      const blockIdMap = new Map<string, string>();
+      for (const doc of blocksLookup.rows) {
+        blockIdMap.set(doc.blockType as string, doc.$id as string);
+      }
+
+      const now = new Date().toISOString();
+      await Promise.allSettled(
+        identifiedAssumptions.map((assumption) => {
+          const affectedBlockIds = assumption.affectedBlocks
+            .map((bt) => blockIdMap.get(bt))
+            .filter((id): id is string => !!id);
+          const severityScore = assumption.riskLevel === 'high' ? 8 : assumption.riskLevel === 'medium' ? 5 : 2;
+
+          return serverTablesDB.createRow({
+            databaseId: DATABASE_ID,
+            tableId: ASSUMPTIONS_TABLE_ID,
+            data: {
+              canvas: canvasId,
+              assumptionText: assumption.statement,
+              category: 'product',
+              status: 'untested',
+              riskLevel: assumption.riskLevel,
+              severityScore,
+              confidenceScore: 0,
+              source: 'ai',
+              segmentIds: JSON.stringify([]),
+              linkedValidationItemIds: JSON.stringify([]),
+              createdAt: now,
+              updatedAt: now,
+              ...(affectedBlockIds.length > 0 ? { blocks: affectedBlockIds } : {}),
+            },
+          });
+        }),
+      );
+    }
+
     return NextResponse.json({
       analysis: { ...analysis, generatedAt: new Date().toISOString() },
       confidenceScore,
       riskScore,
+      assumptionsCreated: identifiedAssumptions.length,
       usage,
     });
   } catch (error: unknown) {
