@@ -1,20 +1,14 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import { BLOCK_DEFINITIONS } from "./constants";
-
-export interface AssumptionItem {
-  $id: string;
-  statement: string;
-  category: "market" | "product" | "ops" | "legal";
-  severityScore: number;
-  status: string;
-  blockTypes: string[];
-}
+import { useState, useRef, useCallback, useEffect } from "react";
+import type { Assumption } from "@/lib/types/canvas";
+import { AssumptionCard } from "./AssumptionCard";
+import { ManualAssumptionModal } from "./ManualAssumptionModal";
+import { ExperimentDesignModal } from "./ExperimentDesignModal";
+import { EvidenceCollectionModal } from "./EvidenceCollectionModal";
 
 interface AssumptionsViewProps {
   canvasId: string;
-  initialAssumptions: AssumptionItem[];
 }
 
 type AnalysisStep = "idle" | "loading" | "analyzing" | "saving" | "done" | "error";
@@ -26,23 +20,51 @@ const STEPS: { key: AnalysisStep; label: string }[] = [
   { key: "done", label: "Complete" },
 ];
 
-const CATEGORY_STYLES: Record<string, { bg: string; text: string }> = {
-  market: { bg: "bg-blue-500/15", text: "text-blue-400" },
-  product: { bg: "bg-purple-500/15", text: "text-purple-400" },
-  ops: { bg: "bg-amber-500/15", text: "text-amber-400" },
-  legal: { bg: "bg-red-500/15", text: "text-red-400" },
-};
-
-function getSeverityColor(score: number): string {
-  if (score >= 7) return "var(--state-critical)";
-  if (score >= 4) return "var(--state-warning)";
-  return "var(--state-healthy)";
+interface KanbanColumn {
+  id: string;
+  label: string;
+  color: string;
+  filter: (a: Assumption) => boolean;
 }
 
-function getBlockLabel(blockType: string): string {
-  const def = BLOCK_DEFINITIONS.find((d) => d.type === blockType);
-  return def?.bmcLabel ?? blockType.replace(/_/g, " ");
-}
+const COLUMNS: KanbanColumn[] = [
+  {
+    id: "high-untested",
+    label: "High Risk Untested",
+    color: "var(--state-critical)",
+    filter: (a) => a.status === "untested" && a.riskLevel === "high",
+  },
+  {
+    id: "medium-untested",
+    label: "Medium Risk Untested",
+    color: "var(--state-warning)",
+    filter: (a) => a.status === "untested" && a.riskLevel === "medium",
+  },
+  {
+    id: "low-untested",
+    label: "Low Risk Untested",
+    color: "var(--state-healthy)",
+    filter: (a) => a.status === "untested" && a.riskLevel === "low",
+  },
+  {
+    id: "testing",
+    label: "Testing",
+    color: "var(--state-ai)",
+    filter: (a) => a.status === "testing",
+  },
+  {
+    id: "validated",
+    label: "Validated",
+    color: "var(--state-healthy)",
+    filter: (a) => a.status === "validated",
+  },
+  {
+    id: "refuted",
+    label: "Refuted",
+    color: "var(--state-critical)",
+    filter: (a) => a.status === "refuted",
+  },
+];
 
 function StepIndicator({
   currentStep,
@@ -69,7 +91,6 @@ function StepIndicator({
 
         return (
           <div key={s.key} className="flex items-center gap-2.5">
-            {/* Icon */}
             <div className="w-4 h-4 flex items-center justify-center shrink-0">
               {isDone ? (
                 <svg
@@ -155,17 +176,38 @@ function ThinkingPanel({ text }: { text: string }) {
   );
 }
 
-export function AssumptionsView({
-  canvasId,
-  initialAssumptions,
-}: AssumptionsViewProps) {
-  const [assumptions, setAssumptions] =
-    useState<AssumptionItem[]>(initialAssumptions);
+export function AssumptionsView({ canvasId }: AssumptionsViewProps) {
+  const [assumptions, setAssumptions] = useState<Assumption[]>([]);
+  const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<AnalysisStep>("idle");
   const [thinking, setThinking] = useState("");
   const [savingCount, setSavingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const abortRef = useRef<AbortController | undefined>(undefined);
+
+  // Modal state
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [selectedAssumption, setSelectedAssumption] = useState<Assumption | null>(null);
+  const [showExperimentModal, setShowExperimentModal] = useState(false);
+  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+
+  const fetchAssumptions = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/canvas/${canvasId}/assumptions`);
+      if (res.ok) {
+        const data = await res.json();
+        setAssumptions(data.assumptions ?? []);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false);
+    }
+  }, [canvasId]);
+
+  useEffect(() => {
+    fetchAssumptions();
+  }, [fetchAssumptions]);
 
   const handleAnalyze = useCallback(async () => {
     if (step !== "idle" && step !== "done" && step !== "error") return;
@@ -218,10 +260,11 @@ export function AssumptionsView({
                 break;
               case "done":
                 if (Array.isArray(event.assumptions)) {
-                  setAssumptions((prev) => [...prev, ...event.assumptions]);
                   setSavingCount(event.assumptions.length);
                 }
                 setStep("done");
+                // Refetch from API to get full Assumption objects
+                fetchAssumptions();
                 break;
               case "error":
                 setError(event.error);
@@ -239,29 +282,30 @@ export function AssumptionsView({
         setStep("error");
       }
     }
-  }, [canvasId, step]);
+  }, [canvasId, step, fetchAssumptions]);
 
   const isRunning = step !== "idle" && step !== "done" && step !== "error";
 
-  // Sort by severity (highest first)
-  const sorted = [...assumptions].sort(
-    (a, b) => b.severityScore - a.severityScore,
-  );
-
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-4">
-      <div className="max-w-3xl mx-auto space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-display-small text-lg">Assumptions</h2>
-            {assumptions.length > 0 && (
-              <p className="text-xs text-foreground-muted mt-0.5">
-                {assumptions.length} assumption
-                {assumptions.length !== 1 ? "s" : ""} tracked
-              </p>
-            )}
-          </div>
+    <div className="flex-1 overflow-hidden flex flex-col px-6 py-4">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="font-display-small text-lg">Assumptions</h2>
+          {assumptions.length > 0 && (
+            <p className="text-xs text-foreground-muted mt-0.5">
+              {assumptions.length} assumption
+              {assumptions.length !== 1 ? "s" : ""} tracked
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowManualModal(true)}
+            className="ui-btn ui-btn-sm ui-btn-ghost text-foreground-muted hover:text-foreground"
+          >
+            + New Assumption
+          </button>
           <button
             onClick={handleAnalyze}
             disabled={isRunning}
@@ -274,93 +318,144 @@ export function AssumptionsView({
             {isRunning ? "Analyzing..." : "Extract Assumptions"}
           </button>
         </div>
+      </div>
 
-        {sorted.length === 0 && step === "idle" && (
-          <p className="text-sm text-foreground-muted">
-            AI scans all blocks to surface hidden assumptions your business model
-            depends on.
-          </p>
-        )}
+      {/* Error */}
+      {error && (
+        <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400 mb-4">
+          {error}
+        </div>
+      )}
 
-        {/* Error */}
-        {error && (
-          <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">
-            {error}
-          </div>
-        )}
-
-        {/* Step progress */}
-        {step !== "idle" && (
+      {/* Step progress */}
+      {step !== "idle" && (
+        <div className="mb-4">
           <StepIndicator currentStep={step} savingCount={savingCount} />
-        )}
+        </div>
+      )}
 
-        {/* AI reasoning (collapsible) */}
-        {(isRunning || step === "done") && thinking && (
+      {/* AI reasoning */}
+      {(isRunning || step === "done") && thinking && (
+        <div className="mb-4">
           <ThinkingPanel text={thinking} />
-        )}
+        </div>
+      )}
 
-        {/* Empty state */}
-        {sorted.length === 0 && step === "idle" && (
-          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-8 text-center">
-            <p className="text-foreground-muted text-sm">
-              No assumptions yet. Click &ldquo;Extract Assumptions&rdquo; to
-              scan your canvas for hidden assumptions.
-            </p>
-          </div>
-        )}
+      {/* Empty state */}
+      {!loading && assumptions.length === 0 && step === "idle" && (
+        <div className="rounded-lg border border-white/10 bg-white/[0.02] p-8 text-center">
+          <p className="text-foreground-muted text-sm">
+            No assumptions yet. Click &ldquo;Extract Assumptions&rdquo; to
+            scan your canvas, or add one manually.
+          </p>
+        </div>
+      )}
 
-        {/* Assumption cards */}
-        {sorted.length > 0 && (
-          <div className="space-y-2">
-            {sorted.map((a) => {
-              const catStyle = CATEGORY_STYLES[a.category] ?? {
-                bg: "bg-white/10",
-                text: "text-foreground-muted",
-              };
+      {/* Loading state */}
+      {loading && (
+        <div className="py-8 text-center text-sm text-foreground-muted">
+          Loading assumptions...
+        </div>
+      )}
+
+      {/* Kanban board */}
+      {!loading && assumptions.length > 0 && (
+        <div className="flex-1 overflow-x-auto">
+          <div className="flex gap-4 h-full min-h-0">
+            {COLUMNS.map((col) => {
+              const items = assumptions.filter(col.filter);
               return (
                 <div
-                  key={a.$id}
-                  className="rounded-lg border border-white/10 bg-white/[0.02] p-4 space-y-2"
+                  key={col.id}
+                  className="w-64 shrink-0 flex flex-col min-h-0"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="flex-1 text-sm leading-relaxed">
-                      {a.statement}
-                    </p>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider ${catStyle.bg} ${catStyle.text}`}
-                      >
-                        {a.category}
-                      </span>
-                      <span
-                        className="px-2 py-0.5 rounded text-[10px] font-medium"
-                        style={{
-                          color: getSeverityColor(a.severityScore),
-                          background: `color-mix(in srgb, ${getSeverityColor(a.severityScore)} 15%, transparent)`,
-                        }}
-                      >
-                        {a.severityScore.toFixed(0)}/10
-                      </span>
-                    </div>
+                  {/* Column header */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div
+                      className="w-2 h-2 rounded-full"
+                      style={{ background: col.color }}
+                    />
+                    <span className="text-xs font-medium text-foreground-muted">
+                      {col.label}
+                    </span>
+                    <span
+                      className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-medium"
+                      style={{
+                        color: col.color,
+                        background: `color-mix(in srgb, ${col.color} 15%, transparent)`,
+                      }}
+                    >
+                      {items.length}
+                    </span>
                   </div>
-                  {a.blockTypes.length > 0 && (
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {a.blockTypes.map((bt) => (
-                        <span
-                          key={bt}
-                          className="px-2 py-0.5 rounded bg-white/5 text-[10px] text-foreground-muted"
-                        >
-                          {getBlockLabel(bt)}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+
+                  {/* Column cards */}
+                  <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                    {items.map((a) => (
+                      <AssumptionCard
+                        key={a.$id}
+                        assumption={a}
+                        onDesignTest={() => {
+                          setSelectedAssumption(a);
+                          setShowExperimentModal(true);
+                        }}
+                        onUpdateProgress={() => {
+                          setSelectedAssumption(a);
+                          setShowEvidenceModal(true);
+                        }}
+                        onViewEvidence={() => {
+                          setSelectedAssumption(a);
+                          setShowEvidenceModal(true);
+                        }}
+                      />
+                    ))}
+                    {items.length === 0 && (
+                      <div className="rounded-lg border border-dashed border-white/10 p-4 text-center">
+                        <p className="text-[11px] text-foreground-muted/50">
+                          No items
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Modals */}
+      <ManualAssumptionModal
+        canvasId={canvasId}
+        isOpen={showManualModal}
+        onClose={() => setShowManualModal(false)}
+        onCreated={fetchAssumptions}
+      />
+
+      {selectedAssumption && (
+        <>
+          <ExperimentDesignModal
+            assumption={selectedAssumption}
+            canvasId={canvasId}
+            isOpen={showExperimentModal}
+            onClose={() => {
+              setShowExperimentModal(false);
+              setSelectedAssumption(null);
+            }}
+            onCreated={fetchAssumptions}
+          />
+          <EvidenceCollectionModal
+            assumption={selectedAssumption}
+            canvasId={canvasId}
+            isOpen={showEvidenceModal}
+            onClose={() => {
+              setShowEvidenceModal(false);
+              setSelectedAssumption(null);
+            }}
+            onUpdated={fetchAssumptions}
+          />
+        </>
+      )}
     </div>
   );
 }
