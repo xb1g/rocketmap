@@ -209,7 +209,7 @@ export function MobileFocusSheet({
                 )}
               </div>
               <div className="space-y-2">
-                {(block.content.items ?? []).map((item) => {
+                {(block.content.items ?? []).map((item, idx) => {
                   const itemSegments = (item.linkedSegmentIds ?? [])
                     .map((id) => (allSegments ?? []).find((s) => s.$id === id))
                     .filter((s): s is Segment => s !== undefined);
@@ -225,7 +225,7 @@ export function MobileFocusSheet({
 
                   return (
                     <BlockCard
-                      key={item.id}
+                      key={`${item.id}-${idx}`}
                       block={blockCardData}
                       allSegments={allSegments ?? []}
                       onUpdate={(id: string, updates: any) => {

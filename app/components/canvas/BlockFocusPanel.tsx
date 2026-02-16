@@ -943,7 +943,18 @@ export function BlockFocusPanel({
                   )}
                 </div>
                 <div className="space-y-2">
-                  {(block.content.items ?? []).map((item) => {
+                  {(block.content.items ?? []).reduce<Array<{ item: typeof block.content.items extends (infer T)[] | undefined ? T : never; renderKey: string }>>((acc, item, index) => {
+                    const rawId = item.id?.trim();
+                    if (!rawId) {
+                      acc.push({ item, renderKey: `item-${index}` });
+                    } else {
+                      // Deduplicate by id - skip duplicates
+                      if (!acc.some(a => a.renderKey === rawId)) {
+                        acc.push({ item, renderKey: rawId });
+                      }
+                    }
+                    return acc;
+                  }, []).map(({ item, renderKey }) => {
                     // Adapt BlockItem to BlockCard internal block prop
                     const itemSegments = (item.linkedSegmentIds ?? [])
                       .map((id) =>
@@ -965,7 +976,7 @@ export function BlockFocusPanel({
 
                     return (
                       <BlockCard
-                        key={item.id}
+                        key={renderKey}
                         block={blockCardData}
                         allSegments={allSegments ?? []}
                         onUpdate={(id: string, updates: any) => {

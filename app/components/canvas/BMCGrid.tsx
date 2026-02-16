@@ -133,7 +133,7 @@ export function BMCGrid({
             return {
               $id: item.id,
               blockType: def.type,
-              contentJson: JSON.stringify({ text: item.name, tags: [] }),
+              contentJson: JSON.stringify({ text: item.name, tags: item.tags ?? [] }),
               confidenceScore: Math.round((block?.confidenceScore ?? 0) * 100),
               riskScore: 0,
               segments: itemSegments,

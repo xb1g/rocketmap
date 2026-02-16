@@ -23,6 +23,7 @@ export interface BlockContent {
 export interface BlockItem {
   id: string; // Internal stable ID
   name: string;
+  tags: string[]; // Short labels for categorization (e.g. "SaaS", "B2B", "recurring")
   linkedSegmentIds: string[]; // List of segment IDs this item is relevant to
   linkedItemIds: string[]; // format: "blockType:itemId" - cross-block item links
   createdAt: string;

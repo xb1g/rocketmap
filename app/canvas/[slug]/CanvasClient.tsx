@@ -738,6 +738,7 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
       const newItem: BlockItem = {
         id: crypto.randomUUID(),
         name: "New item",
+        tags: [],
         linkedItemIds: [],
         linkedSegmentIds: [],
         createdAt: new Date().toISOString(),
@@ -932,6 +933,7 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
       const newItem: BlockItem = {
         id: crypto.randomUUID(),
         name: proposal.name,
+        tags: [],
         linkedSegmentIds: [],
         linkedItemIds: [],
         createdAt: new Date().toISOString(),
@@ -1128,7 +1130,7 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
       />
 
       {/* Tab content */}
-      {activeTab === "canvas" && !isMobile && (
+      {activeTab === "canvas" && !isMobile && !expandedBlock && (
         <BMCGrid
           mode={mode}
           blocks={blocks}
@@ -1337,13 +1339,9 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
         />
       )}
 
-      {/* Canvas Overview — main area panel (left of sidebar) */}
-      {expandedBlock && expandedBlockData && (
-          <div className="fixed inset-0 z-40 pointer-events-none">
-            <div
-              className="absolute top-0 bottom-0 left-0 pointer-events-auto overflow-y-auto"
-              style={{ right: "420px" }}
-            >
+      {/* Canvas Overview — replaces BMCGrid when a block is expanded */}
+      {activeTab === "canvas" && !isMobile && expandedBlock && expandedBlockData && (
+          <div className="flex-1 min-h-0 overflow-y-auto">
               <ExpandedCanvasOverview
                 blocks={blocks}
                 mode={mode}
@@ -1376,7 +1374,6 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
                     />
                   </div>
                 )}
-            </div>
           </div>
         )}
 

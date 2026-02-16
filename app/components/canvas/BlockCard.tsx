@@ -58,6 +58,9 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
       [block.segments],
     );
 
+    const hasSegments = block.segments.length > 0;
+    const hasTags = content.tags && content.tags.length > 0;
+
     // Position the floating menu when it opens
     useEffect(() => {
       if (!showLinkPicker || !linkBtnRef.current) return;
@@ -145,13 +148,13 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
             </button>
           )}
 
-          {/* Tags row */}
-          {content.tags && content.tags.length > 0 && (
+          {/* Tags — always visible, styled as primary pills */}
+          {hasTags && (
             <div className="flex items-center gap-1 flex-wrap">
-              {content.tags.map((tag, i) => (
+              {content.tags!.map((tag, i) => (
                 <span
                   key={i}
-                  className="text-[8px] px-1.5 py-px rounded bg-white/8 text-foreground-muted/70"
+                  className="text-[8px] font-medium px-1.5 py-0.5 rounded-md bg-[var(--chroma-indigo)]/12 text-[var(--chroma-indigo)] border border-[var(--chroma-indigo)]/15"
                 >
                   {tag}
                 </span>
@@ -159,26 +162,30 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
             </div>
           )}
 
-          {/* Linked segments row */}
-          {block.segments.length > 0 && (
+          {/* Linked segments — always visible as colored pills */}
+          {hasSegments && (
             <div className="flex items-center gap-1 flex-wrap">
               {block.segments.map(seg => {
                 const isHighlighted = highlightedSegmentId === seg.$id;
+                const segColor = seg.colorHex || 'var(--state-calm)';
                 return (
                   <span
                     key={seg.$id}
                     className={`inline-flex items-center gap-1 text-[8px] px-1.5 py-0.5 rounded-full border transition-all duration-150 cursor-default ${
                       isHighlighted
-                        ? 'border-white/30 text-foreground/90 bg-white/8'
-                        : 'border-white/8 text-foreground-muted/70'
+                        ? 'border-white/30 text-foreground/90 bg-white/10'
+                        : 'border-white/10 text-foreground-muted/80 bg-white/[0.04]'
                     }`}
-                    style={isHighlighted ? { boxShadow: `0 0 6px ${seg.colorHex || 'var(--state-calm)'}40` } : undefined}
+                    style={{
+                      borderColor: isHighlighted ? `${segColor}60` : undefined,
+                      boxShadow: isHighlighted ? `0 0 6px ${segColor}40` : undefined,
+                    }}
                     onMouseEnter={() => onSegmentHover?.(seg.$id)}
                     onMouseLeave={() => onSegmentHover?.(null)}
                   >
                     <span
                       className="w-1.5 h-1.5 rounded-full shrink-0"
-                      style={{ background: seg.colorHex || 'var(--state-calm)' }}
+                      style={{ background: segColor }}
                     />
                     {seg.name}
                   </span>
@@ -187,7 +194,7 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
             </div>
           )}
 
-          {/* Confidence + actions */}
+          {/* Footer: link button + confidence + delete */}
           <div className="flex items-center gap-1.5">
             {/* Link to segments button */}
             <button

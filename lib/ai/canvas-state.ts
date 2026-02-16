@@ -138,6 +138,7 @@ export async function getCanvasBlocks(canvasId: string, userId: string): Promise
           id: doc.$id as string,
           name,
           linkedSegmentIds: resolveSegmentIds(doc),
+          tags: [],
           linkedItemIds: [],
           createdAt: (doc.$createdAt as string) || new Date().toISOString(),
         };

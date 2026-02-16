@@ -354,6 +354,7 @@ export default async function CanvasPage({ params }: PageProps) {
           name,
           description,
           linkedSegmentIds,
+          tags: [],
           linkedItemIds: [],
           createdAt: readString(doc.$createdAt) || new Date().toISOString(),
         };
