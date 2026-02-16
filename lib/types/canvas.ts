@@ -16,21 +16,11 @@ export type CanvasTab = "canvas" | "analysis" | "notes";
 
 /** Content stored as JSON in contentJson column */
 export interface BlockContent {
-  bmc: string;
-  lean: string;
-  items?: BlockItem[];
+  text: string;      // Main content (multiline)
+  tags?: string[];   // Optional categorization tags
 }
 
-export interface BlockItem {
-  id: string;
-  name: string;
-  description?: string;
-  linkedSegmentIds: number[];
-  linkedItemIds: string[]; // format: "blockType:itemId"
-  createdAt: string;
-}
-
-/** Normalized card stored in `cards` collection (replaces BlockItem in JSON) */
+/** @deprecated Legacy type, will be removed */
 export interface Card {
   $id: string;
   id: string;        // stable ID e.g. "card_123"
@@ -87,16 +77,15 @@ export interface BlockSegmentLink {
 }
 
 export interface BlockData {
+  $id: string;
   blockType: BlockType;
-  content: BlockContent;
-  state: BlockState;
+  contentJson: string; // JSON.stringify(BlockContent)
+  confidenceScore: number; // 0-100
+  riskScore: number; // 0-100
+  segments: Segment[]; // Loaded from M:M relationship
   aiAnalysis: AIAnalysis | null;
-  confidenceScore: number;
-  riskScore: number;
   deepDiveData: MarketResearchData | null;
   lastUsage?: AIUsage | null;
-  linkedSegments?: Segment[];
-  cards?: Card[];
 }
 
 export interface CanvasData {
