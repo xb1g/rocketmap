@@ -118,15 +118,22 @@ export function BMCGrid({
 
           // Adapt items → blocks prop for BlockCard rendering
           const items = block?.content.items ?? [];
-          const blockCards = items.map((item) => ({
-            $id: item.id,
-            blockType: def.type,
-            contentJson: JSON.stringify({ text: item.name, tags: [] }),
-            confidenceScore: block?.confidenceScore ?? 0,
-            riskScore: 0,
-            segments: (block?.linkedSegments ?? []).filter(() => true),
-            state: block?.state ?? ("calm" as const),
-          }));
+          const segmentById = new Map(allSegments.map(s => [s.$id, s]));
+          const blockCards = items.map((item) => {
+            // Resolve item-level linkedSegmentIds to full Segment objects
+            const itemSegments = ((item as Record<string, unknown>).linkedSegmentIds as string[] ?? [])
+              .map(id => segmentById.get(id))
+              .filter((s): s is Segment => s !== undefined);
+            return {
+              $id: item.id,
+              blockType: def.type,
+              contentJson: JSON.stringify({ text: item.name, tags: [] }),
+              confidenceScore: block?.confidenceScore ?? 0,
+              riskScore: 0,
+              segments: itemSegments,
+              state: block?.state ?? ("calm" as const),
+            };
+          });
 
           return (
             <BlockCell
