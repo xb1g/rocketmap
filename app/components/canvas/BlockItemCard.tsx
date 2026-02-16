@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useCallback, forwardRef } from "react";
-import type { BlockItem } from "@/lib/types/canvas";
+import type { BlockItem, Segment } from "@/lib/types/canvas";
 
 interface BlockItemCardProps {
   item: BlockItem;
+  segments: Segment[];
   onUpdate: (updates: Partial<BlockItem>) => void;
   onDelete: () => void;
   onLinkClick: () => void;
@@ -14,12 +15,14 @@ interface BlockItemCardProps {
 
 export const BlockItemCard = forwardRef<HTMLDivElement, BlockItemCardProps>(
   function BlockItemCard(
-    { item, onUpdate, onDelete, onLinkClick, onMouseEnter, onMouseLeave },
+    { item, segments, onUpdate, onDelete, onLinkClick, onMouseEnter, onMouseLeave },
     ref,
   ) {
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(item.name);
     const [editDesc, setEditDesc] = useState(item.description ?? "");
+
+    const linkedSegments = segments.filter(seg => item.linkedSegmentIds.includes(seg.$id));
 
     const handleSave = useCallback(() => {
       if (!editName.trim()) return;
@@ -113,6 +116,29 @@ export const BlockItemCard = forwardRef<HTMLDivElement, BlockItemCardProps>(
                 <p className="text-[9px] text-foreground-muted/50 line-clamp-2 mt-0.5 leading-tight">
                   {item.description}
                 </p>
+              )}
+              {/* Segment tags */}
+              {linkedSegments.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {linkedSegments.slice(0, 3).map((seg) => (
+                    <span
+                      key={seg.$id}
+                      className="inline-flex items-center gap-0.5 text-[8px] px-1 py-px rounded bg-white/5 text-foreground-muted/60 border border-white/8"
+                      title={seg.description || seg.name}
+                    >
+                      <span
+                        className="w-1 h-1 rounded-full shrink-0"
+                        style={{ background: seg.colorHex || 'var(--state-healthy)' }}
+                      />
+                      {seg.name}
+                    </span>
+                  ))}
+                  {linkedSegments.length > 3 && (
+                    <span className="text-[8px] text-foreground-muted/40 px-1">
+                      +{linkedSegments.length - 3}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
             {/* Cross-block link count */}
