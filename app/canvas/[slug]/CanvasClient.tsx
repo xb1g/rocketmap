@@ -37,6 +37,7 @@ import { NotesView } from "@/app/components/canvas/NotesView";
 import { CanvasSettingsModal } from "@/app/components/canvas/CanvasSettingsModal";
 import { BlockFocusPanel } from "@/app/components/canvas/BlockFocusPanel";
 import { AnalysisView } from "@/app/components/canvas/AnalysisView";
+import { AssumptionsView } from "@/app/components/canvas/AssumptionsView";
 import { DebugPanel } from "@/app/components/canvas/DebugPanel";
 import { ChatBar } from "@/app/components/ai/ChatBar";
 import { BlockChatSection } from "@/app/components/ai/BlockChatSection";
@@ -1019,6 +1020,8 @@ export function CanvasClient({
           onRunConsistencyCheck={handleConsistencyCheck}
         />
       )}
+
+      {activeTab === "assumptions" && <AssumptionsView />}
 
       {activeTab === "notes" && (
         <NotesView value={notes} onChange={handleNotesChange} />
