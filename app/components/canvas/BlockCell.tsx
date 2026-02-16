@@ -3,15 +3,14 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type {
   BlockDefinition,
-  BlockItem,
   BlockState,
   BlockType,
   CanvasMode,
   Segment,
 } from "@/lib/types/canvas";
 import { BlockTooltip } from "./BlockTooltip";
-import { BlockItemCard } from "./BlockItemCard";
-import { LinkPicker } from "./LinkPicker";
+import { BlockCard } from "./BlockCard";
+import { SegmentCard } from "./SegmentCard";
 
 const BLOCK_ABBREVIATIONS: Record<BlockType, { bmc: string; lean: string }> = {
   key_partnerships: { bmc: "KP", lean: "PROB" },
@@ -132,9 +131,18 @@ interface BlockCellProps {
   confidenceScore: number;
   hasAnalysis: boolean;
   linkedSegments?: Segment[];
-  items?: BlockItem[];
+  blocks?: Array<{
+    $id: string;
+    blockType: BlockType;
+    contentJson: string;
+    confidenceScore: number;
+    riskScore: number;
+    segments: Segment[];
+    state: BlockState;
+  }>;
   allSegments?: Segment[];
-  allBlockItems?: Map<BlockType, BlockItem[]>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  allBlockItems?: Map<BlockType, any[]>;
   onChange: (value: string) => void;
   onFocus: () => void;
   onBlur: () => void;
@@ -148,13 +156,12 @@ interface BlockCellProps {
     updates: Partial<Pick<Segment, "name" | "description">>,
   ) => Promise<void>;
   onSegmentFocus?: (segmentId: string) => void;
-  onItemCreate?: () => void;
-  onItemUpdate?: (itemId: string, updates: Partial<BlockItem>) => void;
-  onItemDelete?: (itemId: string) => void;
-  onItemToggleSegment?: (itemId: string, segmentId: string) => void;
-  onItemToggleLink?: (itemId: string, linkedItemId: string) => void;
-  onItemHover?: (itemId: string | null) => void;
-  itemRefCallback?: (itemId: string, el: HTMLElement | null) => void;
+  onBlockCreate?: () => void;
+  onBlockUpdate?: (blockId: string, updates: { contentJson: string }) => void;
+  onBlockDelete?: (blockId: string) => void;
+  onBlockToggleSegment?: (blockId: string, segmentId: string) => void;
+  onBlockHover?: (blockId: string | null) => void;
+  blockRefCallback?: (blockId: string, el: HTMLElement | null) => void;
   segmentRefCallback?: (segmentId: string, el: HTMLElement | null) => void;
 }
 
@@ -169,7 +176,7 @@ export function BlockCell({
   confidenceScore,
   hasAnalysis,
   linkedSegments,
-  items,
+  blocks,
   allSegments,
   allBlockItems,
   onChange,
@@ -182,13 +189,12 @@ export function BlockCell({
   onAddSegment,
   onSegmentUpdate,
   onSegmentFocus,
-  onItemCreate,
-  onItemUpdate,
-  onItemDelete,
-  onItemToggleSegment,
-  onItemToggleLink,
-  onItemHover,
-  itemRefCallback,
+  onBlockCreate,
+  onBlockUpdate,
+  onBlockDelete,
+  onBlockToggleSegment,
+  onBlockHover,
+  blockRefCallback,
   segmentRefCallback,
 }: BlockCellProps) {
   const cellRef = useRef<HTMLDivElement>(null);
@@ -200,12 +206,10 @@ export function BlockCell({
   const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
-  const [linkPickerItemId, setLinkPickerItemId] = useState<string | null>(null);
-  const linkPickerAnchorRef = useRef<HTMLElement>(null);
 
   const isSegmentBlock =
     definition.type === "customer_segments" && !!onAddSegment;
-  const hasItems = !!onItemCreate;
+  const hasBlocks = !!onBlockCreate;
 
   const linkedSegmentById = useMemo(
     () =>
@@ -214,12 +218,17 @@ export function BlockCell({
   );
 
   const resolvedLinkedSegments = useMemo(
-    () =>
-      (linkedSegments ?? []).map((seg) => {
+    () => {
+      // For customer_segments block, show ALL segments regardless of linking
+      if (isSegmentBlock) {
+        return allSegments ?? [];
+      }
+      return (linkedSegments ?? []).map((seg) => {
         const fullSegment = linkedSegmentById.get(seg.$id);
         return fullSegment ?? seg;
-      }),
-    [linkedSegments, linkedSegmentById],
+      });
+    },
+    [isSegmentBlock, allSegments, linkedSegments, linkedSegmentById],
   );
 
   const handleCreateSegment = useCallback(async () => {
@@ -420,7 +429,7 @@ export function BlockCell({
       </div>
       {/* Text content — shrink for segment blocks so cards fit */}
       <textarea
-        className={`bmc-cell-textarea ${isSegmentBlock ? "!flex-none !min-h-[2.5rem] !max-h-[4rem]" : hasItems ? "bmc-cell-textarea-auto" : ""}`}
+        className={`bmc-cell-textarea ${isSegmentBlock ? "!flex-none !min-h-[2.5rem] !max-h-[4rem]" : hasBlocks ? "bmc-cell-textarea-auto" : ""}`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={onFocus}
@@ -429,198 +438,60 @@ export function BlockCell({
         spellCheck={false}
       />
 
-      {/* Block item cards — shown for all blocks */}
-      {(items && items.length > 0) || onItemCreate ? (
-        <div
-          className="block-items-container"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {items?.map((item) => {
-            const linkPickerOpen = linkPickerItemId === item.id;
-            return (
-              <div key={item.id} className="relative">
-                <BlockItemCard
-                  ref={(el) => {
-                    itemRefCallback?.(`${definition.type}:${item.id}`, el);
-                  }}
-                  item={item}
-                  segments={allSegments ?? []}
-                  onUpdate={(updates) => onItemUpdate?.(item.id, updates)}
-                  onDelete={() => onItemDelete?.(item.id)}
-                  onLinkClick={() => {
-                    setLinkPickerItemId(linkPickerOpen ? null : item.id);
-                  }}
-                  onMouseEnter={() => onItemHover?.(item.id)}
-                  onMouseLeave={() => onItemHover?.(null)}
-                />
-                {linkPickerOpen && allBlockItems && (
-                  <LinkPicker
-                    item={item}
-                    blockType={definition.type}
-                    segments={allSegments ?? []}
-                    allBlockItems={allBlockItems}
-                    anchorRef={linkPickerAnchorRef}
-                    onToggleSegment={(segId) =>
-                      onItemToggleSegment?.(item.id, segId)
-                    }
-                    onToggleItem={(linkedId) =>
-                      onItemToggleLink?.(item.id, linkedId)
-                    }
-                    onClose={() => setLinkPickerItemId(null)}
-                  />
-                )}
-              </div>
-            );
-          })}
-          {onItemCreate && (
+      {/* Block cards - NEW */}
+      {((blocks && blocks.length > 0) || onBlockCreate) && (
+        <div className="block-items-container">
+          {blocks?.map(block => (
+            <BlockCard
+              key={block.$id}
+              block={block}
+              allSegments={allSegments ?? []}
+              allBlockItems={allBlockItems}
+              onUpdate={(blockId, updates) => onBlockUpdate?.(blockId, updates)}
+              onDelete={(blockId) => onBlockDelete?.(blockId)}
+              onSegmentToggle={(blockId, segmentId) => onBlockToggleSegment?.(blockId, segmentId)}
+              onMouseEnter={() => onBlockHover?.(block.$id)}
+              onMouseLeave={() => onBlockHover?.(null)}
+              ref={(el) => blockRefCallback?.(block.$id, el)}
+            />
+          ))}
+          {onBlockCreate && (
             <button
-              onClick={onItemCreate}
+              onClick={onBlockCreate}
               className="w-full rounded-md border border-dashed border-white/8 hover:border-white/15 px-2 py-1 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/[0.03] transition-colors text-left"
             >
-              + Add item
+              + Add block
             </button>
           )}
         </div>
-      ) : null}
+      )}
 
-      {/* Segment cards — shown for customer_segments below text */}
+      {/* Segment cards - customer_segments block */}
       {isSegmentBlock && (
         <div
           className="flex-1 min-h-0 overflow-y-auto px-2 pb-1.5 space-y-1"
           onClick={(e) => e.stopPropagation()}
         >
           {resolvedLinkedSegments.map((seg) => (
-            <div
+            <SegmentCard
               key={seg.$id}
-              ref={(el) => segmentRefCallback?.(seg.$id, el)}
-              className="rounded-md border border-white/8 bg-white/[0.03] hover:bg-white/[0.05] transition-colors"
-            >
-              {editingSegmentId === seg.$id ? (
-                <div className="p-1.5 space-y-1">
-                  <input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="w-full bg-white/5 rounded px-1.5 py-0.5 text-[10px] font-medium text-foreground outline-none border border-white/12 focus:border-white/25"
-                    placeholder="Segment name"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === "Escape") setEditingSegmentId(null);
-                    }}
-                    onFocus={(e) => e.stopPropagation()}
-                  />
-                  <textarea
-                    value={editDesc}
-                    onChange={(e) => setEditDesc(e.target.value)}
-                    className="w-full bg-white/5 rounded px-1.5 py-0.5 text-[10px] text-foreground-muted outline-none border border-white/12 focus:border-white/25 resize-none"
-                    placeholder="Description..."
-                    rows={2}
-                    onKeyDown={(e) => {
-                      if (e.key === "Escape") setEditingSegmentId(null);
-                    }}
-                    onFocus={(e) => e.stopPropagation()}
-                  />
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleSaveSegmentEdit(seg.$id)}
-                      className="text-[9px] px-1.5 py-0.5 rounded bg-white/8 text-foreground hover:bg-white/12 transition-colors"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={() => setEditingSegmentId(null)}
-                      className="text-[9px] px-1.5 py-0.5 rounded text-foreground-muted/50 hover:text-foreground-muted transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-1.5">
-                  <div className="flex items-start gap-1.5">
-                    <span
-                      className="w-1.5 h-1.5 rounded-full shrink-0 mt-[3px]"
-                      style={{
-                        background:
-                          seg.priorityScore >= 70
-                            ? "var(--state-healthy)"
-                            : seg.priorityScore >= 40
-                              ? "var(--state-warning)"
-                              : "var(--state-critical)",
-                      }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <button
-                        onClick={() => {
-                          setEditingSegmentId(seg.$id);
-                          setEditName(seg.name);
-                          setEditDesc(seg.description || "");
-                        }}
-                        className="text-[10px] font-medium text-foreground/80 hover:text-foreground text-left w-full truncate transition-colors"
-                      >
-                        {seg.name}
-                      </button>
-                      {seg.description && (
-                        <p className="text-[9px] text-foreground-muted/50 line-clamp-2 mt-0.5 leading-tight">
-                          {seg.description}
-                        </p>
-                      )}
-                    </div>
-                    {seg.earlyAdopterFlag && (
-                      <span className="text-[7px] font-mono px-1 py-px rounded bg-emerald-400/10 text-emerald-400/70 shrink-0">
-                        EA
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 mt-1 pt-1 border-t border-white/5">
-                    <button
-                      onClick={() => onSegmentFocus?.(seg.$id)}
-                      className="flex items-center gap-1 text-[9px] text-foreground-muted/40 hover:text-foreground-muted transition-colors px-1 py-0.5 rounded hover:bg-white/5"
-                      title="Open in focus view"
-                    >
-                      <svg
-                        width="9"
-                        height="9"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="15 3 21 3 21 9" />
-                        <polyline points="9 21 3 21 3 15" />
-                        <line x1="21" y1="3" x2="14" y2="10" />
-                        <line x1="3" y1="21" x2="10" y2="14" />
-                      </svg>
-                      Focus
-                    </button>
-                    <button
-                      onClick={() => onSegmentClick?.(seg.$id)}
-                      className="flex items-center gap-1 text-[9px] text-foreground-muted/40 hover:text-foreground-muted transition-colors px-1 py-0.5 rounded hover:bg-white/5"
-                      title="Link to other blocks"
-                    >
-                      <svg
-                        width="9"
-                        height="9"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                      </svg>
-                      Link
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+              segment={seg}
+              mode="full"
+              isEditing={editingSegmentId === seg.$id}
+              onEdit={() => {
+                setEditingSegmentId(seg.$id);
+                setEditName(seg.name);
+                setEditDesc(seg.description || "");
+              }}
+              onSave={(updates) => handleSaveSegmentEdit(seg.$id)}
+              onCancel={() => setEditingSegmentId(null)}
+              onFocus={() => onSegmentFocus?.(seg.$id)}
+              onLink={() => onSegmentClick?.(seg.$id)}
+              segmentRefCallback={(el) => segmentRefCallback?.(seg.$id, el)}
+            />
           ))}
 
-          {/* New segment card */}
+          {/* New segment button */}
           {addingNew ? (
             <div className="rounded-md border border-white/12 bg-white/[0.03] p-1.5 space-y-1">
               <input
@@ -690,38 +561,13 @@ export function BlockCell({
       {!isSegmentBlock && resolvedLinkedSegments && resolvedLinkedSegments.length > 0 && (
         <div className="px-2 pb-0.5 space-y-0.5">
           {resolvedLinkedSegments.slice(0, 4).map((seg) => (
-            <button
+            <SegmentCard
               key={seg.$id}
-              ref={(el) => segmentRefCallback?.(seg.$id, el)}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSegmentClick?.(seg.$id);
-              }}
-              className="flex items-center gap-1.5 w-full text-left px-1.5 py-0.5 rounded hover:bg-white/5 transition-colors group/seg"
-            >
-              <span
-                className="w-1.5 h-1.5 rounded-full shrink-0"
-                style={{
-                  background:
-                    seg.priorityScore >= 70
-                      ? "var(--state-healthy)"
-                      : seg.priorityScore >= 40
-                        ? "var(--state-warning)"
-                        : "var(--state-critical)",
-                }}
-              />
-              <span className="text-[10px] text-foreground-muted/70 group-hover/seg:text-foreground-muted truncate flex-1">
-                {seg.name}
-              </span>
-              {seg.earlyAdopterFlag && (
-                <span className="text-[8px] font-mono px-1 py-px rounded bg-emerald-400/10 text-emerald-400/70 shrink-0">
-                  EA
-                </span>
-              )}
-              <span className="text-[9px] font-mono text-foreground-muted/40 shrink-0">
-                {seg.priorityScore}
-              </span>
-            </button>
+              segment={seg}
+              mode="compact"
+              onLink={() => onSegmentClick?.(seg.$id)}
+              segmentRefCallback={(el) => segmentRefCallback?.(seg.$id, el)}
+            />
           ))}
           {resolvedLinkedSegments.length > 4 && (
             <span className="text-[9px] text-foreground-muted/40 px-1.5">

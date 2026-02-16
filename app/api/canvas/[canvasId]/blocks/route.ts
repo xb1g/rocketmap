@@ -31,7 +31,7 @@ export async function PUT(request: Request, context: RouteContext) {
       databaseId: DATABASE_ID,
       tableId: CANVASES_TABLE_ID,
       rowId: canvasId,
-      queries: [Query.select(['$id'])],
+      queries: [],
     }) as unknown as CanvasData;
 
     if (getUserIdFromCanvas(canvas) !== user.$id) {

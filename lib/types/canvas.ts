@@ -14,7 +14,6 @@ export type CanvasMode = "bmc" | "lean";
 export type BlockState = "calm" | "healthy" | "warning" | "critical" | "ai";
 export type CanvasTab = "canvas" | "analysis" | "notes" | "debug";
 
-/** Content stored as JSON in contentJson column */
 export interface BlockContent {
   bmc: string;
   lean: string;
@@ -81,6 +80,7 @@ export interface BlockSegmentLink {
 }
 
 export interface BlockData {
+  $id?: string;
   blockType: BlockType;
   content: BlockContent;
   state: BlockState;
