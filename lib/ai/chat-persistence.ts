@@ -1,10 +1,13 @@
-import { Query, ID } from 'node-appwrite';
+import { Query } from 'node-appwrite';
+import { ID } from 'node-appwrite';
 import {
-  serverDatabases,
+  serverTablesDB,
   DATABASE_ID,
-  CANVASES_COLLECTION_ID,
-  MESSAGES_COLLECTION_ID,
+  CANVASES_TABLE_ID,
+  MESSAGES_TABLE_ID,
 } from '@/lib/appwrite';
+import { getUserIdFromCanvas } from '@/lib/utils';
+import type { CanvasData } from '@/lib/types/canvas';
 
 interface ChatMessage {
   id: string;
@@ -27,41 +30,57 @@ interface SaveMessageInput {
 }
 
 async function resolveCanvasId(canvasDocId: string, userId: string): Promise<string> {
-  const canvas = await serverDatabases.getDocument(
-    DATABASE_ID,
-    CANVASES_COLLECTION_ID,
-    canvasDocId,
-  );
-  if (canvas.ownerId !== userId) {
+  const canvas = await serverTablesDB.getRow({
+    databaseId: DATABASE_ID,
+    tableId: CANVASES_TABLE_ID,
+    rowId: canvasDocId,
+  }) as unknown as CanvasData;
+  if (getUserIdFromCanvas(canvas) !== userId) {
     throw new Error('Forbidden');
   }
-  return String(canvas.id);
+  return String(canvas.$id);
 }
 
 export async function loadChatMessages(
   canvasDocId: string,
   chatKey: string,
   userId: string,
-): Promise<ChatMessage[]> {
+  cursor?: string,
+): Promise<{ messages: ChatMessage[]; lastId: string | null }> {
   const canvasId = await resolveCanvasId(canvasDocId, userId);
 
-  const result = await serverDatabases.listDocuments(
-    DATABASE_ID,
-    MESSAGES_COLLECTION_ID,
-    [
-      Query.equal('canvasId', canvasId),
-      Query.equal('chatKey', chatKey),
-      Query.orderAsc('createdAt'),
-      Query.limit(100),
-    ],
-  );
+  // Index required: messages collection — composite [canvas, chatKey, createdAt] index
+  const queries = [
+    Query.equal('canvas', canvasId),
+    Query.equal('chatKey', chatKey),
+    Query.select(['$id', 'messageId', 'role', 'content', 'createdAt']),
+    Query.orderAsc('createdAt'),
+    Query.limit(100),
+  ];
+  // Cursor pagination for chat feeds — avoids offset skips on dynamic data
+  if (cursor) {
+    queries.push(Query.cursorAfter(cursor));
+  }
 
-  return result.documents.map((doc) => ({
-    id: doc.messageId as string,
-    role: doc.role as string,
-    content: doc.content as string,
-    createdAt: doc.createdAt as string,
-  }));
+  const result = await serverTablesDB.listRows({
+    databaseId: DATABASE_ID,
+    tableId: MESSAGES_TABLE_ID,
+    queries,
+    total: false,
+  });
+
+  const docs = result.rows;
+  const lastId = docs.length > 0 ? docs[docs.length - 1].$id : null;
+
+  return {
+    messages: docs.map((doc) => ({
+      id: doc.messageId as string,
+      role: doc.role as string,
+      content: doc.content as string,
+      createdAt: doc.createdAt as string,
+    })),
+    lastId,
+  };
 }
 
 export async function saveChatMessage(
@@ -72,20 +91,20 @@ export async function saveChatMessage(
 ): Promise<void> {
   const canvasId = await resolveCanvasId(canvasDocId, userId);
 
-  await serverDatabases.createDocument(
-    DATABASE_ID,
-    MESSAGES_COLLECTION_ID,
-    ID.unique(),
-    {
-      canvasId,
+  await serverTablesDB.createRow({
+    databaseId: DATABASE_ID,
+    tableId: MESSAGES_TABLE_ID,
+    rowId: ID.unique(),
+    data: {
+      canvas: canvasId,
       chatKey,
       role: msg.role,
       content: msg.content,
       messageId: msg.messageId,
       createdAt: new Date().toISOString(),
-      userId,
+      user: userId,
     },
-  );
+  });
 }
 
 export async function listChatSessions(
@@ -95,20 +114,24 @@ export async function listChatSessions(
 ): Promise<ChatSession[]> {
   const canvasId = await resolveCanvasId(canvasDocId, userId);
 
-  const result = await serverDatabases.listDocuments(
-    DATABASE_ID,
-    MESSAGES_COLLECTION_ID,
-    [
-      Query.equal('canvasId', canvasId),
+  // Index required: messages collection — composite [canvas, chatKey, createdAt] index
+  // Index required: messages collection — fulltext index on chatKey (for startsWith)
+  const result = await serverTablesDB.listRows({
+    databaseId: DATABASE_ID,
+    tableId: MESSAGES_TABLE_ID,
+    queries: [
+      Query.equal('canvas', canvasId),
       Query.startsWith('chatKey', scopePrefix),
+      Query.select(['$id', 'chatKey', 'role', 'content', 'createdAt']),
       Query.orderAsc('createdAt'),
       Query.limit(500),
     ],
-  );
+    total: false,
+  });
 
   const groups = new Map<string, { createdAt: string; firstUserMsg: string; count: number }>();
 
-  for (const doc of result.documents) {
+  for (const doc of result.rows) {
     const key = doc.chatKey as string;
     const existing = groups.get(key);
     if (!existing) {
@@ -150,20 +173,24 @@ export async function deleteChatMessages(
 ): Promise<void> {
   const canvasId = await resolveCanvasId(canvasDocId, userId);
 
-  const result = await serverDatabases.listDocuments(
-    DATABASE_ID,
-    MESSAGES_COLLECTION_ID,
-    [
-      Query.equal('canvasId', canvasId),
+  // Index required: messages collection — composite [canvas, chatKey, userId] index
+  // Only need $id for deletion — minimal payload
+  const result = await serverTablesDB.listRows({
+    databaseId: DATABASE_ID,
+    tableId: MESSAGES_TABLE_ID,
+    queries: [
+      Query.equal('canvas', canvasId),
       Query.equal('chatKey', chatKey),
-      Query.equal('userId', userId),
+      Query.equal('user', userId),
+      Query.select(['$id']),
       Query.limit(500),
     ],
-  );
+    total: false,
+  });
 
   await Promise.all(
-    result.documents.map((doc) =>
-      serverDatabases.deleteDocument(DATABASE_ID, MESSAGES_COLLECTION_ID, doc.$id),
+    result.rows.map((doc) =>
+      serverTablesDB.deleteRow({ databaseId: DATABASE_ID, tableId: MESSAGES_TABLE_ID, rowId: doc.$id }),
     ),
   );
 }

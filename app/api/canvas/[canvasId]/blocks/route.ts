@@ -2,11 +2,13 @@ import { NextResponse } from 'next/server';
 import { ID, Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
 import {
-  serverDatabases,
+  serverTablesDB,
   DATABASE_ID,
-  CANVASES_COLLECTION_ID,
-  BLOCKS_COLLECTION_ID,
+  CANVASES_TABLE_ID,
+  BLOCKS_TABLE_ID,
 } from '@/lib/appwrite';
+import { getUserIdFromCanvas } from '@/lib/utils';
+import type { CanvasData } from '@/lib/types/canvas';
 
 interface RouteContext {
   params: Promise<{ canvasId: string }>;
@@ -23,49 +25,50 @@ export async function PUT(request: Request, context: RouteContext) {
       return NextResponse.json({ error: 'blockType is required' }, { status: 400 });
     }
 
-    // Fetch canvas to verify ownership and get integer id
-    const canvas = await serverDatabases.getDocument(
-      DATABASE_ID,
-      CANVASES_COLLECTION_ID,
-      canvasId,
-    );
+    // Fetch canvas to verify ownership
+    // Index: none needed (primary key lookup)
+    const canvas = await serverTablesDB.getRow({
+      databaseId: DATABASE_ID,
+      tableId: CANVASES_TABLE_ID,
+      rowId: canvasId,
+      queries: [Query.select(['$id'])],
+    }) as unknown as CanvasData;
 
-    if (canvas.ownerId !== user.$id) {
+    if (getUserIdFromCanvas(canvas) !== user.$id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const canvasIntId = canvas.id as number;
-
-    // Find existing block doc
-    const existing = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      BLOCKS_COLLECTION_ID,
-      [
-        Query.equal('canvasId', canvasIntId),
+    // Find existing block doc — only need $id for upsert decision
+    // Index required: composite [canvas, blockType]
+    const existing = await serverTablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: BLOCKS_TABLE_ID,
+      queries: [
+        Query.equal('canvas', canvasId),
         Query.equal('blockType', blockType),
+        Query.select(['$id']),
         Query.limit(1),
       ],
-    );
+    });
 
-    if (existing.documents.length > 0) {
-      await serverDatabases.updateDocument(
-        DATABASE_ID,
-        BLOCKS_COLLECTION_ID,
-        existing.documents[0].$id,
-        { contentJson: contentJson ?? '' },
-      );
+    if (existing.rows.length > 0) {
+      await serverTablesDB.updateRow({
+        databaseId: DATABASE_ID,
+        tableId: BLOCKS_TABLE_ID,
+        rowId: existing.rows[0].$id,
+        data: { contentJson: contentJson ?? '' },
+      });
     } else {
-      await serverDatabases.createDocument(
-        DATABASE_ID,
-        BLOCKS_COLLECTION_ID,
-        ID.unique(),
-        {
-          id: Date.now(),
-          canvasId: canvasIntId,
+      await serverTablesDB.createRow({
+        databaseId: DATABASE_ID,
+        tableId: BLOCKS_TABLE_ID,
+        rowId: ID.unique(),
+        data: {
+          canvas: canvasId,
           blockType,
           contentJson: contentJson ?? '',
         },
-      );
+      });
     }
 
     return NextResponse.json({ success: true });

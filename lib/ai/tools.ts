@@ -2,13 +2,16 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { ID } from 'node-appwrite';
 import {
-  serverDatabases,
+  serverTablesDB,
   DATABASE_ID,
-  CANVASES_COLLECTION_ID,
-  BLOCKS_COLLECTION_ID,
+  CANVASES_TABLE_ID,
+  BLOCKS_TABLE_ID,
+  SEGMENTS_TABLE_ID,
 } from '@/lib/appwrite';
 import { generateSlug } from '@/lib/utils';
 import type { BlockType } from '@/lib/types/canvas';
+import { SEGMENT_COLORS } from '@/lib/types/canvas';
+import { searchBrave } from './brave-search';
 
 export const analyzeBlock = tool({
   description: 'Analyze a business model canvas block and return structured insights including an improved draft, hidden assumptions, risks, and critical questions.',
@@ -38,6 +41,17 @@ export const checkConsistency = tool({
     overallScore: z.number().min(0).max(100).describe('Overall coherence score 0-100'),
   }),
   execute: async (params) => params,
+});
+
+export const searchWeb = tool({
+  description: 'Search the web for real-world market data, competitor information, industry reports, and validation data. Use this to ground market research in current facts and sources. Always cite URLs in your analysis.',
+  inputSchema: z.object({
+    query: z.string().describe('Search query optimized for finding market research data (e.g., "TAM coffee shop management software 2026", "specialty coffee market size Bangkok")'),
+    maxResults: z.number().optional().default(5).describe('Maximum number of search results to return (default 5)'),
+  }),
+  execute: async ({ query, maxResults }) => {
+    return await searchBrave(query, { maxResults });
+  },
 });
 
 // ─── Deep Dive Tools (Market Research) ───────────────────────────────────────
@@ -227,15 +241,24 @@ export const createSegments = tool({
 
 const generateCanvasInputSchema = z.object({
   title: z.string().min(3).describe('A concise title for the canvas (the startup or product name)'),
-  key_partnerships: z.string().min(10).describe('Key Partners block content'),
-  key_activities: z.string().min(10).describe('Key Activities block content'),
-  key_resources: z.string().min(10).describe('Key Resources block content'),
-  value_prop: z.string().min(10).describe('Value Propositions block content'),
-  customer_relationships: z.string().min(10).describe('Customer Relationships block content'),
-  channels: z.string().min(10).describe('Channels block content'),
-  customer_segments: z.string().min(10).describe('Customer Segments block content'),
-  cost_structure: z.string().min(10).describe('Cost Structure block content'),
-  revenue_streams: z.string().min(10).describe('Revenue Streams block content'),
+  segments: z.array(z.object({
+    name: z.string().describe('Segment name'),
+    description: z.string().describe('Segment description'),
+    demographics: z.string().describe('Demographic characteristics (e.g., "25-40 years old, urban professionals")'),
+    psychographics: z.string().describe('Psychographic characteristics (e.g., "Value convenience, tech-savvy")'),
+    behavioral: z.string().describe('Behavioral patterns (e.g., "Early adopters, frequent online shoppers")'),
+    geographic: z.string().describe('Geographic scope (e.g., "Bangkok metropolitan area", "Southeast Asia")'),
+    estimatedSize: z.string().describe('Estimated segment size (e.g., "50,000 SMBs in Thailand", "15% of TAM")'),
+    priority: z.enum(['high', 'medium', 'low']).describe('Segment priority'),
+  })).optional().describe('Customer segments to extract (1-3 segments recommended)'),
+  key_partnerships: z.array(z.string()).optional().describe('Array of specific key partners (e.g., ["Cloud infrastructure providers (AWS/GCP)", "Payment gateway partners"])'),
+  key_activities: z.array(z.string()).optional().describe('Array of concrete key activities (e.g., ["ML model training", "Customer onboarding automation"])'),
+  key_resources: z.array(z.string()).optional().describe('Array of specific key resources (e.g., ["Proprietary dataset of 10M+ transactions", "Engineering team (5 FTE)"])'),
+  value_prop: z.array(z.string()).optional().describe('Array of specific value propositions (e.g., ["Reduce churn by 30%", "Save 10 hours/week on manual work"])'),
+  customer_relationships: z.array(z.string()).optional().describe('Array of relationship types (e.g., ["Self-service onboarding", "Dedicated account manager for enterprise"])'),
+  channels: z.array(z.string()).optional().describe('Array of specific channels (e.g., ["Website", "D2C sales team", "Social media (LinkedIn/Twitter)"])'),
+  cost_structure: z.array(z.string()).optional().describe('Array of specific cost items (e.g., ["AWS infrastructure: $500/mo", "Engineering salaries: $15k/mo"])'),
+  revenue_streams: z.array(z.string()).optional().describe('Array of specific revenue streams (e.g., ["$15/mo subscription tier", "$99/year annual plan"])'),
 });
 
 /** Static version — echoes args back (used as fallback / in tool registry) */
@@ -257,51 +280,133 @@ const ALL_BLOCK_TYPES: BlockType[] = [
  */
 export function createGenerateCanvasTool(userId: string) {
   return tool({
-    description: 'Generate a complete Business Model Canvas with content for all 9 blocks based on the startup idea discussed. Call this once you have enough context from the conversation.',
+    description: 'Generate a complete Business Model Canvas with content for all 9 blocks based on the startup idea discussed. Call this once you have enough context from the conversation. Extract customer segments and create multiple atomic blocks per type.',
     inputSchema: generateCanvasInputSchema,
     execute: async (params) => {
-      const { title, ...blocks } = params;
-      const slug = await generateSlug(title, userId);
+      const { title, segments = [], ...blockArrays } = params;
       const now = new Date().toISOString();
-      const canvasIntId = Date.now();
 
-      // Create canvas document
-      await serverDatabases.createDocument(
-        DATABASE_ID,
-        CANVASES_COLLECTION_ID,
-        ID.unique(),
-        {
-          id: canvasIntId,
-          title: title.trim(),
-          slug,
-          description: '',
-          createdAt: now,
-          updatedAt: now,
-          isPublic: false,
-          ownerId: userId,
-        },
-      );
+      try {
+        // 1. Create canvas
+        const canvas = await serverTablesDB.createRow({
+          databaseId: DATABASE_ID,
+          tableId: CANVASES_TABLE_ID,
+          rowId: ID.unique(),
+          data: {
+            title: title.trim(),
+            slug: await generateSlug(title, userId),
+            description: '',
+            createdAt: now,
+            updatedAt: now,
+            isPublic: false,
+            users: userId, // Appwrite relationship field
+          }
+        });
 
-      // Create all 9 blocks in parallel
-      await Promise.all(
-        ALL_BLOCK_TYPES.map((blockType, index) => {
-          const content = blocks[blockType as keyof typeof blocks] ?? '';
-          const contentJson = JSON.stringify({ bmc: content, lean: content });
-          return serverDatabases.createDocument(
-            DATABASE_ID,
-            BLOCKS_COLLECTION_ID,
-            ID.unique(),
-            {
-              id: canvasIntId * 100 + index + 1,
-              canvasId: canvasIntId,
-              blockType,
-              contentJson,
-            },
+        // 2. Create segments (MOST IMPORTANT)
+        let segmentSummary = '';
+        if (segments.length > 0) {
+          await Promise.all(
+            segments.map((seg, idx) =>
+              serverTablesDB.createRow({
+                databaseId: DATABASE_ID,
+                tableId: SEGMENTS_TABLE_ID,
+                rowId: ID.unique(),
+                data: {
+                  canvas: canvas.$id,  // Appwrite relationship
+                  name: seg.name,
+                  description: seg.description || '',
+                  demographics: seg.demographics || '',
+                  psychographics: seg.psychographics || '',
+                  behavioral: seg.behavioral || '',
+                  geographic: seg.geographic || '',
+                  estimatedSize: seg.estimatedSize || '',
+                  priorityScore: seg.priority === 'high' ? 80 : seg.priority === 'low' ? 30 : 50,
+                  earlyAdopterFlag: false,
+                  colorHex: SEGMENT_COLORS[idx % SEGMENT_COLORS.length]
+                }
+              })
+            )
           );
-        }),
-      );
 
-      return { slug, canvasId: canvasIntId, title: title.trim() };
+          // Create summary for customer_segments block
+          segmentSummary = segments.map(seg =>
+            `${seg.name} - ${seg.description} (${seg.estimatedSize})`
+          ).join('\n');
+        }
+
+        // 3. Create blocks (multiple per type from arrays)
+        const blockTypeMap: Record<string, BlockType> = {
+          key_partnerships: 'key_partnerships',
+          key_activities: 'key_activities',
+          key_resources: 'key_resources',
+          value_prop: 'value_prop',
+          customer_relationships: 'customer_relationships',
+          channels: 'channels',
+          cost_structure: 'cost_structure',
+          revenue_streams: 'revenue_streams'
+        };
+
+        const blockCreationPromises = [];
+        for (const [paramKey, blockType] of Object.entries(blockTypeMap)) {
+          const contentArray = blockArrays[paramKey as keyof typeof blockArrays];
+          if (!contentArray || contentArray.length === 0) continue;
+
+          for (const content of contentArray) {
+            blockCreationPromises.push(
+              serverTablesDB.createRow({
+                databaseId: DATABASE_ID,
+                tableId: BLOCKS_TABLE_ID,
+                rowId: ID.unique(),
+                data: {
+                  canvas: canvas.$id,  // Appwrite relationship
+                  blockType: blockType,
+                  contentJson: JSON.stringify({ bmc: content, lean: content }),
+                  aiAnalysisJson: '',
+                  deepDiveJson: '',
+                  confidenceScore: 0,
+                  riskScore: 0
+                }
+              })
+            );
+          }
+        }
+
+        // Create customer_segments block if segments were provided
+        if (segmentSummary) {
+          blockCreationPromises.push(
+            serverTablesDB.createRow({
+              databaseId: DATABASE_ID,
+              tableId: BLOCKS_TABLE_ID,
+              rowId: ID.unique(),
+              data: {
+                canvas: canvas.$id,
+                blockType: 'customer_segments',
+                contentJson: JSON.stringify({ bmc: segmentSummary, lean: segmentSummary }),
+                aiAnalysisJson: '',
+                deepDiveJson: '',
+                confidenceScore: 0,
+                riskScore: 0
+              }
+            })
+          );
+        }
+
+        if (blockCreationPromises.length > 0) {
+          await Promise.all(blockCreationPromises);
+        }
+
+        // 4. Return canvas info (use $id for Appwrite)
+        return {
+          slug: canvas.slug,
+          canvasId: canvas.$id,
+          title: canvas.title
+        };
+      } catch (error) {
+        // Appwrite cascade deletes handle cleanup automatically
+        console.error('Canvas creation failed:', error);
+        throw error;
+      }
     },
   });
 }
@@ -313,35 +418,6 @@ const blockTypeEnum = z.enum([
   'value_prop', 'customer_relationships', 'channels',
   'customer_segments', 'cost_structure', 'revenue_streams',
 ]);
-
-export const addCard = tool({
-  description: 'Add a new card to a specific block. Use this for atomic card creation — adding a single cost item, activity, resource, channel, partner, etc. Prefer this over createBlockItems when you want to add one card precisely.',
-  inputSchema: z.object({
-    blockType: blockTypeEnum.describe('Which block to add the card to'),
-    name: z.string().describe('Card title (e.g. "AWS hosting", "Content marketing")'),
-    description: z.string().describe('Brief description or details'),
-  }),
-  execute: async (params) => params,
-});
-
-export const modifyCard = tool({
-  description: 'Modify an existing card by its ID. Use this for surgical edits — fixing wording, updating description, or renaming a card without touching anything else in the block.',
-  inputSchema: z.object({
-    cardId: z.string().describe('The stable card ID (e.g. "card_123...")'),
-    name: z.string().optional().describe('New card title (omit to keep current)'),
-    description: z.string().optional().describe('New description (omit to keep current)'),
-  }),
-  execute: async (params) => params,
-});
-
-export const removeCard = tool({
-  description: 'Remove a card from a block by its ID. Use this when the user wants to delete a specific item, or when an item is redundant or incorrect.',
-  inputSchema: z.object({
-    cardId: z.string().describe('The stable card ID to remove'),
-    reason: z.string().describe('Brief explanation of why this card should be removed'),
-  }),
-  execute: async (params) => params,
-});
 
 // ─── Block Editing Tool ──────────────────────────────────────────────────────
 
@@ -369,12 +445,10 @@ export const proposeBlockEdit = tool({
 const allTools: Record<string, ReturnType<typeof tool<any, any>>> = {
   analyzeBlock,
   checkConsistency,
+  searchWeb,
   proposeBlockEdit,
   createBlockItems,
   createSegments,
-  addCard,
-  modifyCard,
-  removeCard,
   generateCanvas,
   estimateMarketSize,
   generateSegments,

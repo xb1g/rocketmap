@@ -331,6 +331,12 @@ See [docs/plans/2026-02-13-radix-chromatic-theme-design.md](docs/plans/2026-02-1
 
 ## Gotchas
 
+- **⚠️ CRITICAL - Appwrite TablesDB API**: ONLY use `TablesDB` API (v22+), NOT the deprecated `Databases` API. See [docs/APPWRITE_TABLESDB_MIGRATION.md](docs/APPWRITE_TABLESDB_MIGRATION.md) for complete guide. Key points:
+  - Use `serverTablesDB.listRows()` NOT `serverDatabases.listDocuments()`
+  - Response is `result.rows` NOT `result.documents`
+  - Parameters are objects: `{ databaseId, tableId, queries }`
+  - `createRow()` does NOT take `rowId` (auto-generated)
+  - Relationship fields CANNOT be in `Query.select()` (auto-loaded)
 - **Crimson Text font**: Only weights 400, 600, 700 — weight 500 does NOT exist (build will fail)
 - **Shared blocks**: channels, customer_segments, cost_structure, revenue_streams share content across BMC/Lean modes — use `isSharedBlock()` from constants.ts
 - **useRef initial value**: Must pass explicit `undefined` — `useRef<T>(undefined)` not `useRef<T>()`

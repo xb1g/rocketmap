@@ -12,34 +12,28 @@ export type BlockType =
 
 export type CanvasMode = "bmc" | "lean";
 export type BlockState = "calm" | "healthy" | "warning" | "critical" | "ai";
-export type CanvasTab = "canvas" | "analysis" | "notes";
+export type CanvasTab = "canvas" | "analysis" | "notes" | "debug";
 
 /** Content stored as JSON in contentJson column */
 export interface BlockContent {
   bmc: string;
   lean: string;
-  items?: BlockItem[];
+  items: BlockItem[];
 }
 
 export interface BlockItem {
-  id: string;
+  id: string; // Internal stable ID
   name: string;
   description?: string;
-  linkedSegmentIds: number[];
-  linkedItemIds: string[]; // format: "blockType:itemId"
+  linkedItemIds: string[]; // format: "blockType:itemId" - cross-block item links
   createdAt: string;
 }
 
-/** Normalized card stored in `cards` collection (replaces BlockItem in JSON) */
-export interface Card {
+export interface BlockCard {
   $id: string;
-  id: string;        // stable ID e.g. "card_123"
-  blockId: number;
-  canvasId: number;
   name: string;
-  description: string;
+  description?: string;
   order: number;
-  createdAt: string;
 }
 
 export const SEGMENT_COLORS = [
@@ -65,8 +59,8 @@ export interface AIUsage {
 
 export interface Segment {
   $id: string;
-  id: number;
-  canvasId: number;
+  id?: number; // Legacy field - kept for backward compatibility
+  canvasId?: number | string; // Legacy field - can be integer or string $id
   name: string;
   description: string;
   earlyAdopterFlag: boolean;
@@ -81,8 +75,8 @@ export interface Segment {
 
 export interface BlockSegmentLink {
   $id: string;
-  blockId: number;
-  segmentId: number;
+  blockId: number | string; // Can be integer or string $id
+  segmentId: number | string; // Can be integer or string $id
   relationshipType: string; // e.g. "primary_segment", "secondary_segment", "unrelated"
 }
 
@@ -90,23 +84,23 @@ export interface BlockData {
   blockType: BlockType;
   content: BlockContent;
   state: BlockState;
+  cards?: BlockCard[];
   aiAnalysis: AIAnalysis | null;
   confidenceScore: number;
   riskScore: number;
   deepDiveData: MarketResearchData | null;
   lastUsage?: AIUsage | null;
   linkedSegments?: Segment[];
-  cards?: Card[];
 }
 
 export interface CanvasData {
   $id: string;
-  id: number;
+  id?: number; // Legacy field - kept for backward compatibility during migration. New code should use $id.
   title: string;
   slug: string;
   description: string;
   isPublic: boolean;
-  ownerId: string;
+  users: string | { $id: string }; // Appwrite relationship - can be ID string or nested object
 }
 
 export interface BlockDefinition {
@@ -251,7 +245,7 @@ export interface DecisionCriterion {
 }
 
 export interface SegmentScorecard {
-  segmentId: number;
+  segmentId: string;
   beachheadStatus: BeachheadStatus;
   arpu: number | null;
   revenuePotential: number | null;

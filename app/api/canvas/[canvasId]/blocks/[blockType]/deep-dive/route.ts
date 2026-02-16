@@ -4,19 +4,20 @@ import { generateTextWithLogging } from '@/lib/ai/logger';
 import { Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
 import {
-  serverDatabases,
+  serverTablesDB,
   DATABASE_ID,
-  CANVASES_COLLECTION_ID,
-  BLOCKS_COLLECTION_ID,
+  CANVASES_TABLE_ID,
+  BLOCKS_TABLE_ID,
 } from '@/lib/appwrite';
 import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { getToolsForAgent } from '@/lib/ai/tools';
 import { buildDeepDivePrompt, getDeepDiveToolName } from '@/lib/ai/prompts';
-import type { DeepDiveModule, MarketResearchData } from '@/lib/types/canvas';
+import type { DeepDiveModule, MarketResearchData, CanvasData } from '@/lib/types/canvas';
 import {
   getAnthropicModelForUser,
   recordAnthropicUsageForUser,
 } from '@/lib/ai/user-preferences';
+import { getUserIdFromCanvas } from '@/lib/utils';
 
 interface RouteContext {
   params: Promise<{ canvasId: string; blockType: string }>;
@@ -53,7 +54,15 @@ export async function POST(request: Request, context: RouteContext) {
 
     const systemPrompt = buildDeepDivePrompt(module, blocks, existingDeepDive, inputs);
     const toolName = getDeepDiveToolName(module);
-    const tools = getToolsForAgent([toolName]);
+
+    // Add searchWeb for modules that need real-world market data
+    const toolNames = [toolName];
+    const searchModules: DeepDiveModule[] = ['tam_sam_som', 'market_validation', 'competitive_landscape'];
+    if (searchModules.includes(module)) {
+      toolNames.push('searchWeb');
+    }
+
+    const tools = getToolsForAgent(toolNames);
 
     const content = targetBlock
       ? `${targetBlock.content.bmc}\n${targetBlock.content.lean}`.trim()
@@ -182,7 +191,7 @@ export async function POST(request: Request, context: RouteContext) {
           keyRisks: string[];
           requiredExperiments: string[];
         };
-        const segmentId = inputs?.segmentId ? Number(inputs.segmentId) : 0;
+        const segmentId = inputs?.segmentId || '';
         // Compute data confidence from deep-dive completeness
         let dataConfidence = 20; // base
         if (updatedDeepDive.tamSamSom?.tam) dataConfidence += 20;
@@ -249,34 +258,38 @@ export async function PUT(request: Request, context: RouteContext) {
     const { canvasId, blockType } = await context.params;
     const { deepDiveJson } = (await request.json()) as { deepDiveJson: string };
 
-    // Verify ownership
-    const canvas = await serverDatabases.getDocument(
-      DATABASE_ID,
-      CANVASES_COLLECTION_ID,
-      canvasId,
-    );
-    if (canvas.ownerId !== user.$id) {
+    // Verify ownership — relationship fields auto-loaded
+    // Index: none needed (primary key lookup)
+    const canvas = await serverTablesDB.getRow({
+      databaseId: DATABASE_ID,
+      tableId: CANVASES_TABLE_ID,
+      rowId: canvasId,
+      queries: [Query.select(['$id'])],
+    }) as unknown as CanvasData;
+    if (getUserIdFromCanvas(canvas) !== user.$id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const canvasIntId = canvas.id as number;
-    const existing = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      BLOCKS_COLLECTION_ID,
-      [
-        Query.equal('canvasId', canvasIntId),
+    // Find existing block doc — only need $id for update target
+    // Index required: composite [canvas, blockType]
+    const existing = await serverTablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: BLOCKS_TABLE_ID,
+      queries: [
+        Query.equal('canvas', canvasId),
         Query.equal('blockType', blockType),
+        Query.select(['$id']),
         Query.limit(1),
       ],
-    );
+    });
 
-    if (existing.documents.length > 0) {
-      await serverDatabases.updateDocument(
-        DATABASE_ID,
-        BLOCKS_COLLECTION_ID,
-        existing.documents[0].$id,
-        { deepDiveJson },
-      );
+    if (existing.rows.length > 0) {
+      await serverTablesDB.updateRow({
+        databaseId: DATABASE_ID,
+        tableId: BLOCKS_TABLE_ID,
+        rowId: existing.rows[0].$id,
+        data: { deepDiveJson },
+      });
     }
 
     return NextResponse.json({ ok: true });
@@ -288,29 +301,24 @@ export async function PUT(request: Request, context: RouteContext) {
 }
 
 async function persistDeepDive(canvasId: string, blockType: string, data: MarketResearchData) {
-  const canvas = await serverDatabases.getDocument(
-    DATABASE_ID,
-    CANVASES_COLLECTION_ID,
-    canvasId,
-  );
-  const canvasIntId = canvas.id as number;
-
-  const existing = await serverDatabases.listDocuments(
-    DATABASE_ID,
-    BLOCKS_COLLECTION_ID,
-    [
-      Query.equal('canvasId', canvasIntId),
+  // Index required: composite [canvas, blockType]
+  const existing = await serverTablesDB.listRows({
+    databaseId: DATABASE_ID,
+    tableId: BLOCKS_TABLE_ID,
+    queries: [
+      Query.equal('canvas', canvasId),
       Query.equal('blockType', blockType),
+      Query.select(['$id']),
       Query.limit(1),
     ],
-  );
+  });
 
-  if (existing.documents.length > 0) {
-    await serverDatabases.updateDocument(
-      DATABASE_ID,
-      BLOCKS_COLLECTION_ID,
-      existing.documents[0].$id,
-      { deepDiveJson: JSON.stringify(data) },
-    );
+  if (existing.rows.length > 0) {
+    await serverTablesDB.updateRow({
+      databaseId: DATABASE_ID,
+      tableId: BLOCKS_TABLE_ID,
+      rowId: existing.rows[0].$id,
+      data: { deepDiveJson: JSON.stringify(data) },
+    });
   }
 }

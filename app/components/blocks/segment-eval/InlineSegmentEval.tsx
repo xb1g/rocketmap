@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from "react";
 import type {
   BlockData,
   Segment,
   MarketResearchData,
   SegmentScorecard,
   SegmentProfile,
-} from '@/lib/types/canvas';
-import { SegmentSnapshot } from './SegmentSnapshot';
-import { DecisionMatrix } from './DecisionMatrix';
-import { BeachheadDecision, type ComparisonResult } from './BeachheadDecision';
+} from "@/lib/types/canvas";
+import { SegmentSnapshot } from "./SegmentSnapshot";
+import { DecisionMatrix } from "./DecisionMatrix";
+import { BeachheadDecision, type ComparisonResult } from "./BeachheadDecision";
 
 interface InlineSegmentEvalProps {
   canvasId: string;
@@ -35,18 +35,21 @@ export function InlineSegmentEval({
   const scorecards = data.scorecards ?? [];
   const linked = block.linkedSegments ?? [];
 
-  const [selectedSegmentId, setSelectedSegmentId] = useState<number | null>(
-    linked.length > 0 ? linked[0].id : null,
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(
+    linked.length > 0 ? linked[0].$id : null,
   );
   const [isScoring, setIsScoring] = useState(false);
   const [isComparing, setIsComparing] = useState(false);
   const [isSuggestingProfile, setIsSuggestingProfile] = useState(false);
-  const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null);
+  const [comparisonResult, setComparisonResult] =
+    useState<ComparisonResult | null>(null);
 
   const putTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const selectedSegment = linked.find((s) => s.id === selectedSegmentId) ?? null;
-  const selectedScorecard = scorecards.find((s) => s.segmentId === selectedSegmentId) ?? null;
+  const selectedSegment =
+    linked.find((s) => s.$id === selectedSegmentId) ?? null;
+  const selectedScorecard =
+    scorecards.find((s) => s.segmentId === selectedSegmentId) ?? null;
 
   // Persist deep-dive data (debounced)
   const persistDeepDive = useCallback(
@@ -57,8 +60,8 @@ export function InlineSegmentEval({
         await fetch(
           `/api/canvas/${canvasId}/blocks/customer_segments/deep-dive`,
           {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ deepDiveJson: JSON.stringify(updatedData) }),
           },
         );
@@ -77,12 +80,12 @@ export function InlineSegmentEval({
       const res = await fetch(
         `/api/canvas/${canvasId}/blocks/customer_segments/deep-dive`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            module: 'segment_scoring',
+            module: "segment_scoring",
             inputs: {
-              segmentId: String(selectedSegment.id),
+              segmentId: selectedSegment.$id,
               segmentName: selectedSegment.name,
               segmentDescription: selectedSegment.description,
               demographics: selectedSegment.demographics,
@@ -107,9 +110,9 @@ export function InlineSegmentEval({
 
   // Compare two segments
   const handleCompare = useCallback(
-    async (otherSegmentId: number) => {
+    async (otherSegmentId: string) => {
       if (!selectedSegment || isComparing) return;
-      const otherSegment = linked.find((s) => s.id === otherSegmentId);
+      const otherSegment = linked.find((s) => s.$id === otherSegmentId);
       if (!otherSegment) return;
 
       setIsComparing(true);
@@ -119,15 +122,15 @@ export function InlineSegmentEval({
         const res = await fetch(
           `/api/canvas/${canvasId}/blocks/customer_segments/deep-dive`,
           {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              module: 'segment_comparison',
+              module: "segment_comparison",
               inputs: {
-                segmentAId: String(selectedSegment.id),
+                segmentAId: selectedSegment.$id,
                 segmentAName: selectedSegment.name,
                 segmentADescription: selectedSegment.description,
-                segmentBId: String(otherSegment.id),
+                segmentBId: otherSegment.$id,
                 segmentBName: otherSegment.name,
                 segmentBDescription: otherSegment.description,
               },
@@ -163,7 +166,9 @@ export function InlineSegmentEval({
         const catCriteria = updatedCriteria.filter((c) => c.category === cat);
         const totalWeight = catCriteria.reduce((s, c) => s + c.weight, 0);
         if (totalWeight > 0) {
-          const catScore = catCriteria.reduce((s, c) => s + c.score * c.weight, 0) / totalWeight;
+          const catScore =
+            catCriteria.reduce((s, c) => s + c.score * c.weight, 0) /
+            totalWeight;
           overall += catScore * catWeight;
         }
       }
@@ -178,7 +183,9 @@ export function InlineSegmentEval({
       const updatedData: MarketResearchData = {
         ...data,
         scorecards: [
-          ...(data.scorecards ?? []).filter((s) => s.segmentId !== selectedScorecard.segmentId),
+          ...(data.scorecards ?? []).filter(
+            (s) => s.segmentId !== selectedScorecard.segmentId,
+          ),
           updatedScorecard,
         ],
       };
@@ -204,7 +211,9 @@ export function InlineSegmentEval({
       const updatedData: MarketResearchData = {
         ...data,
         scorecards: [
-          ...(data.scorecards ?? []).filter((s) => s.segmentId !== selectedScorecard.segmentId),
+          ...(data.scorecards ?? []).filter(
+            (s) => s.segmentId !== selectedScorecard.segmentId,
+          ),
           updatedScorecard,
         ],
       };
@@ -224,7 +233,9 @@ export function InlineSegmentEval({
       const updatedData: MarketResearchData = {
         ...data,
         scorecards: [
-          ...(data.scorecards ?? []).filter((s) => s.segmentId !== selectedScorecard.segmentId),
+          ...(data.scorecards ?? []).filter(
+            (s) => s.segmentId !== selectedScorecard.segmentId,
+          ),
           updatedScorecard,
         ],
       };
@@ -241,7 +252,7 @@ export function InlineSegmentEval({
         ...data,
         segmentProfiles: {
           ...(data.segmentProfiles ?? {}),
-          [String(selectedSegmentId)]: profile,
+          [selectedSegmentId]: profile,
         },
       };
       persistDeepDive(updatedData);
@@ -258,12 +269,12 @@ export function InlineSegmentEval({
       const res = await fetch(
         `/api/canvas/${canvasId}/blocks/customer_segments/deep-dive`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            module: 'segment_profile',
+            module: "segment_profile",
             inputs: {
-              segmentId: String(selectedSegment.id),
+              segmentId: selectedSegment.$id,
               segmentName: selectedSegment.name,
               segmentDescription: selectedSegment.description,
             },
@@ -298,19 +309,19 @@ export function InlineSegmentEval({
       {linked.length > 1 && (
         <div className="flex gap-1 flex-wrap">
           {linked.map((seg) => {
-            const sc = scorecards.find((s) => s.segmentId === seg.id);
-            const isActive = selectedSegmentId === seg.id;
+            const sc = scorecards.find((s) => s.segmentId === seg.$id);
+            const isActive = selectedSegmentId === seg.$id;
             return (
               <button
-                key={seg.id}
+                key={seg.$id}
                 onClick={() => {
-                  setSelectedSegmentId(seg.id);
+                  setSelectedSegmentId(seg.$id);
                   setComparisonResult(null);
                 }}
                 className={`flex items-center gap-1.5 text-[10px] px-2 py-1 rounded-full border transition-colors ${
                   isActive
-                    ? 'border-white/20 bg-white/8 text-foreground'
-                    : 'border-white/5 text-foreground-muted/50 hover:text-foreground-muted'
+                    ? "border-white/20 bg-white/8 text-foreground"
+                    : "border-white/5 text-foreground-muted/50 hover:text-foreground-muted"
                 }`}
               >
                 {seg.name}
@@ -318,11 +329,12 @@ export function InlineSegmentEval({
                   <span
                     className="font-mono text-[9px]"
                     style={{
-                      color: sc.overallScore >= 4
-                        ? 'var(--state-healthy)'
-                        : sc.overallScore >= 3
-                          ? 'var(--state-warning)'
-                          : 'var(--state-critical)',
+                      color:
+                        sc.overallScore >= 4
+                          ? "var(--state-healthy)"
+                          : sc.overallScore >= 3
+                            ? "var(--state-warning)"
+                            : "var(--state-critical)",
                     }}
                   >
                     {sc.overallScore.toFixed(1)}
@@ -341,7 +353,11 @@ export function InlineSegmentEval({
             segment={selectedSegment}
             scorecard={selectedScorecard}
             deepDiveData={data}
-            profile={data.segmentProfiles?.[String(selectedSegmentId)] ?? null}
+            profile={
+              selectedSegmentId
+                ? data.segmentProfiles?.[selectedSegmentId] ?? null
+                : null
+            }
             isScoring={isScoring}
             isSuggestingProfile={isSuggestingProfile}
             onScore={handleScore}

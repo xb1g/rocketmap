@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import type { Segment, SegmentScorecard } from '@/lib/types/canvas';
-import { RecommendationBadge } from './ScorecardHelpers';
+import { useState } from "react";
+import type { Segment, SegmentScorecard } from "@/lib/types/canvas";
+import { RecommendationBadge } from "./ScorecardHelpers";
 
 interface BeachheadDecisionProps {
   scorecard: SegmentScorecard;
   segments: Segment[];
   isComparing: boolean;
   comparisonResult: ComparisonResult | null;
-  onCompare: (otherSegmentId: number) => void;
+  onCompare: (otherSegmentId: string) => void;
   onRescore: () => void;
 }
 
@@ -17,7 +17,7 @@ export interface ComparisonResult {
   segmentAName: string;
   segmentBName: string;
   scoreDifference: number;
-  betterSegment: 'A' | 'B' | 'tie';
+  betterSegment: "A" | "B" | "tie";
   keyDifferences: {
     criterion: string;
     scoreA: number;
@@ -37,12 +37,14 @@ export function BeachheadDecision({
   onRescore,
 }: BeachheadDecisionProps) {
   const [showComparePicker, setShowComparePicker] = useState(false);
-  const otherSegments = segments.filter((s) => s.id !== scorecard.segmentId);
+  const otherSegments = segments.filter((s) => s.$id !== scorecard.segmentId);
 
   return (
     <div className="glass-morphism rounded-xl p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="font-display-small text-sm text-foreground">Beachhead Decision</h4>
+        <h4 className="font-display-small text-sm text-foreground">
+          Beachhead Decision
+        </h4>
         <RecommendationBadge recommendation={scorecard.aiRecommendation} />
       </div>
 
@@ -100,17 +102,17 @@ export function BeachheadDecision({
               disabled={isComparing}
               className="text-[11px] px-3 py-1.5 rounded-lg bg-white/5 border border-white/8 text-foreground-muted hover:text-foreground transition-colors"
             >
-              {isComparing ? 'Comparing…' : 'Compare with…'}
+              {isComparing ? "Comparing…" : "Compare with…"}
             </button>
 
             {showComparePicker && (
               <div className="absolute top-full left-0 mt-1 w-48 py-1 rounded-lg bg-[#1a1a2e] border border-white/10 shadow-xl z-10">
                 {otherSegments.map((seg) => (
                   <button
-                    key={seg.id}
+                    key={seg.$id}
                     onClick={() => {
                       setShowComparePicker(false);
-                      onCompare(seg.id);
+                      onCompare(seg.$id);
                     }}
                     className="w-full text-left px-3 py-1.5 text-xs text-foreground-muted hover:bg-white/5 hover:text-foreground transition-colors"
                   >
@@ -139,13 +141,19 @@ export function BeachheadDecision({
             <span
               className="text-[10px] font-mono px-2 py-0.5 rounded-full"
               style={{
-                background: comparisonResult.betterSegment === 'tie' ? 'rgba(255,255,255,0.05)' : 'rgba(16,185,129,0.1)',
-                color: comparisonResult.betterSegment === 'tie' ? 'rgba(255,255,255,0.5)' : 'rgb(16,185,129)',
+                background:
+                  comparisonResult.betterSegment === "tie"
+                    ? "rgba(255,255,255,0.05)"
+                    : "rgba(16,185,129,0.1)",
+                color:
+                  comparisonResult.betterSegment === "tie"
+                    ? "rgba(255,255,255,0.5)"
+                    : "rgb(16,185,129)",
               }}
             >
-              {comparisonResult.betterSegment === 'tie'
-                ? 'Tie'
-                : `${comparisonResult.betterSegment === 'A' ? comparisonResult.segmentAName : comparisonResult.segmentBName} wins`}
+              {comparisonResult.betterSegment === "tie"
+                ? "Tie"
+                : `${comparisonResult.betterSegment === "A" ? comparisonResult.segmentAName : comparisonResult.segmentBName} wins`}
             </span>
           </div>
 
@@ -170,14 +178,16 @@ export function BeachheadDecision({
                   <span
                     className="font-mono w-6 text-right"
                     style={{
-                      color: diff.delta > 0
-                        ? 'var(--state-healthy)'
-                        : diff.delta < 0
-                          ? 'var(--state-critical)'
-                          : 'var(--foreground-muted)',
+                      color:
+                        diff.delta > 0
+                          ? "var(--state-healthy)"
+                          : diff.delta < 0
+                            ? "var(--state-critical)"
+                            : "var(--foreground-muted)",
                     }}
                   >
-                    {diff.delta > 0 ? '+' : ''}{diff.delta}
+                    {diff.delta > 0 ? "+" : ""}
+                    {diff.delta}
                   </span>
                 </div>
               ))}

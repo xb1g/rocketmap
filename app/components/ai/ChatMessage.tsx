@@ -156,8 +156,8 @@ export function ChatMessageWithParts({
                       }
                       if (e.key === "Escape") cancelEdit();
                     }}
-                    className="px-3 py-2 text-xs leading-relaxed rounded-2xl rounded-br-md bg-(--chroma-indigo)/15 text-foreground/90 whitespace-pre-wrap border border-(--chroma-indigo)/30 outline-none resize-y min-h-[40px] font-sans"
-                    rows={Math.max(1, editText.split("\n").length)}
+                    className="px-4 py-3 text-sm leading-relaxed rounded-2xl rounded-br-md bg-(--chroma-indigo)/15 text-foreground/90 whitespace-pre-wrap border border-(--chroma-indigo)/30 outline-none resize-y min-h-[120px] w-full font-sans"
+                    rows={Math.max(4, editText.split("\n").length)}
                     autoFocus
                   />
                   <div className="flex gap-1.5 justify-end">

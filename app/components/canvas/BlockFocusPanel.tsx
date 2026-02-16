@@ -28,11 +28,20 @@ interface BlockFocusPanelProps {
   onDeepDive?: () => void;
   onAcceptEdit?: (proposalId: string, edits: BlockEditProposal[]) => void;
   onRejectEdit?: (proposalId: string) => void;
-  onSegmentCreate?: (data: { name: string; description?: string }) => Promise<Segment | null>;
-  onSegmentUpdate?: (segmentId: number, updates: Partial<Segment>) => Promise<void>;
-  onSegmentDelete?: (segmentId: number) => Promise<void>;
-  onSegmentLink?: (segmentId: number, segmentOverride?: Segment) => Promise<void>;
-  onSegmentUnlink?: (segmentId: number) => Promise<void>;
+  onSegmentCreate?: (data: {
+    name: string;
+    description?: string;
+  }) => Promise<Segment | null>;
+  onSegmentUpdate?: (
+    segmentId: string,
+    updates: Partial<Segment>,
+  ) => Promise<void>;
+  onSegmentDelete?: (segmentId: string) => Promise<void>;
+  onSegmentLink?: (
+    segmentId: string,
+    segmentOverride?: Segment,
+  ) => Promise<void>;
+  onSegmentUnlink?: (segmentId: string) => Promise<void>;
   chatSection?: React.ReactNode;
 }
 
@@ -59,8 +68,8 @@ function SegmentEditCard({
   onClose,
 }: {
   seg: Segment;
-  onUpdate?: (segmentId: number, updates: Partial<Segment>) => Promise<void>;
-  onDelete?: (segmentId: number) => Promise<void>;
+  onUpdate?: (segmentId: string, updates: Partial<Segment>) => Promise<void>;
+  onDelete?: (segmentId: string) => Promise<void>;
   onClose: () => void;
 }) {
   const [name, setName] = useState(seg.name);
@@ -73,9 +82,9 @@ function SegmentEditCard({
     (updates: Partial<Segment>) => {
       if (!onUpdate) return;
       if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => onUpdate(seg.id, updates), 600);
+      saveTimer.current = setTimeout(() => onUpdate(seg.$id, updates), 600);
     },
-    [onUpdate, seg.id],
+    [onUpdate, seg.$id],
   );
 
   return (
@@ -115,14 +124,16 @@ function SegmentEditCard({
       />
 
       <div className="flex items-center gap-2">
-        <span className="text-[9px] text-foreground-muted/50 uppercase tracking-wider">Priority</span>
+        <span className="text-[9px] text-foreground-muted/50 uppercase tracking-wider">
+          Priority
+        </span>
         <div className="flex gap-1">
           {PRIORITY_PRESETS.map((p) => (
             <button
               key={p.value}
               onClick={() => {
                 setPriority(p.value);
-                onUpdate?.(seg.id, { priorityScore: p.value });
+                onUpdate?.(seg.$id, { priorityScore: p.value });
               }}
               className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
                 Math.abs(priority - p.value) < 15
@@ -143,7 +154,7 @@ function SegmentEditCard({
         <button
           onClick={() => {
             setEarlyAdopter(!earlyAdopter);
-            onUpdate?.(seg.id, { earlyAdopterFlag: !earlyAdopter });
+            onUpdate?.(seg.$id, { earlyAdopterFlag: !earlyAdopter });
           }}
           className={`flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
             earlyAdopter
@@ -163,7 +174,7 @@ function SegmentEditCard({
 
         {onDelete && (
           <button
-            onClick={() => onDelete(seg.id)}
+            onClick={() => onDelete(seg.$id)}
             className="text-[10px] text-foreground-muted/30 hover:text-red-400 transition-colors"
           >
             Delete segment
@@ -200,23 +211,31 @@ function LinkedSegmentsSection({
   creatingSegment: boolean;
   newSegmentName: string;
   showLinkPicker: boolean;
-  editingSegmentId: number | null;
-  pendingLinks: Set<number>;
+  editingSegmentId: string | null;
+  pendingLinks: Set<string>;
   onSetCreating: (v: boolean) => void;
   onSetNewName: (v: string) => void;
   onSetShowLinkPicker: (v: boolean) => void;
-  onSetEditingSegmentId: (v: number | null) => void;
-  onSetPendingLinks: (v: Set<number>) => void;
-  onSegmentCreate: (data: { name: string; description?: string }) => Promise<Segment | null>;
-  onSegmentUpdate?: (segmentId: number, updates: Partial<Segment>) => Promise<void>;
-  onSegmentDelete?: (segmentId: number) => Promise<void>;
-  onSegmentLink?: (segmentId: number, segmentOverride?: Segment) => Promise<void>;
-  onSegmentUnlink?: (segmentId: number) => Promise<void>;
+  onSetEditingSegmentId: (v: string | null) => void;
+  onSetPendingLinks: (v: Set<string>) => void;
+  onSegmentCreate: (data: {
+    name: string;
+    description?: string;
+  }) => Promise<Segment | null>;
+  onSegmentUpdate?: (
+    segmentId: string,
+    updates: Partial<Segment>,
+  ) => Promise<void>;
+  onSegmentDelete?: (segmentId: string) => Promise<void>;
+  onSegmentLink?: (
+    segmentId: string,
+    segmentOverride?: Segment,
+  ) => Promise<void>;
+  onSegmentUnlink?: (segmentId: string) => Promise<void>;
 }) {
   const linked = block.linkedSegments ?? [];
-  const unlinkable = allSegments?.filter(
-    (s) => !linked.some((ls) => ls.id === s.id),
-  ) ?? [];
+  const unlinkable =
+    allSegments?.filter((s) => !linked.some((ls) => ls.$id === s.$id)) ?? [];
 
   const handleConfirmLinks = async () => {
     if (!onSegmentLink || pendingLinks.size === 0) return;
@@ -227,7 +246,7 @@ function LinkedSegmentsSection({
     onSetShowLinkPicker(false);
   };
 
-  const togglePendingLink = (id: number) => {
+  const togglePendingLink = (id: string) => {
     const next = new Set(pendingLinks);
     if (next.has(id)) next.delete(id);
     else next.add(id);
@@ -284,8 +303,10 @@ function LinkedSegmentsSection({
             autoFocus
             onKeyDown={async (e) => {
               if (e.key === "Enter" && newSegmentName.trim()) {
-                const seg = await onSegmentCreate({ name: newSegmentName.trim() });
-                if (seg && onSegmentLink) await onSegmentLink(seg.id, seg);
+                const seg = await onSegmentCreate({
+                  name: newSegmentName.trim(),
+                });
+                if (seg && onSegmentLink) await onSegmentLink(seg.$id, seg);
                 onSetNewName("");
                 onSetCreating(false);
               }
@@ -298,8 +319,10 @@ function LinkedSegmentsSection({
           <button
             onClick={async () => {
               if (!newSegmentName.trim()) return;
-              const seg = await onSegmentCreate({ name: newSegmentName.trim() });
-              if (seg && onSegmentLink) await onSegmentLink(seg.id, seg);
+              const seg = await onSegmentCreate({
+                name: newSegmentName.trim(),
+              });
+              if (seg && onSegmentLink) await onSegmentLink(seg.$id, seg);
               onSetNewName("");
               onSetCreating(false);
             }}
@@ -325,11 +348,11 @@ function LinkedSegmentsSection({
           <div className="max-h-44 overflow-y-auto p-1 space-y-0.5">
             {unlinkable.length > 0 ? (
               unlinkable.map((seg) => {
-                const isSelected = pendingLinks.has(seg.id);
+                const isSelected = pendingLinks.has(seg.$id);
                 return (
                   <button
-                    key={seg.id}
-                    onClick={() => togglePendingLink(seg.id)}
+                    key={seg.$id}
+                    onClick={() => togglePendingLink(seg.$id)}
                     className={`flex items-center gap-1.5 w-full text-left px-2 py-1.5 rounded transition-colors ${
                       isSelected
                         ? "bg-white/8 border border-white/15"
@@ -344,7 +367,16 @@ function LinkedSegmentsSection({
                       }`}
                     >
                       {isSelected && (
-                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          width="8"
+                          height="8"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="white"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
                       )}
@@ -377,9 +409,10 @@ function LinkedSegmentsSection({
               </span>
               <button
                 onClick={handleConfirmLinks}
-                className="text-[10px] px-2.5 py-1 rounded bg-[var(--chroma-indigo)]/20 text-[var(--chroma-indigo)] hover:bg-[var(--chroma-indigo)]/30 transition-colors font-medium"
+                className="text-[10px] px-2.5 py-1 rounded bg-(--chroma-indigo)/20 text-(--chroma-indigo) hover:bg-(--chroma-indigo)/30 transition-colors font-medium"
               >
-                Link {pendingLinks.size} segment{pendingLinks.size > 1 ? "s" : ""}
+                Link {pendingLinks.size} segment
+                {pendingLinks.size > 1 ? "s" : ""}
               </button>
             </div>
           )}
@@ -390,9 +423,9 @@ function LinkedSegmentsSection({
       {linked.length > 0 ? (
         <div className="space-y-1">
           {linked.map((seg) =>
-            editingSegmentId === seg.id ? (
+            editingSegmentId === seg.$id ? (
               <SegmentEditCard
-                key={seg.id}
+                key={seg.$id}
                 seg={seg}
                 onUpdate={onSegmentUpdate}
                 onDelete={onSegmentDelete}
@@ -400,9 +433,9 @@ function LinkedSegmentsSection({
               />
             ) : (
               <div
-                key={seg.id}
+                key={seg.$id}
                 className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/2 border border-white/5 group/lseg cursor-pointer hover:bg-white/4 transition-colors"
-                onClick={() => onSetEditingSegmentId(seg.id)}
+                onClick={() => onSetEditingSegmentId(seg.$id)}
               >
                 <span
                   className="w-2 h-2 rounded-full shrink-0"
@@ -430,7 +463,7 @@ function LinkedSegmentsSection({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onSegmentUnlink(seg.id);
+                      onSegmentUnlink(seg.$id);
                     }}
                     className="text-foreground-muted/30 hover:text-red-400 text-xs opacity-0 group-hover/lseg:opacity-100 transition-opacity shrink-0"
                     title="Unlink segment"
@@ -480,8 +513,8 @@ export function BlockFocusPanel({
   const [showLinkPicker, setShowLinkPicker] = useState(false);
   const [creatingSegment, setCreatingSegment] = useState(false);
   const [newSegmentName, setNewSegmentName] = useState("");
-  const [editingSegmentId, setEditingSegmentId] = useState<number | null>(null);
-  const [pendingLinks, setPendingLinks] = useState<Set<number>>(new Set());
+  const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null);
+  const [pendingLinks, setPendingLinks] = useState<Set<string>>(new Set());
 
   // Resizable width
   const [width, setWidth] = useState(DEFAULT_WIDTH);
@@ -534,7 +567,7 @@ export function BlockFocusPanel({
           onMouseDown={handleMouseDown}
           className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-10 group"
         >
-          <div className="absolute inset-y-0 left-0 w-px bg-white/8 group-hover:bg-white/20 group-active:bg-[var(--chroma-indigo)]/50 transition-colors" />
+          <div className="absolute inset-y-0 left-0 w-px bg-white/8 group-hover:bg-white/20 group-active:bg-(--chroma-indigo)/50 transition-colors" />
         </div>
 
         <BlockFocusHeader
@@ -592,7 +625,7 @@ export function BlockFocusPanel({
                 disabled={isAnalyzing}
                 className={`ui-btn ui-btn-sm ui-btn-block font-display-small text-[11px] uppercase tracking-wider ${
                   isAnalyzing
-                    ? "ui-btn-secondary glow-ai text-[var(--state-ai)]"
+                    ? "ui-btn ui-btn-sm ui-btn-secondary glow-ai text-(--state-ai)"
                     : "ui-btn-secondary text-foreground-muted hover:text-foreground"
                 }`}
               >
@@ -609,7 +642,6 @@ export function BlockFocusPanel({
                     Deep Dive
                   </button>
                 )}
-
             </div>
 
             {/* Deep dive gate message */}
@@ -633,7 +665,6 @@ export function BlockFocusPanel({
               analysis={block.aiAnalysis}
               usage={block.lastUsage}
             />
-
           </div>
 
           {/* Divider with collapse toggle */}

@@ -1,13 +1,14 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/appwrite-server";
 import {
-  serverDatabases,
+  serverTablesDB,
   DATABASE_ID,
-  USERS_COLLECTION_ID,
-  CANVASES_COLLECTION_ID,
-  BLOCKS_COLLECTION_ID,
+  USERS_TABLE_ID,
+  CANVASES_TABLE_ID,
+  BLOCKS_TABLE_ID,
 } from "@/lib/appwrite";
 import { Query } from "node-appwrite";
+import { ID } from "node-appwrite";
 import { DashboardClient } from "./DashboardClient";
 import { getAnthropicUsageStatsFromUser } from "@/lib/ai/user-preferences";
 
@@ -21,23 +22,23 @@ export default async function DashboardPage() {
   // Fetch or create user document
   let userDoc;
   try {
-    userDoc = await serverDatabases.getDocument(
-      DATABASE_ID,
-      USERS_COLLECTION_ID,
-      user.$id,
-    );
+    userDoc = await serverTablesDB.getRow({
+      databaseId: DATABASE_ID,
+      tableId: USERS_TABLE_ID,
+      rowId: user.$id,
+    });
   } catch {
     try {
-      userDoc = await serverDatabases.createDocument(
-        DATABASE_ID,
-        USERS_COLLECTION_ID,
-        user.$id,
-        {
+      userDoc = await serverTablesDB.createRow({
+        databaseId: DATABASE_ID,
+        tableId: USERS_TABLE_ID,
+        rowId: ID.unique(),
+        data: {
           email: user.email,
           name: user.name || "",
           onboardingCompleted: false,
         },
-      );
+      });
     } catch (error) {
       console.error("Error creating user document:", error);
       userDoc = { onboardingCompleted: false };
@@ -45,6 +46,8 @@ export default async function DashboardPage() {
   }
 
   // Fetch user's canvases with block counts
+  // Index required: canvases.users + $updatedAt (composite, desc)
+  // Index required: blocks.canvasId (key)
   let canvases: {
     $id: string;
     title: string;
@@ -53,22 +56,31 @@ export default async function DashboardPage() {
     blocksCount: number;
   }[] = [];
   try {
-    const canvasesResult = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      CANVASES_COLLECTION_ID,
-      [Query.equal("ownerId", user.$id), Query.orderDesc("$updatedAt")],
-    );
+    const canvasesResult = await serverTablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: CANVASES_TABLE_ID,
+      queries: [
+        Query.equal("users", user.$id),
+        Query.orderDesc("$updatedAt"),
+        Query.select(["$id", "title", "slug", "$updatedAt"]),
+        Query.limit(25),
+      ],
+    });
 
     canvases = await Promise.all(
-      canvasesResult.documents.map(async (doc) => {
+      canvasesResult.rows.map(async (doc) => {
         let blocksCount = 0;
         try {
-          const blocksResult = await serverDatabases.listDocuments(
-            DATABASE_ID,
-            BLOCKS_COLLECTION_ID,
-            [Query.equal("canvasId", doc.id as number), Query.limit(9)],
-          );
-          blocksCount = blocksResult.documents.filter((block) => {
+          const blocksResult = await serverTablesDB.listRows({
+            databaseId: DATABASE_ID,
+            tableId: BLOCKS_TABLE_ID,
+            queries: [
+              Query.equal("canvasId", doc.$id),
+              Query.select(["$id", "contentJson"]),
+              Query.limit(9),
+            ],
+          });
+          blocksCount = blocksResult.rows.filter((block) => {
             const content = block.contentJson as string;
             if (!content) return false;
             try {

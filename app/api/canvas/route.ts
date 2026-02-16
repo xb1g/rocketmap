@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { ID } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
-import { serverDatabases, DATABASE_ID, CANVASES_COLLECTION_ID } from '@/lib/appwrite';
+import { ID } from 'node-appwrite';
+import { serverTablesDB, DATABASE_ID, CANVASES_TABLE_ID } from '@/lib/appwrite';
 import { generateSlug } from '@/lib/utils';
 
 export async function POST(request: Request) {
@@ -16,11 +16,11 @@ export async function POST(request: Request) {
     const slug = await generateSlug(title, user.$id);
     const now = new Date().toISOString();
 
-    const doc = await serverDatabases.createDocument(
-      DATABASE_ID,
-      CANVASES_COLLECTION_ID,
-      ID.unique(),
-      {
+    const doc = await serverTablesDB.createRow({
+      databaseId: DATABASE_ID,
+      tableId: CANVASES_TABLE_ID,
+      rowId: ID.unique(),
+      data: {
         id: Date.now(),
         title: title.trim(),
         slug,
@@ -28,9 +28,9 @@ export async function POST(request: Request) {
         createdAt: now,
         updatedAt: now,
         isPublic: false,
-        ownerId: user.$id,
+        users: user.$id,
       },
-    );
+    });
 
     return NextResponse.json({ slug, $id: doc.$id });
   } catch (error: unknown) {

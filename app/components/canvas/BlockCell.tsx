@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type {
   BlockDefinition,
   BlockItem,
@@ -141,21 +141,21 @@ interface BlockCellProps {
   onExpand: () => void;
   onAddToChat: () => void;
   onAnalyze: () => void;
-  onSegmentClick?: (segmentId: number) => void;
+  onSegmentClick?: (segmentId: string) => void;
   onAddSegment?: (name: string, description?: string) => Promise<void>;
   onSegmentUpdate?: (
-    segmentId: number,
+    segmentId: string,
     updates: Partial<Pick<Segment, "name" | "description">>,
   ) => Promise<void>;
-  onSegmentFocus?: (segmentId: number) => void;
+  onSegmentFocus?: (segmentId: string) => void;
   onItemCreate?: () => void;
   onItemUpdate?: (itemId: string, updates: Partial<BlockItem>) => void;
   onItemDelete?: (itemId: string) => void;
-  onItemToggleSegment?: (itemId: string, segmentId: number) => void;
+  onItemToggleSegment?: (itemId: string, segmentId: string) => void;
   onItemToggleLink?: (itemId: string, linkedItemId: string) => void;
   onItemHover?: (itemId: string | null) => void;
   itemRefCallback?: (itemId: string, el: HTMLElement | null) => void;
-  segmentRefCallback?: (segmentId: number, el: HTMLElement | null) => void;
+  segmentRefCallback?: (segmentId: string, el: HTMLElement | null) => void;
 }
 
 export function BlockCell({
@@ -197,7 +197,7 @@ export function BlockCell({
   const [newSegmentDesc, setNewSegmentDesc] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [addingNew, setAddingNew] = useState(false);
-  const [editingSegmentId, setEditingSegmentId] = useState<number | null>(null);
+  const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [linkPickerItemId, setLinkPickerItemId] = useState<string | null>(null);
@@ -206,6 +206,21 @@ export function BlockCell({
   const isSegmentBlock =
     definition.type === "customer_segments" && !!onAddSegment;
   const hasItems = !!onItemCreate;
+
+  const linkedSegmentById = useMemo(
+    () =>
+      new Map((allSegments ?? []).map((segment) => [segment.$id, segment] as const)),
+    [allSegments],
+  );
+
+  const resolvedLinkedSegments = useMemo(
+    () =>
+      (linkedSegments ?? []).map((seg) => {
+        const fullSegment = linkedSegmentById.get(seg.$id);
+        return fullSegment ?? seg;
+      }),
+    [linkedSegments, linkedSegmentById],
+  );
 
   const handleCreateSegment = useCallback(async () => {
     if (!newSegmentName.trim() || !onAddSegment || isSaving) return;
@@ -221,12 +236,12 @@ export function BlockCell({
   }, [newSegmentName, newSegmentDesc, onAddSegment, isSaving]);
 
   const handleSaveSegmentEdit = useCallback(
-    async (segId: number) => {
+    async (segId: string) => {
       if (!onSegmentUpdate) {
         setEditingSegmentId(null);
         return;
       }
-      const original = linkedSegments?.find((s) => s.id === segId);
+      const original = resolvedLinkedSegments.find((s) => s.$id === segId);
       if (!original) {
         setEditingSegmentId(null);
         return;
@@ -241,7 +256,7 @@ export function BlockCell({
       }
       setEditingSegmentId(null);
     },
-    [editName, editDesc, onSegmentUpdate, linkedSegments],
+    [editName, editDesc, onSegmentUpdate, resolvedLinkedSegments],
   );
 
   useEffect(() => {
@@ -415,7 +430,7 @@ export function BlockCell({
       />
 
       {/* Block item cards — shown for all blocks */}
-      {onItemCreate && (
+      {(items && items.length > 0) || onItemCreate ? (
         <div
           className="block-items-container"
           onClick={(e) => e.stopPropagation()}
@@ -457,14 +472,16 @@ export function BlockCell({
               </div>
             );
           })}
-          <button
-            onClick={onItemCreate}
-            className="w-full rounded-md border border-dashed border-white/8 hover:border-white/15 px-2 py-1 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/[0.03] transition-colors text-left"
-          >
-            + Add item
-          </button>
+          {onItemCreate && (
+            <button
+              onClick={onItemCreate}
+              className="w-full rounded-md border border-dashed border-white/8 hover:border-white/15 px-2 py-1 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/[0.03] transition-colors text-left"
+            >
+              + Add item
+            </button>
+          )}
         </div>
-      )}
+      ) : null}
 
       {/* Segment cards — shown for customer_segments below text */}
       {isSegmentBlock && (
@@ -472,13 +489,13 @@ export function BlockCell({
           className="flex-1 min-h-0 overflow-y-auto px-2 pb-1.5 space-y-1"
           onClick={(e) => e.stopPropagation()}
         >
-          {linkedSegments?.map((seg) => (
+          {resolvedLinkedSegments.map((seg) => (
             <div
-              key={seg.id}
-              ref={(el) => segmentRefCallback?.(seg.id, el)}
+              key={seg.$id}
+              ref={(el) => segmentRefCallback?.(seg.$id, el)}
               className="rounded-md border border-white/8 bg-white/[0.03] hover:bg-white/[0.05] transition-colors"
             >
-              {editingSegmentId === seg.id ? (
+              {editingSegmentId === seg.$id ? (
                 <div className="p-1.5 space-y-1">
                   <input
                     value={editName}
@@ -504,7 +521,7 @@ export function BlockCell({
                   />
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => handleSaveSegmentEdit(seg.id)}
+                      onClick={() => handleSaveSegmentEdit(seg.$id)}
                       className="text-[9px] px-1.5 py-0.5 rounded bg-white/8 text-foreground hover:bg-white/12 transition-colors"
                     >
                       Save
@@ -534,7 +551,7 @@ export function BlockCell({
                     <div className="flex-1 min-w-0">
                       <button
                         onClick={() => {
-                          setEditingSegmentId(seg.id);
+                          setEditingSegmentId(seg.$id);
                           setEditName(seg.name);
                           setEditDesc(seg.description || "");
                         }}
@@ -556,7 +573,7 @@ export function BlockCell({
                   </div>
                   <div className="flex items-center gap-1 mt-1 pt-1 border-t border-white/5">
                     <button
-                      onClick={() => onSegmentFocus?.(seg.id)}
+                      onClick={() => onSegmentFocus?.(seg.$id)}
                       className="flex items-center gap-1 text-[9px] text-foreground-muted/40 hover:text-foreground-muted transition-colors px-1 py-0.5 rounded hover:bg-white/5"
                       title="Open in focus view"
                     >
@@ -578,7 +595,7 @@ export function BlockCell({
                       Focus
                     </button>
                     <button
-                      onClick={() => onSegmentClick?.(seg.id)}
+                      onClick={() => onSegmentClick?.(seg.$id)}
                       className="flex items-center gap-1 text-[9px] text-foreground-muted/40 hover:text-foreground-muted transition-colors px-1 py-0.5 rounded hover:bg-white/5"
                       title="Link to other blocks"
                     >
@@ -670,15 +687,15 @@ export function BlockCell({
       )}
 
       {/* Segment sub-rows for non-segment blocks */}
-      {!isSegmentBlock && linkedSegments && linkedSegments.length > 0 && (
+      {!isSegmentBlock && resolvedLinkedSegments && resolvedLinkedSegments.length > 0 && (
         <div className="px-2 pb-0.5 space-y-0.5">
-          {linkedSegments.slice(0, 4).map((seg) => (
+          {resolvedLinkedSegments.slice(0, 4).map((seg) => (
             <button
-              key={seg.id}
-              ref={(el) => segmentRefCallback?.(seg.id, el)}
+              key={seg.$id}
+              ref={(el) => segmentRefCallback?.(seg.$id, el)}
               onClick={(e) => {
                 e.stopPropagation();
-                onSegmentClick?.(seg.id);
+                onSegmentClick?.(seg.$id);
               }}
               className="flex items-center gap-1.5 w-full text-left px-1.5 py-0.5 rounded hover:bg-white/5 transition-colors group/seg"
             >
@@ -706,9 +723,9 @@ export function BlockCell({
               </span>
             </button>
           ))}
-          {linkedSegments.length > 4 && (
+          {resolvedLinkedSegments.length > 4 && (
             <span className="text-[9px] text-foreground-muted/40 px-1.5">
-              +{linkedSegments.length - 4} more
+              +{resolvedLinkedSegments.length - 4} more
             </span>
           )}
         </div>

@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useCallback, forwardRef } from "react";
-import type { BlockItem, Segment } from "@/lib/types/canvas";
+import type { BlockItem } from "@/lib/types/canvas";
 
 interface BlockItemCardProps {
   item: BlockItem;
-  segments: Segment[];
   onUpdate: (updates: Partial<BlockItem>) => void;
   onDelete: () => void;
   onLinkClick: () => void;
@@ -15,16 +14,12 @@ interface BlockItemCardProps {
 
 export const BlockItemCard = forwardRef<HTMLDivElement, BlockItemCardProps>(
   function BlockItemCard(
-    { item, segments, onUpdate, onDelete, onLinkClick, onMouseEnter, onMouseLeave },
+    { item, onUpdate, onDelete, onLinkClick, onMouseEnter, onMouseLeave },
     ref,
   ) {
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(item.name);
     const [editDesc, setEditDesc] = useState(item.description ?? "");
-
-    const linkedSegments = segments.filter((s) =>
-      item.linkedSegmentIds.includes(s.id),
-    );
 
     const handleSave = useCallback(() => {
       if (!editName.trim()) return;
@@ -120,24 +115,6 @@ export const BlockItemCard = forwardRef<HTMLDivElement, BlockItemCardProps>(
                 </p>
               )}
             </div>
-            {/* Segment color badges */}
-            {linkedSegments.length > 0 && (
-              <div className="flex items-center gap-0.5 shrink-0 mt-[2px]">
-                {linkedSegments.slice(0, 3).map((seg) => (
-                  <span
-                    key={seg.id}
-                    className="segment-badge"
-                    style={{ background: seg.colorHex ?? "#6366f1" }}
-                    title={seg.name}
-                  />
-                ))}
-                {linkedSegments.length > 3 && (
-                  <span className="text-[7px] text-foreground-muted/40">
-                    +{linkedSegments.length - 3}
-                  </span>
-                )}
-              </div>
-            )}
             {/* Cross-block link count */}
             {item.linkedItemIds.length > 0 && (
               <span
@@ -152,7 +129,7 @@ export const BlockItemCard = forwardRef<HTMLDivElement, BlockItemCardProps>(
             <button
               onClick={onLinkClick}
               className="flex items-center gap-1 text-[9px] text-foreground-muted/40 hover:text-foreground-muted transition-colors px-1 py-0.5 rounded hover:bg-white/5"
-              title="Link to segments or other items"
+              title="Link to other block items"
             >
               <svg
                 width="9"

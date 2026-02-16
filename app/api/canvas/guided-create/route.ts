@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       system: ONBOARDING_SYSTEM_PROMPT,
       messages: modelMessages,
       tools,
-      stopWhen: stepCountIs(2),
+      stopWhen: stepCountIs(1),
       toolChoice,
     }, {
       onUsage: (usage) => recordAnthropicUsageForUser(user.$id, usage),

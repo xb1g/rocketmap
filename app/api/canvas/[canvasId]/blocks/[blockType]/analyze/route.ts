@@ -4,10 +4,9 @@ import { generateTextWithLogging } from '@/lib/ai/logger';
 import { Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
 import {
-  serverDatabases,
+  serverTablesDB,
   DATABASE_ID,
-  CANVASES_COLLECTION_ID,
-  BLOCKS_COLLECTION_ID,
+  BLOCKS_TABLE_ID,
 } from '@/lib/appwrite';
 import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { getAgentConfig } from '@/lib/ai/agents';
@@ -71,36 +70,32 @@ export async function POST(_request: Request, context: RouteContext) {
     const confidenceScore = hasContent ? (hasDepth ? 0.7 : 0.4) : 0.2;
     const riskScore = Math.min(1, analysis.risks.length * 0.15);
 
-    // Persist to Appwrite
-    const canvas = await serverDatabases.getDocument(
-      DATABASE_ID,
-      CANVASES_COLLECTION_ID,
-      canvasId,
-    );
-    const canvasIntId = canvas.id as number;
-
-    const existing = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      BLOCKS_COLLECTION_ID,
-      [
-        Query.equal('canvasId', canvasIntId),
+    // Persist to Appwrite — canvas ownership already verified by getCanvasBlocks above
+    // Find existing block doc — only need $id for update target
+    // Index required: composite [canvas, blockType]
+    const existing = await serverTablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: BLOCKS_TABLE_ID,
+      queries: [
+        Query.equal('canvas', canvasId),
         Query.equal('blockType', blockType),
+        Query.select(['$id']),
         Query.limit(1),
       ],
-    );
+    });
 
     const aiAnalysisJson = JSON.stringify({
       ...analysis,
       generatedAt: new Date().toISOString(),
     });
 
-    if (existing.documents.length > 0) {
-      await serverDatabases.updateDocument(
-        DATABASE_ID,
-        BLOCKS_COLLECTION_ID,
-        existing.documents[0].$id,
-        { aiAnalysisJson, confidenceScore, riskScore },
-      );
+    if (existing.rows.length > 0) {
+      await serverTablesDB.updateRow({
+        databaseId: DATABASE_ID,
+        tableId: BLOCKS_TABLE_ID,
+        rowId: existing.rows[0].$id,
+        data: { aiAnalysisJson, confidenceScore, riskScore },
+      });
     }
 
     return NextResponse.json({

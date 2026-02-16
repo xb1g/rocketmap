@@ -1,20 +1,24 @@
-'use client';
+"use client";
 
-import type { Segment, SegmentScorecard, BeachheadStatus } from '@/lib/types/canvas';
+import type {
+  Segment,
+  SegmentScorecard,
+  BeachheadStatus,
+} from "@/lib/types/canvas";
 
 interface SegmentSelectorProps {
   segments: Segment[];
   scorecards: SegmentScorecard[];
-  selectedSegmentId: number | null;
-  onSelect: (segmentId: number) => void;
+  selectedSegmentId: string | null;
+  onSelect: (segmentId: string) => void;
   onCreateNew: () => void;
 }
 
 function beachheadDot(status: BeachheadStatus) {
   const colors = {
-    primary: 'bg-[var(--chroma-indigo)]',
-    secondary: 'bg-amber-400',
-    later: 'bg-white/20',
+    primary: "bg-[var(--chroma-indigo)]",
+    secondary: "bg-amber-400",
+    later: "bg-white/20",
   };
   return colors[status];
 }
@@ -28,8 +32,8 @@ export function SegmentSelector({
 }: SegmentSelectorProps) {
   // Sort: scored segments first (by score desc), then unscored
   const sorted = [...segments].sort((a, b) => {
-    const scA = scorecards.find((s) => s.segmentId === a.id);
-    const scB = scorecards.find((s) => s.segmentId === b.id);
+    const scA = scorecards.find((s) => s.segmentId === a.$id);
+    const scB = scorecards.find((s) => s.segmentId === b.$id);
     if (scA && !scB) return -1;
     if (!scA && scB) return 1;
     if (scA && scB) return scB.overallScore - scA.overallScore;
@@ -46,21 +50,23 @@ export function SegmentSelector({
 
       <div className="flex-1 overflow-y-auto py-1">
         {sorted.map((seg) => {
-          const scorecard = scorecards.find((s) => s.segmentId === seg.id);
-          const isSelected = selectedSegmentId === seg.id;
+          const scorecard = scorecards.find((s) => s.segmentId === seg.$id);
+          const isSelected = selectedSegmentId === seg.$id;
 
           return (
             <button
-              key={seg.id}
-              onClick={() => onSelect(seg.id)}
+              key={seg.$id}
+              onClick={() => onSelect(seg.$id)}
               className={`w-full text-left px-3 py-2 flex items-center gap-2 transition-colors ${
                 isSelected
-                  ? 'bg-white/8 border-r-2 border-r-[var(--chroma-indigo)]'
-                  : 'hover:bg-white/4'
+                  ? "bg-white/8 border-r-2 border-r-[var(--chroma-indigo)]"
+                  : "hover:bg-white/4"
               }`}
             >
               {scorecard ? (
-                <span className={`w-2 h-2 rounded-full shrink-0 ${beachheadDot(scorecard.beachheadStatus)}`} />
+                <span
+                  className={`w-2 h-2 rounded-full shrink-0 ${beachheadDot(scorecard.beachheadStatus)}`}
+                />
               ) : (
                 <span className="w-2 h-2 rounded-full shrink-0 bg-white/10" />
               )}
@@ -71,11 +77,12 @@ export function SegmentSelector({
                 <span
                   className="text-[10px] font-mono shrink-0"
                   style={{
-                    color: scorecard.overallScore >= 4
-                      ? 'var(--state-healthy)'
-                      : scorecard.overallScore >= 3
-                        ? 'var(--state-warning)'
-                        : 'var(--state-critical)',
+                    color:
+                      scorecard.overallScore >= 4
+                        ? "var(--state-healthy)"
+                        : scorecard.overallScore >= 3
+                          ? "var(--state-warning)"
+                          : "var(--state-critical)",
                   }}
                 >
                   {scorecard.overallScore.toFixed(1)}

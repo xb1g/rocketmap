@@ -10,7 +10,7 @@ interface LinkPickerProps {
   segments: Segment[];
   allBlockItems: Map<BlockType, BlockItem[]>;
   anchorRef: React.RefObject<HTMLElement | null>;
-  onToggleSegment: (segmentId: number) => void;
+  onToggleSegment: (segmentId: string) => void;
   onToggleItem: (linkedItemId: string) => void;
   onClose: () => void;
 }
@@ -94,11 +94,11 @@ export function LinkPicker({
               </p>
             )}
             {segments.map((seg) => {
-              const isLinked = item.linkedSegmentIds.includes(seg.id);
+              const isLinked = item.linkedSegmentIds.includes(seg.$id);
               return (
                 <button
-                  key={seg.id}
-                  onClick={() => onToggleSegment(seg.id)}
+                  key={seg.$id}
+                  onClick={() => onToggleSegment(seg.$id)}
                   className={`flex items-center gap-1.5 w-full text-left px-1.5 py-1 rounded transition-colors ${
                     isLinked
                       ? "bg-white/8 text-foreground"
@@ -109,7 +109,9 @@ export function LinkPicker({
                     className="w-2 h-2 rounded-full shrink-0"
                     style={{ background: seg.colorHex ?? "#6366f1" }}
                   />
-                  <span className="text-[10px] truncate flex-1">{seg.name}</span>
+                  <span className="text-[10px] truncate flex-1">
+                    {seg.name}
+                  </span>
                   {isLinked && (
                     <svg
                       width="10"

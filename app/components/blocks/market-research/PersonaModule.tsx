@@ -28,7 +28,11 @@ function PersonaCard({
   onChange: (updated: Persona) => void;
   onRemove: () => void;
 }) {
-  const segment = segments.find((s) => s.id === persona.segmentId);
+  const segment = segments.find(
+    (s) =>
+      (s as any).$id === persona.segmentId ||
+      (s as any).id === persona.segmentId,
+  );
   const initials = persona.name
     .split(" ")
     .map((w) => w[0])

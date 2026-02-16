@@ -1,6 +1,9 @@
 {
   "enabledPlugins": {
     "superpowers@superpowers-marketplace": true,
-    "double-shot-latte@superpowers-marketplace": true
+    "double-shot-latte@superpowers-marketplace": false
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   }
 }

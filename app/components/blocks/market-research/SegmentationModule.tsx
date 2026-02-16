@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import type { SegmentationData, CustomerSegment } from "@/lib/types/canvas";
 
 interface SegmentationModuleProps {
@@ -11,11 +11,97 @@ interface SegmentationModuleProps {
   onSave: (data: SegmentationData) => void;
 }
 
-const PRIORITY_COLORS: Record<string, string> = {
+type PriorityLevel = "high" | "medium" | "low";
+
+const PRIORITY_COLORS: Record<PriorityLevel, string> = {
   high: "text-emerald-400 bg-emerald-400/10",
   medium: "text-amber-400 bg-amber-400/10",
   low: "text-foreground-muted bg-white/5",
 };
+
+const PRIORITY_LABELS: Record<PriorityLevel, string> = {
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+};
+
+function normalizePriority(
+  value: unknown,
+): {
+  priority: PriorityLevel;
+  priorityText: string;
+} {
+  if (typeof value === "string") {
+    const normalized = value.toLowerCase();
+    if (normalized === "high" || normalized === "medium" || normalized === "low") {
+      return { priority: normalized, priorityText: normalized };
+    }
+  }
+
+  const numeric =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : NaN;
+  if (Number.isFinite(numeric)) {
+    if (numeric >= 70) return { priority: "high", priorityText: "high" };
+    if (numeric >= 40) return { priority: "medium", priorityText: "medium" };
+    return { priority: "low", priorityText: "low" };
+  }
+
+  return { priority: "medium", priorityText: "medium" };
+}
+
+function normalizeSegment(raw: unknown, fallbackIndex = 0): CustomerSegment {
+  if (raw && typeof raw === "object") {
+    const source = raw as Record<string, unknown>;
+    const normalizedId = typeof source.id === "string" && source.id.length > 0 ? source.id : source.$id;
+    const id =
+      typeof normalizedId === "string" && normalizedId.length > 0
+        ? normalizedId
+        : String(source.id ?? fallbackIndex + 1);
+    const prioritySource = normalizePriority(
+      source.priority ??
+        source.priorityScore ??
+        source["priority_score"] ??
+        source["priorityScore"],
+    );
+    return {
+      id,
+      name: typeof source.name === "string" ? source.name : "",
+      description:
+        typeof source.description === "string" ? source.description : "",
+      demographics:
+        typeof source.demographics === "string" ? source.demographics : "",
+      psychographics:
+        typeof source.psychographics === "string" ? source.psychographics : "",
+      behavioral:
+        typeof source.behavioral === "string" ? source.behavioral : "",
+      geographic:
+        typeof source.geographic === "string" ? source.geographic : "",
+      estimatedSize:
+        typeof source.estimatedSize === "string" ? source.estimatedSize : "",
+      priority: prioritySource.priority,
+    };
+  }
+  return {
+    id: crypto.randomUUID(),
+    name: "",
+    description: "",
+    demographics: "",
+    psychographics: "",
+    behavioral: "",
+    geographic: "",
+    estimatedSize: "",
+    priority: "medium",
+  };
+}
+
+function normalizeSegments(rawSegments: unknown): CustomerSegment[] {
+  if (!Array.isArray(rawSegments)) return [];
+  return rawSegments.map((segment, index) => normalizeSegment(segment, index));
+}
 
 function SegmentCard({
   segment,
@@ -26,6 +112,7 @@ function SegmentCard({
   onChange: (updated: CustomerSegment) => void;
   onRemove: () => void;
 }) {
+  const priorityLabel = PRIORITY_LABELS[segment.priority];
   return (
     <div className="p-4 rounded-lg bg-white/3 border border-white/5 space-y-3">
       <div className="flex items-start justify-between">
@@ -39,7 +126,7 @@ function SegmentCard({
           <span
             className={`text-[10px] px-1.5 py-0.5 rounded ${PRIORITY_COLORS[segment.priority]}`}
           >
-            {segment.priority}
+            {priorityLabel}
           </span>
           <button
             onClick={onRemove}
@@ -92,7 +179,10 @@ export function SegmentationModule({
   onGenerate,
   onSave,
 }: SegmentationModuleProps) {
-  const current = data ?? { segments: [] };
+  const normalizedSegments = useMemo(
+    () => normalizeSegments(data?.segments),
+    [data?.segments],
+  );
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const debouncedSave = useCallback(
@@ -104,19 +194,19 @@ export function SegmentationModule({
   );
 
   const handleSegmentChange = (index: number, updated: CustomerSegment) => {
-    const segments = [...current.segments];
+    const segments = [...normalizedSegments];
     segments[index] = updated;
     debouncedSave({ segments });
   };
 
   const handleRemove = (index: number) => {
-    const segments = current.segments.filter((_, i) => i !== index);
+    const segments = normalizedSegments.filter((_, i) => i !== index);
     onSave({ segments });
   };
 
   const handleAdd = () => {
     const segments = [
-      ...current.segments,
+      ...normalizedSegments,
       {
         id: crypto.randomUUID(),
         name: "",
@@ -152,9 +242,9 @@ export function SegmentationModule({
             : "Generate Segments with AI"}
       </button>
 
-      {current.segments.length > 0 && (
+      {normalizedSegments.length > 0 && (
         <div className="space-y-3">
-          {current.segments.map((seg, i) => (
+          {normalizedSegments.map((seg, i) => (
             <SegmentCard
               key={seg.id}
               segment={seg}
