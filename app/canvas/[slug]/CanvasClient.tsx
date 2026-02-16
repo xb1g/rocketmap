@@ -1339,9 +1339,9 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
         />
       )}
 
-      {/* Canvas Overview — replaces BMCGrid when a block is expanded */}
+      {/* Expanded block detail — sits beside the focus panel at z-50 */}
       {activeTab === "canvas" && !isMobile && expandedBlock && expandedBlockData && (
-          <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="fixed top-0 bottom-0 left-0 z-50 overflow-y-auto bg-[var(--color-background)]" style={{ right: `${420}px` }}>
               <ExpandedCanvasOverview
                 blocks={blocks}
                 mode={mode}

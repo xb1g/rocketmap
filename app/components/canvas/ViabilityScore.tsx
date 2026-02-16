@@ -215,7 +215,7 @@ export function ViabilityScore({
 
       <Popover.Portal>
         <Popover.Content
-          className="glass-morphism backdrop-blur-2xl bg-[#0f0f23]/95 border border-white/20 rounded-lg p-4 max-w-md shadow-2xl z-50"
+          className="glass-morphism border border-white/15 rounded-lg p-4 max-w-md shadow-2xl z-50"
           sideOffset={8}
           align="end"
         >
