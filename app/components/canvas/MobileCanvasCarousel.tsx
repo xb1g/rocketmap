@@ -12,32 +12,56 @@ import { BLOCK_DEFINITIONS, getBlockValue } from "./constants";
 import { BlockCell } from "./BlockCell";
 
 interface Section {
-  id: "left" | "center" | "right";
+  id: string;
   blocks: BlockType[];
   title: string;
 }
 
 const SECTIONS: Section[] = [
   {
-    id: "left",
-    blocks: ["key_partnerships", "key_activities", "key_resources"],
-    title: "Resources",
+    id: "kp",
+    blocks: ["key_partnerships"],
+    title: "KP",
   },
   {
-    id: "center",
+    id: "ka",
+    blocks: ["key_activities"],
+    title: "KA",
+  },
+  {
+    id: "kr",
+    blocks: ["key_resources"],
+    title: "KR",
+  },
+  {
+    id: "vp",
     blocks: ["value_prop"],
     title: "Value",
   },
   {
-    id: "right",
-    blocks: [
-      "customer_segments",
-      "channels",
-      "customer_relationships",
-      "revenue_streams",
-      "cost_structure",
-    ],
+    id: "cr",
+    blocks: ["customer_relationships"],
+    title: "CR",
+  },
+  {
+    id: "ch",
+    blocks: ["channels"],
+    title: "CH",
+  },
+  {
+    id: "cs",
+    blocks: ["customer_segments"],
     title: "Customers",
+  },
+  {
+    id: "rev",
+    blocks: ["revenue_streams"],
+    title: "Revenue",
+  },
+  {
+    id: "cost",
+    blocks: ["cost_structure"],
+    title: "Cost",
   },
 ];
 
@@ -104,7 +128,7 @@ export function MobileCanvasCarousel({
   onItemToggleLink,
 }: MobileCanvasCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [currentSection, setCurrentSection] = useState(1); // Start at VP (center)
+  const [currentSection, setCurrentSection] = useState(3); // Start at Value (index 3)
 
   // Collect all block items for LinkPicker
   const allBlockItems = new Map<BlockType, BlockItem[]>();
@@ -132,7 +156,7 @@ export function MobileCanvasCarousel({
       const sectionWidth = el.clientWidth;
       if (sectionWidth === 0) return;
       const index = Math.round(el.scrollLeft / sectionWidth);
-      setCurrentSection(Math.min(2, Math.max(0, index)));
+      setCurrentSection(Math.min(8, Math.max(0, index)));
     };
 
     el.addEventListener("scroll", handleScroll, { passive: true });
@@ -160,7 +184,7 @@ export function MobileCanvasCarousel({
             onClick={() => scrollToSection(i)}
             role="tab"
             aria-selected={currentSection === i}
-            aria-label={`${section.title} section (${i + 1} of 3)`}
+            aria-label={`${section.title} section (${i + 1} of 9)`}
           >
             {section.title}
           </button>
