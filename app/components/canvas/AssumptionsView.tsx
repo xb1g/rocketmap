@@ -196,7 +196,7 @@ export function AssumptionsView({ canvasId }: AssumptionsViewProps) {
       const res = await fetch(`/api/canvas/${canvasId}/assumptions`);
       if (res.ok) {
         const data = await res.json();
-        setAssumptions(data.assumptions ?? []);
+        setAssumptions(Array.isArray(data) ? data : []);
       }
     } catch {
       // silently fail
