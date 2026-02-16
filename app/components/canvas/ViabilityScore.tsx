@@ -113,7 +113,6 @@ export function ViabilityScore({
         </pre>
         <button
           onClick={handleCalculate}
-          disabled={status === "calculating"}
           className="ui-btn ui-btn-sm ui-btn-primary flex items-center gap-1.5"
         >
           Calculate Viability
@@ -173,7 +172,6 @@ export function ViabilityScore({
 
         <button
           onClick={handleRefresh}
-          disabled={status === "calculating"}
           className={`ui-btn ui-btn-xs ui-btn-ghost ${
             status === "outdated" ? "animate-pulse" : ""
           }`}

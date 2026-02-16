@@ -100,6 +100,7 @@ export async function saveChatMessage(
   await serverTablesDB.createRow({
     databaseId: DATABASE_ID,
     tableId: MESSAGES_TABLE_ID,
+    rowId: ID.unique(),
     data: {
       canvas: canvasDocId, // Use relationship - just pass the canvas row ID
       chatKey,

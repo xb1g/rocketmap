@@ -824,24 +824,34 @@ function GenerateCanvasCard({
 
   // Extract data from the tool invocation
   const inv = part.type === "tool-invocation"
-    ? (part.toolInvocation as { args?: Record<string, string>; result?: Record<string, string>; toolCallId?: string } | undefined)
+    ? (part.toolInvocation as { args?: Record<string, unknown>; result?: Record<string, unknown>; toolCallId?: string } | undefined)
     : undefined;
-  const args = inv?.args ?? (part.input as Record<string, string> | undefined);
-  const result = inv?.result ?? (part.output as Record<string, string> | undefined);
-  const title = result?.title ?? args?.title;
+  const args = inv?.args ?? (part.input as Record<string, unknown> | undefined);
+  const result = inv?.result ?? (part.output as Record<string, unknown> | undefined);
+  const titleValue = result?.title ?? args?.title;
+  const title = typeof titleValue === "string" ? titleValue : undefined;
   const toolCallId = inv?.toolCallId ?? (part.toolCallId as string | undefined);
 
   // Server-side tool returns { slug, canvasId, title } in result
-  const canvasSlug = result?.slug ?? canvasSlugProp;
+  const resultSlug = result?.slug;
+  const canvasSlug =
+    typeof resultSlug === "string" && resultSlug.length > 0
+      ? resultSlug
+      : canvasSlugProp;
 
   // Count filled blocks from args
   const blockKeys = [
     "key_partnerships", "key_activities", "key_resources",
-    "value_propositions", "customer_relationships", "channels",
-    "customer_segments", "cost_structure", "revenue_streams",
+    "value_prop", "customer_relationships", "channels",
+    "segments", "cost_structure", "revenue_streams",
   ];
+  const hasContent = (value: unknown): boolean => {
+    if (Array.isArray(value)) return value.length > 0;
+    if (typeof value === "string") return value.trim().length > 0;
+    return value !== null && value !== undefined;
+  };
   const filledBlocks = args
-    ? blockKeys.filter((k) => args[k] && args[k].length > 10).length
+    ? blockKeys.filter((k) => hasContent(args[k])).length
     : 0;
 
   return (
@@ -897,7 +907,7 @@ function GenerateCanvasCard({
                 key={k}
                 className="w-1.5 h-1.5 rounded-full"
                 style={{
-                  background: args?.[k] && args[k].length > 10
+                  background: hasContent(args?.[k])
                     ? "rgb(52, 211, 153)"
                     : "var(--gray-a5)",
                 }}

@@ -208,6 +208,24 @@ export function MobileCanvasCarousel({
                 ? getBlockValue(block.content, blockType, mode)
                 : "";
 
+              // Adapt items → blocks prop for BlockCard rendering
+              const items = block?.content.items ?? [];
+              const segmentById = new Map(allSegments.map(s => [s.$id, s]));
+              const blockCards = items.map((item) => {
+                const itemSegments = (item.linkedSegmentIds ?? [])
+                  .map(id => segmentById.get(id))
+                  .filter((s): s is Segment => s !== undefined);
+                return {
+                  $id: item.id,
+                  blockType,
+                  contentJson: JSON.stringify({ text: item.name, tags: [] }),
+                  confidenceScore: block?.confidenceScore ?? 0,
+                  riskScore: 0,
+                  segments: itemSegments,
+                  state: block?.state ?? ("calm" as const),
+                };
+              });
+
               return (
                 <div
                   key={blockType}
@@ -225,7 +243,7 @@ export function MobileCanvasCarousel({
                     confidenceScore={block?.confidenceScore ?? 0}
                     hasAnalysis={!!block?.aiAnalysis}
                     linkedSegments={block?.linkedSegments}
-                    items={block?.content.items}
+                    blocks={blockCards.length > 0 ? blockCards : undefined}
                     allSegments={allSegments}
                     allBlockItems={allBlockItems}
                     onChange={(v) => onBlockChange(blockType, v)}
@@ -250,32 +268,28 @@ export function MobileCanvasCarousel({
                         ? onSegmentFocus
                         : undefined
                     }
-                    onItemCreate={
+                    onBlockCreate={
                       onItemCreate && blockType !== "customer_segments"
                         ? () => onItemCreate(blockType)
                         : undefined
                     }
-                    onItemUpdate={
+                    onBlockUpdate={
                       onItemUpdate
-                        ? (itemId, updates) =>
-                            onItemUpdate(blockType, itemId, updates)
+                        ? (blockId, updates) => {
+                            const parsed = JSON.parse(updates.contentJson);
+                            onItemUpdate(blockType, blockId, { name: parsed.text });
+                          }
                         : undefined
                     }
-                    onItemDelete={
+                    onBlockDelete={
                       onItemDelete
-                        ? (itemId) => onItemDelete(blockType, itemId)
+                        ? (blockId) => onItemDelete(blockType, blockId)
                         : undefined
                     }
-                    onItemToggleSegment={
+                    onBlockToggleSegment={
                       onItemToggleSegment
-                        ? (itemId, segId) =>
-                            onItemToggleSegment(blockType, itemId, segId)
-                        : undefined
-                    }
-                    onItemToggleLink={
-                      onItemToggleLink
-                        ? (itemId, linkedId) =>
-                            onItemToggleLink(blockType, itemId, linkedId)
+                        ? (blockId, segId) =>
+                            onItemToggleSegment(blockType, blockId, segId)
                         : undefined
                     }
                   />

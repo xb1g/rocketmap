@@ -16,6 +16,7 @@ interface CanvasToolbarProps {
   onConvertLeanToBmc: () => void;
   hasLeanContent: boolean;
   isConverting: boolean;
+  onSettingsOpen?: () => void;
 }
 
 export function CanvasToolbar({
@@ -28,6 +29,7 @@ export function CanvasToolbar({
   onConvertLeanToBmc,
   hasLeanContent,
   isConverting,
+  onSettingsOpen,
 }: CanvasToolbarProps) {
   return (
     <div className="flex items-center justify-between px-2 py-2">

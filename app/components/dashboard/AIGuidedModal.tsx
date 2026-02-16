@@ -59,6 +59,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
   const [creationStep, setCreationStep] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
   const creatingRef = useRef(false);
+  const lastRedirectSlugRef = useRef<string | null>(null);
 
   // Session management
   const [sessions, setSessions] = useState<GuidedSession[]>([]);
@@ -143,6 +144,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
     setCanvasTitle('');
     setErrorMessage('');
     creatingRef.current = false;
+    lastRedirectSlugRef.current = null;
     setMessages([]);
     setView('chat');
   }, [setMessages]);
@@ -154,6 +156,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
     setCanvasTitle('');
     setErrorMessage('');
     creatingRef.current = session.status === 'completed';
+    lastRedirectSlugRef.current = session.canvasSlug ?? null;
     setView('chat');
   }, [setMessages]);
 
@@ -213,7 +216,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
         }
 
         // If generateCanvas is complete and has a slug, trigger redirect
-        if (isComplete && slug) {
+        if (isComplete && slug && lastRedirectSlugRef.current !== slug) {
           creatingRef.current = true;
           handleCanvasReady(slug, title);
           return;
@@ -232,6 +235,9 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
   }, [creationState]);
 
   const handleCanvasReady = useCallback((slug: string, title: string) => {
+    if (lastRedirectSlugRef.current === slug) return;
+    lastRedirectSlugRef.current = slug;
+
     setCanvasTitle(title);
     setCreationState('creating');
     setCreationStep(0);

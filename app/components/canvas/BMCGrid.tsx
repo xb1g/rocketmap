@@ -123,7 +123,7 @@ export function BMCGrid({
           const segmentById = new Map(allSegments.map(s => [s.$id, s]));
           const blockCards = items.map((item) => {
             // Resolve item-level linkedSegmentIds to full Segment objects
-            const itemSegments = ((item as Record<string, unknown>).linkedSegmentIds as string[] ?? [])
+            const itemSegments = (item.linkedSegmentIds ?? [])
               .map(id => segmentById.get(id))
               .filter((s): s is Segment => s !== undefined);
             return {

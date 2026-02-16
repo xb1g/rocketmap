@@ -239,6 +239,47 @@ export const createSegments = tool({
 
 // ─── Canvas Generation Tool ──────────────────────────────────────────────────
 
+const atomicBlockItemSchema = z.object({
+  text: z.string().min(1).describe('Atomic block content text'),
+  tags: z.array(z.string()).optional().describe('Optional categorization tags'),
+  segmentRefs: z
+    .array(z.string())
+    .optional()
+    .describe('Optional segment references by exact segment name or position ("1", "2", ...)'),
+});
+
+const guidedBlockArraySchema = z
+  .array(z.union([z.string(), atomicBlockItemSchema]))
+  .optional();
+
+type AtomicBlockItemInput = z.infer<typeof atomicBlockItemSchema>;
+
+function normalizeSegmentRefKey(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function normalizeGuidedBlockItem(
+  value: string | AtomicBlockItemInput,
+): { text: string; tags: string[]; segmentRefs: string[] } | null {
+  if (typeof value === 'string') {
+    const text = value.trim();
+    if (!text) return null;
+    return { text, tags: [], segmentRefs: [] };
+  }
+
+  const text = value.text.trim();
+  if (!text) return null;
+  return {
+    text,
+    tags: Array.isArray(value.tags)
+      ? value.tags.map((t) => t.trim()).filter(Boolean)
+      : [],
+    segmentRefs: Array.isArray(value.segmentRefs)
+      ? value.segmentRefs.map((r) => r.trim()).filter(Boolean)
+      : [],
+  };
+}
+
 const generateCanvasInputSchema = z.object({
   title: z.string().min(3).describe('A concise title for the canvas (the startup or product name)'),
   segments: z.array(z.object({
@@ -251,14 +292,14 @@ const generateCanvasInputSchema = z.object({
     estimatedSize: z.string().describe('Estimated segment size (e.g., "50,000 SMBs in Thailand", "15% of TAM")'),
     priority: z.enum(['high', 'medium', 'low']).describe('Segment priority'),
   })).optional().describe('Customer segments to extract (1-3 segments recommended)'),
-  key_partnerships: z.array(z.string()).optional().describe('Array of specific key partners (e.g., ["Cloud infrastructure providers (AWS/GCP)", "Payment gateway partners"])'),
-  key_activities: z.array(z.string()).optional().describe('Array of concrete key activities (e.g., ["ML model training", "Customer onboarding automation"])'),
-  key_resources: z.array(z.string()).optional().describe('Array of specific key resources (e.g., ["Proprietary dataset of 10M+ transactions", "Engineering team (5 FTE)"])'),
-  value_prop: z.array(z.string()).optional().describe('Array of specific value propositions (e.g., ["Reduce churn by 30%", "Save 10 hours/week on manual work"])'),
-  customer_relationships: z.array(z.string()).optional().describe('Array of relationship types (e.g., ["Self-service onboarding", "Dedicated account manager for enterprise"])'),
-  channels: z.array(z.string()).optional().describe('Array of specific channels (e.g., ["Website", "D2C sales team", "Social media (LinkedIn/Twitter)"])'),
-  cost_structure: z.array(z.string()).optional().describe('Array of specific cost items (e.g., ["AWS infrastructure: $500/mo", "Engineering salaries: $15k/mo"])'),
-  revenue_streams: z.array(z.string()).optional().describe('Array of specific revenue streams (e.g., ["$15/mo subscription tier", "$99/year annual plan"])'),
+  key_partnerships: guidedBlockArraySchema.describe('Atomic key partner items (string legacy format is supported temporarily)'),
+  key_activities: guidedBlockArraySchema.describe('Atomic key activity items (string legacy format is supported temporarily)'),
+  key_resources: guidedBlockArraySchema.describe('Atomic key resource items (string legacy format is supported temporarily)'),
+  value_prop: guidedBlockArraySchema.describe('Atomic value proposition items (string legacy format is supported temporarily)'),
+  customer_relationships: guidedBlockArraySchema.describe('Atomic customer relationship items (string legacy format is supported temporarily)'),
+  channels: guidedBlockArraySchema.describe('Atomic channel items (string legacy format is supported temporarily)'),
+  cost_structure: guidedBlockArraySchema.describe('Atomic cost structure items (string legacy format is supported temporarily)'),
+  revenue_streams: guidedBlockArraySchema.describe('Atomic revenue stream items (string legacy format is supported temporarily)'),
 });
 
 /** Static version — echoes args back (used as fallback / in tool registry) */
@@ -303,10 +344,11 @@ export function createGenerateCanvasTool(userId: string) {
           }
         });
 
-        // 2. Create segments (MOST IMPORTANT)
-        let segmentSummary = '';
+        // 2. Create segments and build deterministic lookup for block linking
+        const segmentIdByName = new Map<string, string>();
+        const segmentIdByIndex = new Map<string, string>();
         if (segments.length > 0) {
-          await Promise.all(
+          const createdSegments = await Promise.all(
             segments.map((seg, idx) =>
               serverTablesDB.createRow({
                 databaseId: DATABASE_ID,
@@ -328,14 +370,28 @@ export function createGenerateCanvasTool(userId: string) {
               })
             )
           );
-
-          // Create summary for customer_segments block
-          segmentSummary = segments.map(seg =>
-            `${seg.name} - ${seg.description} (${seg.estimatedSize})`
-          ).join('\n');
+          createdSegments.forEach((doc, idx) => {
+            const seg = segments[idx];
+            segmentIdByName.set(normalizeSegmentRefKey(seg.name), doc.$id);
+            segmentIdByIndex.set(String(idx + 1), doc.$id);
+          });
         }
 
-        // 3. Create blocks (multiple per type from arrays)
+        const resolveSegmentIds = (segmentRefs: string[]): string[] => {
+          const resolved = new Set<string>();
+          for (const ref of segmentRefs) {
+            const byName = segmentIdByName.get(normalizeSegmentRefKey(ref));
+            if (byName) {
+              resolved.add(byName);
+              continue;
+            }
+            const byIndex = segmentIdByIndex.get(ref.trim());
+            if (byIndex) resolved.add(byIndex);
+          }
+          return Array.from(resolved);
+        };
+
+        // 3. Create blocks (multiple per type, atomic format)
         const blockTypeMap: Record<string, BlockType> = {
           key_partnerships: 'key_partnerships',
           key_activities: 'key_activities',
@@ -350,9 +406,13 @@ export function createGenerateCanvasTool(userId: string) {
         const blockCreationPromises = [];
         for (const [paramKey, blockType] of Object.entries(blockTypeMap)) {
           const contentArray = blockArrays[paramKey as keyof typeof blockArrays];
-          if (!contentArray || contentArray.length === 0) continue;
+          if (!Array.isArray(contentArray) || contentArray.length === 0) continue;
 
-          for (const content of contentArray) {
+          for (const rawItem of contentArray as Array<string | AtomicBlockItemInput>) {
+            const normalized = normalizeGuidedBlockItem(rawItem);
+            if (!normalized) continue;
+            const linkedSegmentIds = resolveSegmentIds(normalized.segmentRefs);
+
             blockCreationPromises.push(
               serverTablesDB.createRow({
                 databaseId: DATABASE_ID,
@@ -361,19 +421,30 @@ export function createGenerateCanvasTool(userId: string) {
                 data: {
                   canvas: canvas.$id,  // Appwrite relationship
                   blockType: blockType,
-                  contentJson: JSON.stringify({ bmc: content, lean: content }),
+                  contentJson: JSON.stringify({
+                    text: normalized.text,
+                    ...(normalized.tags.length > 0 ? { tags: normalized.tags } : {}),
+                  }),
                   aiAnalysisJson: '',
                   deepDiveJson: '',
                   confidenceScore: 0,
-                  riskScore: 0
+                  riskScore: 0,
+                  ...(linkedSegmentIds.length > 0 ? { segments: linkedSegmentIds } : {}),
                 }
               })
             );
           }
         }
 
-        // Create customer_segments block if segments were provided
-        if (segmentSummary) {
+        // Create customer_segments blocks based on created segment records
+        for (let idx = 0; idx < segments.length; idx++) {
+          const seg = segments[idx];
+          const segmentId = segmentIdByIndex.get(String(idx + 1));
+          if (!segmentId) continue;
+          const summary = seg.description
+            ? `${seg.name} - ${seg.description}`
+            : seg.name;
+
           blockCreationPromises.push(
             serverTablesDB.createRow({
               databaseId: DATABASE_ID,
@@ -382,11 +453,15 @@ export function createGenerateCanvasTool(userId: string) {
               data: {
                 canvas: canvas.$id,
                 blockType: 'customer_segments',
-                contentJson: JSON.stringify({ bmc: segmentSummary, lean: segmentSummary }),
+                contentJson: JSON.stringify({
+                  text: summary,
+                  tags: ['segment'],
+                }),
                 aiAnalysisJson: '',
                 deepDiveJson: '',
                 confidenceScore: 0,
-                riskScore: 0
+                riskScore: 0,
+                segments: [segmentId],
               }
             })
           );

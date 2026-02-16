@@ -14,7 +14,19 @@ function parseContentJson(raw: string | undefined): BlockContent {
   if (!raw) return { bmc: '', lean: '', items: [] };
   try {
     const parsed = JSON.parse(raw);
-    return { bmc: parsed.bmc ?? '', lean: parsed.lean ?? '', items: parsed.items ?? [] };
+    if (typeof parsed === 'object' && parsed !== null) {
+      const record = parsed as Record<string, unknown>;
+      const atomicText = typeof record.text === 'string' ? record.text : '';
+      const bmc = typeof record.bmc === 'string' ? record.bmc : '';
+      const lean = typeof record.lean === 'string' ? record.lean : '';
+      const items = Array.isArray(record.items) ? record.items as BlockContent['items'] : [];
+      return {
+        bmc: bmc || atomicText,
+        lean: lean || atomicText,
+        items,
+      };
+    }
+    return { bmc: '', lean: '', items: [] };
   } catch {
     return { bmc: raw, lean: '', items: [] };
   }
