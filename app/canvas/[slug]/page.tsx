@@ -7,6 +7,7 @@ import {
   CANVASES_TABLE_ID,
   BLOCKS_TABLE_ID,
   SEGMENTS_TABLE_ID,
+  ASSUMPTIONS_TABLE_ID,
 } from "@/lib/appwrite";
 import type {
   BlockData,
@@ -19,6 +20,7 @@ import type {
   ViabilityData,
 } from "@/lib/types/canvas";
 import { BLOCK_DEFINITIONS } from "@/app/components/canvas/constants";
+import type { AssumptionItem } from "@/app/components/canvas/AssumptionsView";
 import { CanvasClient } from "./CanvasClient";
 
 interface PageProps {
@@ -104,6 +106,26 @@ function readBoolean(value: unknown): boolean {
 
 function readNumber(value: unknown, fallback: number): number {
   return typeof value === "number" ? value : fallback;
+}
+
+function readAssumptionCategory(
+  value: unknown,
+): AssumptionItem["category"] {
+  if (
+    value === "market" ||
+    value === "product" ||
+    value === "ops" ||
+    value === "legal"
+  ) {
+    return value;
+  }
+  return "market";
+}
+
+function readRelationId(value: unknown): string | null {
+  if (typeof value === "string") return value;
+  if (isRecord(value) && typeof value.$id === "string") return value.$id;
+  return null;
 }
 
 function normalizeSegmentRef(
@@ -286,7 +308,70 @@ export default async function CanvasPage({ params }: PageProps) {
     console.error("Error fetching canvas components:", error);
   }
 
-  // 3. Map segments for easy lookup
+  // 3. Fetch assumptions directly — linked to blocks via many-to-many
+  const blockIds = blockDocs
+    .map((doc) => readString(doc.$id))
+    .filter((id) => id.length > 0);
+  const blockTypeById = new Map(
+    blockDocs.map((doc) => [readString(doc.$id), readString(doc.blockType)]),
+  );
+  let initialAssumptions: AssumptionItem[] = [];
+  if (blockIds.length > 0) {
+    try {
+      const assumptionsRes = await serverTablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: ASSUMPTIONS_TABLE_ID,
+        queries: [
+          Query.select([
+            "$id",
+            "assumptionText",
+            "category",
+            "severityScore",
+            "status",
+            "blocks",
+          ]),
+          Query.orderDesc("severityScore"),
+          Query.limit(100),
+        ],
+      });
+
+      initialAssumptions = assumptionsRes.rows
+        .filter((row) => {
+          const blocks = isRecord(row) && Array.isArray(row.blocks) ? row.blocks : null;
+          if (!blocks) return false;
+          return blocks.some((blockRef) => {
+            const blockId = readRelationId(blockRef);
+            return blockId ? blockIds.includes(blockId) : false;
+          });
+        })
+        .map((row) => {
+          const blocks = isRecord(row) && Array.isArray(row.blocks) ? row.blocks : [];
+          const linkedBlockTypes = blocks
+            .map((blockRef) => readRelationId(blockRef))
+            .filter((blockId): blockId is string => !!blockId)
+            .map((blockId) => blockTypeById.get(blockId) ?? "")
+            .filter((blockType) => blockType.length > 0);
+
+          return {
+            $id: readString((row as Record<string, unknown>).$id),
+            statement: readString((row as Record<string, unknown>).assumptionText),
+            category: readAssumptionCategory(
+              (row as Record<string, unknown>).category,
+            ),
+            severityScore: readNumber(
+              (row as Record<string, unknown>).severityScore,
+              0,
+            ),
+            status: readString((row as Record<string, unknown>).status) || "untested",
+            blockTypes: linkedBlockTypes,
+          };
+        });
+    } catch (err) {
+      console.error("Error fetching assumptions:", err);
+    }
+  }
+
+  // 4. Map segments for easy lookup
   const initialSegments: Segment[] = segmentDocs.map((doc) => ({
     $id: readString(doc.$id),
     name: readString(doc.name),
@@ -420,6 +505,7 @@ export default async function CanvasPage({ params }: PageProps) {
         initialSegments={initialSegments}
         readOnly={isReadOnly}
         initialViabilityData={canvasData.viabilityData}
+        initialAssumptions={initialAssumptions}
       />
     </div>
   );

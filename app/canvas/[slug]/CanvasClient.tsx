@@ -40,6 +40,7 @@ import { BlockFocusPanel } from "@/app/components/canvas/BlockFocusPanel";
 import { MobileCanvasCarousel } from "@/app/components/canvas/MobileCanvasCarousel";
 import { MobileFocusSheet } from "@/app/components/canvas/MobileFocusSheet";
 import { AnalysisView } from "@/app/components/canvas/AnalysisView";
+import { AssumptionsView, type AssumptionItem } from "@/app/components/canvas/AssumptionsView";
 import { DebugPanel } from "@/app/components/canvas/DebugPanel";
 import { ChatBar } from "@/app/components/ai/ChatBar";
 import { BlockChatSection } from "@/app/components/ai/BlockChatSection";
@@ -54,6 +55,7 @@ interface CanvasClientProps {
   initialSegments?: Segment[];
   readOnly: boolean;
   initialViabilityData?: ViabilityData | null;
+  initialAssumptions?: AssumptionItem[];
 }
 
 type SaveStatus = "saved" | "saving" | "unsaved";
@@ -80,6 +82,7 @@ export function CanvasClient({
   initialSegments = [],
   readOnly,
   initialViabilityData,
+  initialAssumptions = [],
 }: CanvasClientProps) {
   const router = useRouter();
   const [mode, setMode] = useState<CanvasMode>("bmc");
@@ -718,8 +721,8 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
       const newItem: BlockItem = {
         id: crypto.randomUUID(),
         name: "New item",
-        linkedSegmentIds: [],
         linkedItemIds: [],
+        linkedSegmentIds: [],
         createdAt: new Date().toISOString(),
       };
       updateBlockItems(blockType, (items) => [...items, newItem]);
@@ -1205,6 +1208,13 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
           consistencyData={consistencyData}
           isCheckingConsistency={isCheckingConsistency}
           onRunConsistencyCheck={handleConsistencyCheck}
+        />
+      )}
+
+      {activeTab === "assumptions" && (
+        <AssumptionsView
+          canvasId={canvasId}
+          initialAssumptions={initialAssumptions}
         />
       )}
 

@@ -12,7 +12,7 @@ export type BlockType =
 
 export type CanvasMode = "bmc" | "lean";
 export type BlockState = "calm" | "healthy" | "warning" | "critical" | "ai";
-export type CanvasTab = "canvas" | "analysis" | "notes" | "debug";
+export type CanvasTab = "canvas" | "analysis" | "assumptions" | "notes" | "debug";
 
 export interface BlockContent {
   bmc: string;
@@ -28,6 +28,7 @@ export interface BlockItem {
   linkedItemIds: string[]; // format: "blockType:itemId" - cross-block item links
   createdAt: string;
 }
+
 
 export interface BlockCard {
   $id: string;
@@ -261,6 +262,37 @@ export interface SegmentScorecard {
   requiredExperiments: string[];
   dataConfidence: number;
   lastUpdated: string;
+}
+
+// ─── Assumption Types ─────────────────────────────────────────────────────────
+
+export type AssumptionStatus = 'untested' | 'testing' | 'validated' | 'refuted' | 'inconclusive';
+export type AssumptionPriority = 'low' | 'medium' | 'high';
+
+export interface Assumption {
+  $id: string;
+  canvasId: string;
+  statement: string;
+  status: AssumptionStatus;
+  priority: AssumptionPriority;
+  source: 'ai' | 'user';
+  blockTypes: BlockType[];
+  segmentIds: string[];
+  linkedValidationItemIds: string[];
+  createdAt: string;
+  updatedAt: string;
+  lastTestedAt?: string;
+}
+
+export interface AssumptionTest {
+  $id: string;
+  assumptionId: string;
+  method: string;
+  successCriteria: string;
+  result: 'supports' | 'contradicts' | 'mixed' | 'inconclusive';
+  evidence: string;
+  sourceUrl?: string;
+  createdAt: string;
 }
 
 // ─── Block Item Proposals (AI Copilot → Create Items) ────────────────────────

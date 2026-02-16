@@ -43,6 +43,19 @@ export const checkConsistency = tool({
   execute: async (params) => params,
 });
 
+export const extractAssumptions = tool({
+  description: 'Extract hidden assumptions from the entire business model canvas. Each assumption should be specific, testable, and linked to the blocks where it appears.',
+  inputSchema: z.object({
+    assumptions: z.array(z.object({
+      statement: z.string().describe('A clear, testable assumption statement'),
+      category: z.enum(['market', 'product', 'ops', 'legal']).describe('Assumption category'),
+      severityScore: z.number().min(0).max(10).describe('Impact score 0-10 (10 = highest risk if wrong)'),
+      blockTypes: z.array(z.string()).describe('Block types where this assumption appears (e.g., "customer_segments", "value_prop")'),
+    })).describe('Extracted assumptions from the canvas'),
+  }),
+  execute: async (params) => params,
+});
+
 export const searchWeb = tool({
   description: 'Search the web for real-world market data, competitor information, industry reports, and validation data. Use this to ground market research in current facts and sources. Always cite URLs in your analysis.',
   inputSchema: z.object({
@@ -520,6 +533,7 @@ export const proposeBlockEdit = tool({
 const allTools: Record<string, ReturnType<typeof tool<any, any>>> = {
   analyzeBlock,
   checkConsistency,
+  extractAssumptions,
   searchWeb,
   proposeBlockEdit,
   createBlockItems,

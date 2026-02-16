@@ -18,6 +18,7 @@ interface CanvasTabsProps {
 const BASE_TABS: { value: CanvasTab; label: string }[] = [
   { value: "canvas", label: "Canvas" },
   { value: "analysis", label: "Analysis" },
+  { value: "assumptions", label: "Assumptions" },
   { value: "notes", label: "Notes" },
 ];
 

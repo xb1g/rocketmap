@@ -215,23 +215,22 @@ export function BlockCell({
 
   const linkedSegmentById = useMemo(
     () =>
-      new Map((allSegments ?? []).map((segment) => [segment.$id, segment] as const)),
+      new Map(
+        (allSegments ?? []).map((segment) => [segment.$id, segment] as const),
+      ),
     [allSegments],
   );
 
-  const resolvedLinkedSegments = useMemo(
-    () => {
-      // For customer_segments block, show ALL segments regardless of linking
-      if (isSegmentBlock) {
-        return allSegments ?? [];
-      }
-      return (linkedSegments ?? []).map((seg) => {
-        const fullSegment = linkedSegmentById.get(seg.$id);
-        return fullSegment ?? seg;
-      });
-    },
-    [isSegmentBlock, allSegments, linkedSegments, linkedSegmentById],
-  );
+  const resolvedLinkedSegments = useMemo(() => {
+    // For customer_segments block, show ALL segments regardless of linking
+    if (isSegmentBlock) {
+      return allSegments ?? [];
+    }
+    return (linkedSegments ?? []).map((seg) => {
+      const fullSegment = linkedSegmentById.get(seg.$id);
+      return fullSegment ?? seg;
+    });
+  }, [isSegmentBlock, allSegments, linkedSegments, linkedSegmentById]);
 
   const handleCreateSegment = useCallback(async () => {
     if (readOnly || !newSegmentName.trim() || !onAddSegment || isSaving) return;
@@ -447,7 +446,7 @@ export function BlockCell({
       {/* Block cards - NEW */}
       {((blocks && blocks.length > 0) || onBlockCreate) && (
         <div className="block-items-container">
-          {blocks?.map(block => (
+          {blocks?.map((block) => (
             <BlockCard
               key={block.$id}
               block={block}
@@ -455,7 +454,9 @@ export function BlockCell({
               allBlockItems={allBlockItems}
               onUpdate={(blockId, updates) => onBlockUpdate?.(blockId, updates)}
               onDelete={(blockId) => onBlockDelete?.(blockId)}
-              onSegmentToggle={(blockId, segmentId) => onBlockToggleSegment?.(blockId, segmentId)}
+              onSegmentToggle={(blockId, segmentId) =>
+                onBlockToggleSegment?.(blockId, segmentId)
+              }
               onMouseEnter={() => onBlockHover?.(block.$id)}
               onMouseLeave={() => onBlockHover?.(null)}
               ref={(el) => blockRefCallback?.(block.$id, el)}
@@ -554,36 +555,38 @@ export function BlockCell({
             </div>
           ) : (
             !readOnly && (
-            <button
-              onClick={() => setAddingNew(true)}
-              className="w-full rounded-md border border-dashed border-white/8 hover:border-white/15 px-2 py-1.5 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/[0.03] transition-colors text-left"
-            >
-              + New segment
-            </button>
+              <button
+                onClick={() => setAddingNew(true)}
+                className="w-full rounded-md border border-dashed border-white/8 hover:border-white/15 px-2 py-1.5 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/[0.03] transition-colors text-left"
+              >
+                + New segment
+              </button>
             )
           )}
         </div>
       )}
 
       {/* Segment sub-rows for non-segment blocks */}
-      {!isSegmentBlock && resolvedLinkedSegments && resolvedLinkedSegments.length > 0 && (
-        <div className="px-2 pb-0.5 space-y-0.5">
-          {resolvedLinkedSegments.slice(0, 4).map((seg) => (
-            <SegmentCard
-              key={seg.$id}
-              segment={seg}
-              mode="compact"
-              onLink={() => onSegmentClick?.(seg.$id)}
-              segmentRefCallback={(el) => segmentRefCallback?.(seg.$id, el)}
-            />
-          ))}
-          {resolvedLinkedSegments.length > 4 && (
-            <span className="text-[9px] text-foreground-muted/40 px-1.5">
-              +{resolvedLinkedSegments.length - 4} more
-            </span>
-          )}
-        </div>
-      )}
+      {!isSegmentBlock &&
+        resolvedLinkedSegments &&
+        resolvedLinkedSegments.length > 0 && (
+          <div className="px-2 pb-0.5 space-y-0.5">
+            {resolvedLinkedSegments.slice(0, 4).map((seg) => (
+              <SegmentCard
+                key={seg.$id}
+                segment={seg}
+                mode="compact"
+                onLink={() => onSegmentClick?.(seg.$id)}
+                segmentRefCallback={(el) => segmentRefCallback?.(seg.$id, el)}
+              />
+            ))}
+            {resolvedLinkedSegments.length > 4 && (
+              <span className="text-[9px] text-foreground-muted/40 px-1.5">
+                +{resolvedLinkedSegments.length - 4} more
+              </span>
+            )}
+          </div>
+        )}
     </div>
   );
 }
