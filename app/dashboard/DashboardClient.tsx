@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OnboardingModal } from "../components/OnboardingModal";
 import { QuickStats } from "../components/dashboard/QuickStats";
@@ -19,6 +19,7 @@ interface DashboardClientProps {
     $id: string;
     title: string;
     slug: string;
+    isPublic: boolean;
     $updatedAt: string;
     blocksCount: number;
   }[];
@@ -38,7 +39,24 @@ export function DashboardClient({
 }: DashboardClientProps) {
   const [showOnboarding, setShowOnboarding] = useState(!onboardingCompleted);
   const [showGuidedModal, setShowGuidedModal] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+  const shareFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
+
+  const clearShareFeedback = () => {
+    if (shareFeedbackTimer.current) {
+      clearTimeout(shareFeedbackTimer.current);
+      shareFeedbackTimer.current = null;
+    }
+  };
+
+  const showShareFeedback = (message: string) => {
+    clearShareFeedback();
+    setShareFeedback(message);
+    shareFeedbackTimer.current = setTimeout(() => {
+      setShareFeedback((current) => (current === message ? null : current));
+    }, 2200);
+  };
 
   const handleOnboardingComplete = async () => {
     try {
@@ -82,6 +100,33 @@ export function DashboardClient({
     }
   };
 
+  const handleShare = async (slug: string) => {
+    try {
+      const url = `${window.location.origin}/canvas/${slug}`;
+      await navigator.clipboard.writeText(url);
+      showShareFeedback("Canvas link copied to clipboard.");
+    } catch (error) {
+      console.error("Failed to copy link:", error);
+      showShareFeedback("Failed to copy link. Please try again.");
+    }
+  };
+
+  const handleTogglePublic = async (canvasId: string, isPublic: boolean) => {
+    try {
+      const res = await fetch(`/api/canvas/${canvasId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPublic }),
+      });
+      if (!res.ok) throw new Error("Failed to update canvas visibility");
+      showShareFeedback("Canvas visibility updated.");
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to update visibility:", error);
+      showShareFeedback("Failed to update visibility. Please try again.");
+    }
+  };
+
   const handleDelete = async (canvasId: string) => {
     if (!confirm("Delete this canvas? This cannot be undone.")) return;
     try {
@@ -93,6 +138,10 @@ export function DashboardClient({
     }
   };
 
+  useEffect(() => {
+    return () => clearShareFeedback();
+  }, []);
+
   const firstName = user.name ? user.name.split(" ")[0] : "there";
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -102,9 +151,31 @@ export function DashboardClient({
 
   return (
     <>
+      {shareFeedback && (
+        <div
+          style={{
+            position: "fixed",
+            top: "1rem",
+            right: "1rem",
+            zIndex: 60,
+            maxWidth: "280px",
+            padding: "0.65rem 0.8rem",
+            borderRadius: "10px",
+            border: "1px solid rgba(255,255,255,0.15)",
+            background: "rgba(14, 20, 29, 0.95)",
+            color: "var(--foreground)",
+            fontSize: "0.85rem",
+            boxShadow: "0 12px 30px rgba(0, 0, 0, 0.25)",
+            backdropFilter: "blur(6px)",
+          }}
+        >
+          {shareFeedback}
+        </div>
+      )}
       <OnboardingModal
         isOpen={showOnboarding}
         onComplete={handleOnboardingComplete}
+        onChatToCreate={() => setShowGuidedModal(true)}
       />
       <AIGuidedModal
         open={showGuidedModal}
@@ -198,6 +269,8 @@ export function DashboardClient({
             <CanvasCard
               key={canvas.$id}
               canvas={canvas}
+              onShare={handleShare}
+              onTogglePublic={handleTogglePublic}
               onDuplicate={handleDuplicate}
               onDelete={handleDelete}
             />

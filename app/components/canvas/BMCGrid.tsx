@@ -16,6 +16,7 @@ interface BMCGridProps {
   mode: CanvasMode;
   blocks: Map<BlockType, BlockData>;
   focusedBlock: BlockType | null;
+  readOnly: boolean;
   analyzingBlock: BlockType | null;
   chatTargetBlock: BlockType | null;
   dimmed: boolean;
@@ -58,6 +59,7 @@ export function BMCGrid({
   mode,
   blocks,
   focusedBlock,
+  readOnly,
   analyzingBlock,
   chatTargetBlock,
   dimmed,
@@ -151,6 +153,7 @@ export function BMCGrid({
               blocks={blockCards.length > 0 ? blockCards : undefined}
               allSegments={allSegments}
               allBlockItems={allBlockItems}
+              readOnly={readOnly}
               onChange={(v) => onBlockChange(def.type, v)}
               onFocus={() => onBlockFocus(def.type)}
               onBlur={onBlockBlur}

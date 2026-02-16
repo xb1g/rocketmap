@@ -18,7 +18,7 @@ export async function POST(
       databaseId: DATABASE_ID,
       tableId: CANVASES_TABLE_ID,
       rowId: canvasId,
-      queries: [Query.select(["$id", "id", "title", "description"])],
+      queries: [],
     }) as unknown as CanvasData;
 
     if (getUserIdFromCanvas(source) !== user.$id) {

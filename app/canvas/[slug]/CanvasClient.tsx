@@ -48,6 +48,7 @@ interface CanvasClientProps {
   initialCanvasData: CanvasData;
   initialBlocks: BlockData[];
   initialSegments?: Segment[];
+  readOnly: boolean;
 }
 
 type SaveStatus = "saved" | "saving" | "unsaved";
@@ -72,6 +73,7 @@ export function CanvasClient({
   initialCanvasData,
   initialBlocks,
   initialSegments = [],
+  readOnly,
 }: CanvasClientProps) {
   const router = useRouter();
   const [mode, setMode] = useState<CanvasMode>("bmc");
@@ -159,6 +161,7 @@ export function CanvasClient({
       blockType: BlockType,
       content: { bmc: string; lean: string; items?: BlockItem[] },
     ) => {
+      if (readOnly) return;
       setSaveStatus("saving");
       try {
         const res = await fetch(`/api/canvas/${canvasId}/blocks`, {
@@ -174,7 +177,7 @@ export function CanvasClient({
         setSaveStatus("unsaved");
       }
     },
-    [canvasId],
+    [canvasId, readOnly],
   );
 
   // Save canvas metadata
@@ -182,6 +185,7 @@ export function CanvasClient({
     async (
       updates: Partial<Pick<CanvasData, "title" | "description" | "isPublic">>,
     ) => {
+      if (readOnly) return;
       try {
         const res = await fetch(`/api/canvas/${canvasId}`, {
           method: "PATCH",
@@ -204,11 +208,12 @@ export function CanvasClient({
         // silently fail
       }
     },
-    [canvasId, canvasData.slug, router],
+    [canvasId, canvasData.slug, router, readOnly],
   );
 
   const handleBlockChange = useCallback(
     (blockType: BlockType, value: string) => {
+      if (readOnly) return;
       let updatedContent: BlockContent = {
         bmc: "",
         lean: "",
@@ -257,11 +262,12 @@ export function CanvasClient({
         }, 800),
       );
     },
-    [mode, saveBlock],
+    [mode, saveBlock, readOnly],
   );
 
   const handleAnalyze = useCallback(
     async (blockType: BlockType) => {
+      if (readOnly) return;
       setAnalyzingBlock(blockType);
       // Set glow to AI while analyzing
       setBlocks((prev) => {
@@ -310,10 +316,11 @@ export function CanvasClient({
         setAnalyzingBlock(null);
       }
     },
-    [canvasId],
+    [canvasId, readOnly],
   );
 
   const handleConsistencyCheck = useCallback(async () => {
+    if (readOnly) return;
     setIsCheckingConsistency(true);
     try {
       const res = await fetch(`/api/canvas/${canvasId}/chat`, {
@@ -355,10 +362,11 @@ export function CanvasClient({
     } finally {
       setIsCheckingConsistency(false);
     }
-  }, [canvasId]);
+  }, [canvasId, readOnly]);
 
   const handleNotesChange = useCallback(
     (value: string) => {
+      if (readOnly) return;
       setNotes(value);
       const existing = saveTimers.current.get("__notes");
       if (existing) clearTimeout(existing);
@@ -370,20 +378,22 @@ export function CanvasClient({
         }, 1000),
       );
     },
-    [saveCanvas],
+    [saveCanvas, readOnly],
   );
 
   const handleDelete = useCallback(async () => {
+    if (readOnly) return;
     try {
       await fetch(`/api/canvas/${canvasId}`, { method: "DELETE" });
       router.push("/dashboard");
     } catch {
       // silently fail
     }
-  }, [canvasId, router]);
+  }, [canvasId, router, readOnly]);
 
   const handleDeepDiveDataChange = useCallback(
     (blockType: BlockType, data: MarketResearchData) => {
+      if (readOnly) return;
       setBlocks((prev) => {
         const next = new Map(prev);
         const b = next.get(blockType);
@@ -391,7 +401,7 @@ export function CanvasClient({
         return next;
       });
     },
-    [],
+    [readOnly],
   );
 
   // ─── Segment Handlers ──────────────────────────────────────────────────────
@@ -403,6 +413,7 @@ export function CanvasClient({
       earlyAdopterFlag?: boolean;
       priorityScore?: number;
     }) => {
+      if (readOnly) return null;
       try {
         const res = await fetch(`/api/canvas/${canvasId}/segments`, {
           method: "POST",
@@ -430,11 +441,12 @@ export function CanvasClient({
         return null;
       }
     },
-    [canvasId],
+    [canvasId, readOnly],
   );
 
   const handleSegmentUpdate = useCallback(
     async (segmentId: string, updates: Partial<Segment>) => {
+      if (readOnly) return;
       try {
         const res = await fetch(
           `/api/canvas/${canvasId}/segments/${segmentId}`,
@@ -478,11 +490,12 @@ export function CanvasClient({
         // silently fail
       }
     },
-    [canvasId],
+    [canvasId, readOnly],
   );
 
   const handleSegmentDelete = useCallback(
     async (segmentId: string) => {
+      if (readOnly) return;
       try {
         const res = await fetch(
           `/api/canvas/${canvasId}/segments/${segmentId}`,
@@ -512,7 +525,7 @@ export function CanvasClient({
         // silently fail
       }
     },
-    [canvasId],
+    [canvasId, readOnly],
   );
 
   const handleSegmentLink = useCallback(
@@ -521,6 +534,7 @@ export function CanvasClient({
       segmentId: string,
       segmentOverride?: Segment,
     ) => {
+      if (readOnly) return;
       try {
         const res = await fetch(
           `/api/canvas/${canvasId}/blocks/${blockType}/segments`,
@@ -551,11 +565,12 @@ export function CanvasClient({
         // silently fail
       }
     },
-    [canvasId, segments],
+    [canvasId, segments, readOnly],
   );
 
   const handleSegmentUnlink = useCallback(
     async (blockType: BlockType, segmentId: string) => {
+      if (readOnly) return;
       try {
         const res = await fetch(
           `/api/canvas/${canvasId}/blocks/${blockType}/segments?segmentId=${segmentId}`,
@@ -579,7 +594,7 @@ export function CanvasClient({
         // silently fail
       }
     },
-    [canvasId],
+    [canvasId, readOnly],
   );
 
   // ─── Block Item Handlers ───────────────────────────────────────────────────
@@ -589,6 +604,7 @@ export function CanvasClient({
       blockType: BlockType,
       content: { bmc: string; lean: string; items?: BlockItem[] },
     ) => {
+      if (readOnly) return;
       setSaveStatus("unsaved");
       const key = `__items_${blockType}`;
       const existing = saveTimers.current.get(key);
@@ -601,11 +617,12 @@ export function CanvasClient({
         }, 800),
       );
     },
-    [saveBlock],
+    [saveBlock, readOnly],
   );
 
   const updateBlockItems = useCallback(
     (blockType: BlockType, updater: (items: BlockItem[]) => BlockItem[]) => {
+      if (readOnly) return;
       setBlocks((prev) => {
         const next = new Map(prev);
         const block = next.get(blockType);
@@ -617,11 +634,12 @@ export function CanvasClient({
         return next;
       });
     },
-    [debouncedSaveItems],
+    [debouncedSaveItems, readOnly],
   );
 
   const handleItemCreate = useCallback(
     (blockType: BlockType) => {
+      if (readOnly) return;
       const newItem: BlockItem = {
         id: crypto.randomUUID(),
         name: "New item",
@@ -631,31 +649,34 @@ export function CanvasClient({
       };
       updateBlockItems(blockType, (items) => [...items, newItem]);
     },
-    [updateBlockItems],
+    [updateBlockItems, readOnly],
   );
 
   const handleItemUpdate = useCallback(
     (blockType: BlockType, itemId: string, updates: Partial<BlockItem>) => {
+      if (readOnly) return;
       updateBlockItems(blockType, (items) =>
         items.map((item) =>
           item.id === itemId ? { ...item, ...updates } : item,
         ),
       );
     },
-    [updateBlockItems],
+    [updateBlockItems, readOnly],
   );
 
   const handleItemDelete = useCallback(
     (blockType: BlockType, itemId: string) => {
+      if (readOnly) return;
       updateBlockItems(blockType, (items) =>
         items.filter((item) => item.id !== itemId),
       );
     },
-    [updateBlockItems],
+    [updateBlockItems, readOnly],
   );
 
   const handleItemToggleSegment = useCallback(
     (blockType: BlockType, itemId: string, segmentId: string) => {
+      if (readOnly) return;
       updateBlockItems(blockType, (items) =>
         items.map((item) => {
           if (item.id !== itemId) return item;
@@ -669,11 +690,12 @@ export function CanvasClient({
         }),
       );
     },
-    [updateBlockItems],
+    [updateBlockItems, readOnly],
   );
 
   const handleItemToggleLink = useCallback(
     (blockType: BlockType, itemId: string, linkedItemId: string) => {
+      if (readOnly) return;
       updateBlockItems(blockType, (items) =>
         items.map((item) => {
           if (item.id !== itemId) return item;
@@ -687,7 +709,7 @@ export function CanvasClient({
         }),
       );
     },
-    [updateBlockItems],
+    [updateBlockItems, readOnly],
   );
 
   // Track old content for revert/undo of accepted edits
@@ -698,6 +720,7 @@ export function CanvasClient({
   // Handle accepted block edit from AI chat (single edit at a time)
   const handleAcceptEdit = useCallback(
     async (_proposalId: string, edit: BlockEditProposal) => {
+      if (readOnly) return;
       const existing = blocks.get(edit.blockType);
       if (!existing) return;
 
@@ -733,7 +756,7 @@ export function CanvasClient({
       await saveBlock(edit.blockType, newContent);
       handleAnalyze(edit.blockType);
     },
-    [blocks, saveBlock, handleAnalyze],
+    [blocks, saveBlock, handleAnalyze, readOnly],
   );
 
   const handleRejectEdit = useCallback(() => {
@@ -742,6 +765,7 @@ export function CanvasClient({
 
   const handleRevertEdit = useCallback(
     async (proposalId: string, _editIndex: number) => {
+      if (readOnly) return;
       // Find stored old content for this proposal
       for (const [key, entry] of revertMapRef.current) {
         if (key.startsWith(proposalId)) {
@@ -765,12 +789,13 @@ export function CanvasClient({
         }
       }
     },
-    [blocks, saveBlock, handleAnalyze],
+    [blocks, saveBlock, handleAnalyze, readOnly],
   );
 
   // Handle accepted segment from AI chat — create in DB and link to expanded block
   const handleAcceptSegment = useCallback(
     async (_segKey: string, proposal: SegmentProposal) => {
+      if (readOnly) return;
       const targetBlock = expandedBlock ?? "customer_segments";
       const seg = await handleSegmentCreate({
         name: proposal.name,
@@ -798,12 +823,14 @@ export function CanvasClient({
       handleSegmentCreate,
       handleSegmentUpdate,
       handleSegmentLink,
+      readOnly,
     ],
   );
 
   // Handle accepted block item from AI chat — create as BlockItem (legacy) + Card (normalized)
   const handleAcceptItem = useCallback(
     (_itemKey: string, proposal: BlockItemProposal) => {
+      if (readOnly) return;
       const targetBlock = expandedBlock;
       if (!targetBlock) return;
       // Legacy: still write to contentJson items for backward compat
@@ -817,7 +844,7 @@ export function CanvasClient({
       };
       updateBlockItems(targetBlock, (items) => [...items, newItem]);
     },
-    [expandedBlock, updateBlockItems],
+    [expandedBlock, updateBlockItems, readOnly],
   );
 
   // Check if any non-shared block has lean content (to show convert button)
@@ -834,6 +861,7 @@ export function CanvasClient({
   const [isConverting, setIsConverting] = useState(false);
 
   const handleConvertLeanToBmc = useCallback(async () => {
+    if (readOnly) return;
     // Check if any BMC content would be overwritten
     const hasExistingBmc = BLOCK_DEFINITIONS.some((def) => {
       if (isSharedBlock(def.type)) return false;
@@ -896,7 +924,7 @@ export function CanvasClient({
     } finally {
       setIsConverting(false);
     }
-  }, [blocks, canvasId]);
+  }, [blocks, canvasId, readOnly]);
 
   // Check if all blocks have meaningful content (gate for deep-dive AI)
   const allBlocksFilled = (() => {
@@ -938,6 +966,13 @@ export function CanvasClient({
   const activeChatBlock = expandedBlock ?? chatTargetBlock;
   const reservedRightSpace =
     chatDocked && isDesktop && !expandedBlock ? "460px" : undefined;
+  const showPublicReadOnlyBanner = readOnly && canvasData.isPublic;
+
+  useEffect(() => {
+    if (readOnly && activeTab === "analysis") {
+      setActiveTab("canvas");
+    }
+  }, [activeTab, readOnly]);
 
   return (
     <div
@@ -949,10 +984,37 @@ export function CanvasClient({
         } as CSSProperties
       }
     >
+      {showPublicReadOnlyBanner && (
+        <div
+          style={{
+            border: "1px solid rgba(99,102,241,0.3)",
+            borderRadius: "10px",
+            padding: "0.5rem 0.75rem",
+            background: "linear-gradient(90deg, rgba(99,102,241,0.16), rgba(236,72,153,0.1))",
+            color: "#f8fafc",
+            fontSize: "0.8rem",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "0.6rem",
+          }}
+        >
+          <span>
+            You are viewing this shared canvas in read-only mode.
+          </span>
+          <span
+            className="mode-badge mode-badge-lean"
+            style={{ padding: "0.2rem 0.45rem", fontSize: "0.68rem" }}
+          >
+            Shared
+          </span>
+        </div>
+      )}
       <CanvasToolbar
         title={canvasData.title}
         mode={mode}
         saveStatus={saveStatus}
+        readOnly={readOnly}
         onModeChange={setMode}
         onTitleChange={(title) => saveCanvas({ title })}
         onSettingsOpen={() => setShowSettings(true)}
@@ -969,6 +1031,7 @@ export function CanvasClient({
           mode={mode}
           blocks={blocks}
           focusedBlock={focusedBlock}
+          readOnly={readOnly}
           analyzingBlock={analyzingBlock}
           chatTargetBlock={activeChatBlock}
           dimmed={!!expandedBlock}
@@ -1010,7 +1073,7 @@ export function CanvasClient({
         />
       )}
 
-      {activeTab === "analysis" && (
+      {activeTab === "analysis" && !readOnly && (
         <AnalysisView
           blocks={blocks}
           mode={mode}
@@ -1021,7 +1084,7 @@ export function CanvasClient({
       )}
 
       {activeTab === "notes" && (
-        <NotesView value={notes} onChange={handleNotesChange} />
+        <NotesView value={notes} readOnly={readOnly} onChange={handleNotesChange} />
       )}
 
       {activeTab === "debug" && (
@@ -1042,10 +1105,13 @@ export function CanvasClient({
           allBlocksFilled={allBlocksFilled}
           filledCount={filledCount}
           allSegments={Array.from(segments.values())}
+          readOnly={readOnly}
           onChange={(value) => handleBlockChange(expandedBlock, value)}
           onClose={() => setExpandedBlock(null)}
           onAnalyze={() => handleAnalyze(expandedBlock)}
-          onDeepDive={() => setDeepDiveBlock(expandedBlock)}
+          onDeepDive={() => {
+            if (!readOnly) setDeepDiveBlock(expandedBlock);
+          }}
           onSegmentCreate={handleSegmentCreate}
           onSegmentUpdate={handleSegmentUpdate}
           onSegmentDelete={handleSegmentDelete}
@@ -1056,15 +1122,17 @@ export function CanvasClient({
             handleSegmentUnlink(expandedBlock, segmentId)
           }
           chatSection={
-            <BlockChatSection
-              canvasId={canvasId}
-              blockType={expandedBlock}
-              onAcceptEdit={handleAcceptEdit}
-              onRejectEdit={handleRejectEdit}
-              onRevertEdit={handleRevertEdit}
-              onAcceptSegment={handleAcceptSegment}
-              onAcceptItem={handleAcceptItem}
-            />
+            !readOnly ? (
+              <BlockChatSection
+                canvasId={canvasId}
+                blockType={expandedBlock}
+                onAcceptEdit={handleAcceptEdit}
+                onRejectEdit={handleRejectEdit}
+                onRevertEdit={handleRevertEdit}
+                onAcceptSegment={handleAcceptSegment}
+                onAcceptItem={handleAcceptItem}
+              />
+            ) : null
           }
         />
       )}
@@ -1072,6 +1140,7 @@ export function CanvasClient({
       {/* Segment Evaluation — main area panel (left of sidebar) */}
       {expandedBlock === "customer_segments" &&
         expandedBlockData &&
+        !readOnly &&
         (expandedBlockData.linkedSegments?.length ?? 0) > 0 && (
           <div className="fixed inset-0 z-40 pointer-events-none">
             <div
@@ -1099,22 +1168,24 @@ export function CanvasClient({
         )}
 
       {/* Chat Bar */}
-      <ChatBar
-        canvasId={canvasId}
-        chatBlock={activeChatBlock}
-        docked={expandedBlock ? false : chatDocked}
-        onDockedChange={(next) => {
-          if (!expandedBlock) {
-            setChatDocked(next);
-          }
-        }}
-        onAcceptEdit={handleAcceptEdit}
-        onRejectEdit={handleRejectEdit}
-        onRevertEdit={handleRevertEdit}
-      />
+      {!readOnly && (
+        <ChatBar
+          canvasId={canvasId}
+          chatBlock={activeChatBlock}
+          docked={expandedBlock ? false : chatDocked}
+          onDockedChange={(next) => {
+            if (!expandedBlock) {
+              setChatDocked(next);
+            }
+          }}
+          onAcceptEdit={handleAcceptEdit}
+          onRejectEdit={handleRejectEdit}
+          onRevertEdit={handleRevertEdit}
+        />
+      )}
 
       {/* Deep Dive Overlay */}
-      {deepDiveBlock && deepDiveBlockData && (
+      {!readOnly && deepDiveBlock && deepDiveBlockData && (
         <DeepDiveOverlay
           blockType={deepDiveBlock}
           canvasId={canvasId}
@@ -1131,7 +1202,7 @@ export function CanvasClient({
         <CanvasSettingsModal
           open={showSettings}
           onOpenChange={setShowSettings}
-          canvasId={canvasId}
+          canvasSlug={canvasData.slug}
           description={canvasData.description}
           isPublic={canvasData.isPublic}
           textZoom={textZoom}

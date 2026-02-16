@@ -25,7 +25,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       databaseId: DATABASE_ID,
       tableId: CANVASES_TABLE_ID,
       rowId: canvasId,
-      queries: [Query.select(["$id", "title"])],
+      queries: [],
     });
 
     if (getUserIdFromCanvas(canvas as unknown as CanvasData) !== user.$id) {
@@ -76,7 +76,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
       databaseId: DATABASE_ID,
       tableId: CANVASES_TABLE_ID,
       rowId: canvasId,
-      queries: [Query.select(["$id", "id"])],
+      queries: [],
     });
 
     if (getUserIdFromCanvas(canvas as unknown as CanvasData) !== user.$id) {

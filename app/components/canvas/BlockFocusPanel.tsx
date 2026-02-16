@@ -18,6 +18,7 @@ interface BlockFocusPanelProps {
   block: BlockData;
   mode: CanvasMode;
   canvasId: string;
+  readOnly?: boolean;
   isAnalyzing: boolean;
   allBlocksFilled?: boolean;
   filledCount?: number;
@@ -66,11 +67,13 @@ function SegmentEditCard({
   onUpdate,
   onDelete,
   onClose,
+  readOnly = false,
 }: {
   seg: Segment;
   onUpdate?: (segmentId: string, updates: Partial<Segment>) => Promise<void>;
   onDelete?: (segmentId: string) => Promise<void>;
   onClose: () => void;
+  readOnly?: boolean;
 }) {
   const [name, setName] = useState(seg.name);
   const [description, setDescription] = useState(seg.description);
@@ -86,6 +89,35 @@ function SegmentEditCard({
     },
     [onUpdate, seg.$id],
   );
+
+  if (readOnly) {
+    return (
+      <div className="p-3 rounded-lg bg-white/3 border border-white/8 space-y-2.5 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className="flex items-center gap-2">
+          <span
+            className="w-2.5 h-2.5 rounded-full shrink-0"
+            style={{ background: priorityColor(priority) }}
+          />
+          <div className="font-medium text-sm text-foreground">
+            {name}
+          </div>
+          <button
+            onClick={onClose}
+            className="text-foreground-muted/40 hover:text-foreground text-xs shrink-0"
+            title="Close"
+          >
+            Done
+          </button>
+        </div>
+
+        {description && (
+          <p className="text-xs text-foreground-muted/60 whitespace-pre-line">
+            {description}
+          </p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="p-3 rounded-lg bg-white/3 border border-white/8 space-y-2.5 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
@@ -191,6 +223,7 @@ function LinkedSegmentsSection({
   allSegments,
   creatingSegment,
   newSegmentName,
+  readOnly = false,
   showLinkPicker,
   editingSegmentId,
   pendingLinks,
@@ -209,6 +242,7 @@ function LinkedSegmentsSection({
   blockType: BlockType;
   allSegments?: Segment[];
   creatingSegment: boolean;
+  readOnly: boolean;
   newSegmentName: string;
   showLinkPicker: boolean;
   editingSegmentId: string | null;
@@ -266,7 +300,7 @@ function LinkedSegmentsSection({
           )}
         </span>
         <div className="flex gap-2">
-          {blockType === "customer_segments" && (
+          {blockType === "customer_segments" && !readOnly && (
             <button
               onClick={() => {
                 onSetCreating(true);
@@ -277,7 +311,7 @@ function LinkedSegmentsSection({
               + New
             </button>
           )}
-          {unlinkable.length > 0 && onSegmentLink && (
+          {!readOnly && unlinkable.length > 0 && onSegmentLink && (
             <button
               onClick={() => {
                 onSetShowLinkPicker(!showLinkPicker);
@@ -293,7 +327,7 @@ function LinkedSegmentsSection({
       </div>
 
       {/* Inline create (customer_segments only) */}
-      {creatingSegment && (
+      {creatingSegment && !readOnly && (
         <div className="flex gap-1.5 mb-2">
           <input
             value={newSegmentName}
@@ -343,7 +377,7 @@ function LinkedSegmentsSection({
       )}
 
       {/* Multi-select link picker */}
-      {showLinkPicker && onSegmentLink && (
+      {showLinkPicker && !readOnly && onSegmentLink && (
         <div className="mb-2 rounded-lg bg-white/3 border border-white/8 overflow-hidden">
           <div className="max-h-44 overflow-y-auto p-1 space-y-0.5">
             {unlinkable.length > 0 ? (
@@ -423,19 +457,22 @@ function LinkedSegmentsSection({
       {linked.length > 0 ? (
         <div className="space-y-1">
           {linked.map((seg) =>
-            editingSegmentId === seg.$id ? (
+            editingSegmentId === seg.$id && !readOnly ? (
               <SegmentEditCard
                 key={seg.$id}
                 seg={seg}
                 onUpdate={onSegmentUpdate}
                 onDelete={onSegmentDelete}
+                readOnly={readOnly}
                 onClose={() => onSetEditingSegmentId(null)}
               />
             ) : (
               <div
                 key={seg.$id}
                 className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/2 border border-white/5 group/lseg cursor-pointer hover:bg-white/4 transition-colors"
-                onClick={() => onSetEditingSegmentId(seg.$id)}
+                onClick={
+                  readOnly ? undefined : () => onSetEditingSegmentId(seg.$id)
+                }
               >
                 <span
                   className="w-2 h-2 rounded-full shrink-0"
@@ -459,7 +496,7 @@ function LinkedSegmentsSection({
                 <span className="text-[9px] font-mono text-foreground-muted/40 shrink-0">
                   {seg.priorityScore}
                 </span>
-                {onSegmentUnlink && (
+                {!readOnly && onSegmentUnlink && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -477,7 +514,7 @@ function LinkedSegmentsSection({
         </div>
       ) : !creatingSegment && !showLinkPicker ? (
         <div className="text-[11px] text-foreground-muted/40 py-2 text-center">
-          No segments linked. Use "+ Link" to connect segments to this block.
+          No segments linked. Use &quot;+ Link&quot; to connect segments to this block.
         </div>
       ) : null}
     </div>
@@ -488,6 +525,7 @@ export function BlockFocusPanel({
   blockType,
   block,
   mode,
+  readOnly = false,
   isAnalyzing,
   allBlocksFilled,
   filledCount,
@@ -521,12 +559,16 @@ export function BlockFocusPanel({
   const isDragging = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    isDragging.current = true;
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-  }, []);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (readOnly) return;
+      e.preventDefault();
+      isDragging.current = true;
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    },
+    [readOnly],
+  );
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -563,12 +605,14 @@ export function BlockFocusPanel({
         style={{ width: `${width}px` }}
       >
         {/* Resize handle */}
-        <div
-          onMouseDown={handleMouseDown}
-          className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-10 group"
-        >
-          <div className="absolute inset-y-0 left-0 w-px bg-white/8 group-hover:bg-white/20 group-active:bg-(--chroma-indigo)/50 transition-colors" />
-        </div>
+        {!readOnly && (
+          <div
+            onMouseDown={handleMouseDown}
+            className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-10 group"
+          >
+            <div className="absolute inset-y-0 left-0 w-px bg-white/8 group-hover:bg-white/20 group-active:bg-(--chroma-indigo)/50 transition-colors" />
+          </div>
+        )}
 
         <BlockFocusHeader
           blockType={blockType}
@@ -587,6 +631,7 @@ export function BlockFocusPanel({
               blockType={blockType}
               allSegments={allSegments}
               creatingSegment={creatingSegment}
+              readOnly={readOnly}
               newSegmentName={newSegmentName}
               showLinkPicker={showLinkPicker}
               editingSegmentId={editingSegmentId}
@@ -615,37 +660,41 @@ export function BlockFocusPanel({
             <BlockFocusEditor
               value={value}
               placeholder={`Describe your ${label.toLowerCase()}...`}
+              readOnly={readOnly}
               onChange={onChange}
             />
 
             {/* Action buttons */}
-            <div className="px-4 pb-3 flex gap-2">
-              <button
-                onClick={onAnalyze}
-                disabled={isAnalyzing}
-                className={`ui-btn ui-btn-sm ui-btn-block font-display-small text-[11px] uppercase tracking-wider ${
-                  isAnalyzing
-                    ? "ui-btn ui-btn-sm ui-btn-secondary glow-ai text-(--state-ai)"
-                    : "ui-btn-secondary text-foreground-muted hover:text-foreground"
-                }`}
-              >
-                {isAnalyzing ? "Analyzing..." : "Analyze with AI"}
-              </button>
+            {!readOnly && (
+              <div className="px-4 pb-3 flex gap-2">
+                <button
+                  onClick={onAnalyze}
+                  disabled={isAnalyzing}
+                  className={`ui-btn ui-btn-sm ui-btn-block font-display-small text-[11px] uppercase tracking-wider ${
+                    isAnalyzing
+                      ? "ui-btn ui-btn-sm ui-btn-secondary glow-ai text-(--state-ai)"
+                      : "ui-btn-secondary text-foreground-muted hover:text-foreground"
+                  }`}
+                >
+                  {isAnalyzing ? "Analyzing..." : "Analyze with AI"}
+                </button>
 
-              {blockType === "customer_segments" &&
-                onDeepDive &&
-                allBlocksFilled && (
-                  <button
-                    onClick={onDeepDive}
-                    className="ui-btn ui-btn-sm ui-btn-block ui-btn-secondary font-display-small text-[11px] uppercase tracking-wider text-foreground-muted hover:text-foreground"
-                  >
-                    Deep Dive
-                  </button>
-                )}
-            </div>
+                {blockType === "customer_segments" &&
+                  onDeepDive &&
+                  allBlocksFilled && (
+                    <button
+                      onClick={onDeepDive}
+                      className="ui-btn ui-btn-sm ui-btn-block ui-btn-secondary font-display-small text-[11px] uppercase tracking-wider text-foreground-muted hover:text-foreground"
+                    >
+                      Deep Dive
+                    </button>
+                  )}
+              </div>
+            )}
 
             {/* Deep dive gate message */}
-            {blockType === "customer_segments" &&
+            {!readOnly &&
+              blockType === "customer_segments" &&
               onDeepDive &&
               !allBlocksFilled && (
                 <div className="px-4 pb-3">
@@ -692,8 +741,8 @@ export function BlockFocusPanel({
             <div className="flex-1 h-px bg-white/5" />
           </div>
 
-          {/* Chat — fills all remaining space */}
-          {chatSection && (
+            {/* Chat — fills all remaining space */}
+          {!readOnly && chatSection && (
             <div className="flex-1 min-h-45 flex flex-col">{chatSection}</div>
           )}
         </div>

@@ -116,8 +116,11 @@ function BlockChat({
   const [input, setInput] = useState('');
 
   const transport = useMemo(
-    () => new DefaultChatTransport({ api: `/api/canvas/${canvasId}/blocks/${blockType}/chat` }),
-    [canvasId, blockType],
+    () => new DefaultChatTransport({
+      api: `/api/canvas/${canvasId}/blocks/${blockType}/chat`,
+      body: { chatKey: sessionKey },
+    }),
+    [canvasId, blockType, sessionKey],
   );
 
   const { messages, sendMessage, stop, regenerate, status } = useChat({

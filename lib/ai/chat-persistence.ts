@@ -29,7 +29,13 @@ interface SaveMessageInput {
   content: string;
 }
 
-async function resolveCanvasId(canvasDocId: string, userId: string): Promise<string> {
+export async function loadChatMessages(
+  canvasDocId: string,
+  chatKey: string,
+  userId: string,
+  cursor?: string,
+): Promise<{ messages: ChatMessage[]; lastId: string | null }> {
+  // Verify user has access to this canvas
   const canvas = await serverTablesDB.getRow({
     databaseId: DATABASE_ID,
     tableId: CANVASES_TABLE_ID,
@@ -38,20 +44,11 @@ async function resolveCanvasId(canvasDocId: string, userId: string): Promise<str
   if (getUserIdFromCanvas(canvas) !== userId) {
     throw new Error('Forbidden');
   }
-  return String(canvas.$id);
-}
-
-export async function loadChatMessages(
-  canvasDocId: string,
-  chatKey: string,
-  userId: string,
-  cursor?: string,
-): Promise<{ messages: ChatMessage[]; lastId: string | null }> {
-  const canvasId = await resolveCanvasId(canvasDocId, userId);
 
   // Index required: messages collection — composite [canvas, chatKey, createdAt] index
+  // Note: Relationship fields use the related row's $id for queries
   const queries = [
-    Query.equal('canvas', canvasId),
+    Query.equal('canvas', canvasDocId), // Query by the relationship field value (canvas row ID)
     Query.equal('chatKey', chatKey),
     Query.select(['$id', 'messageId', 'role', 'content', 'createdAt']),
     Query.orderAsc('createdAt'),
@@ -89,20 +86,28 @@ export async function saveChatMessage(
   userId: string,
   msg: SaveMessageInput,
 ): Promise<void> {
-  const canvasId = await resolveCanvasId(canvasDocId, userId);
+  // canvasDocId is already the canvas row ID - no need to resolve
+  // Verify user has access
+  const canvas = await serverTablesDB.getRow({
+    databaseId: DATABASE_ID,
+    tableId: CANVASES_TABLE_ID,
+    rowId: canvasDocId,
+  }) as unknown as CanvasData;
+  if (getUserIdFromCanvas(canvas) !== userId) {
+    throw new Error('Forbidden');
+  }
 
   await serverTablesDB.createRow({
     databaseId: DATABASE_ID,
     tableId: MESSAGES_TABLE_ID,
-    rowId: ID.unique(),
     data: {
-      canvas: canvasId,
+      canvas: canvasDocId, // Use relationship - just pass the canvas row ID
       chatKey,
       role: msg.role,
       content: msg.content,
       messageId: msg.messageId,
       createdAt: new Date().toISOString(),
-      user: userId,
+      user: userId, // Use relationship - just pass the user ID
     },
   });
 }
@@ -112,7 +117,15 @@ export async function listChatSessions(
   scopePrefix: string,
   userId: string,
 ): Promise<ChatSession[]> {
-  const canvasId = await resolveCanvasId(canvasDocId, userId);
+  // Verify user has access to this canvas
+  const canvas = await serverTablesDB.getRow({
+    databaseId: DATABASE_ID,
+    tableId: CANVASES_TABLE_ID,
+    rowId: canvasDocId,
+  }) as unknown as CanvasData;
+  if (getUserIdFromCanvas(canvas) !== userId) {
+    throw new Error('Forbidden');
+  }
 
   // Index required: messages collection — composite [canvas, chatKey, createdAt] index
   // Index required: messages collection — fulltext index on chatKey (for startsWith)
@@ -120,7 +133,7 @@ export async function listChatSessions(
     databaseId: DATABASE_ID,
     tableId: MESSAGES_TABLE_ID,
     queries: [
-      Query.equal('canvas', canvasId),
+      Query.equal('canvas', canvasDocId), // Query by the relationship field value
       Query.startsWith('chatKey', scopePrefix),
       Query.select(['$id', 'chatKey', 'role', 'content', 'createdAt']),
       Query.orderAsc('createdAt'),
@@ -171,17 +184,25 @@ export async function deleteChatMessages(
   chatKey: string,
   userId: string,
 ): Promise<void> {
-  const canvasId = await resolveCanvasId(canvasDocId, userId);
+  // Verify user has access to this canvas
+  const canvas = await serverTablesDB.getRow({
+    databaseId: DATABASE_ID,
+    tableId: CANVASES_TABLE_ID,
+    rowId: canvasDocId,
+  }) as unknown as CanvasData;
+  if (getUserIdFromCanvas(canvas) !== userId) {
+    throw new Error('Forbidden');
+  }
 
-  // Index required: messages collection — composite [canvas, chatKey, userId] index
+  // Index required: messages collection — composite [canvas, chatKey, user] index
   // Only need $id for deletion — minimal payload
   const result = await serverTablesDB.listRows({
     databaseId: DATABASE_ID,
     tableId: MESSAGES_TABLE_ID,
     queries: [
-      Query.equal('canvas', canvasId),
+      Query.equal('canvas', canvasDocId), // Query by the relationship field value
       Query.equal('chatKey', chatKey),
-      Query.equal('user', userId),
+      Query.equal('user', userId), // Query by the relationship field value
       Query.select(['$id']),
       Query.limit(500),
     ],

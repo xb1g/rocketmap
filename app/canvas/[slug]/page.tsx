@@ -65,8 +65,40 @@ function parseDeepDiveJson(raw: string | undefined): MarketResearchData | null {
   }
 }
 
+type SegmentRefValue = {
+  $id?: unknown;
+  name?: unknown;
+  description?: unknown;
+  earlyAdopterFlag?: unknown;
+  priorityScore?: unknown;
+  demographics?: unknown;
+  psychographics?: unknown;
+  behavioral?: unknown;
+  geographic?: unknown;
+  estimatedSize?: unknown;
+  colorHex?: unknown;
+};
+
+type SegmentRef = string | SegmentRefValue;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function readString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function readBoolean(value: unknown): boolean {
+  return typeof value === "boolean" ? value : false;
+}
+
+function readNumber(value: unknown, fallback: number): number {
+  return typeof value === "number" ? value : fallback;
+}
+
 function normalizeSegmentRef(
-  segmentRef: any,
+  segmentRef: SegmentRef,
   segmentById: Map<string, Segment>,
 ): Segment | null {
   if (!segmentRef) return null;
@@ -74,7 +106,7 @@ function normalizeSegmentRef(
   const segmentId =
     typeof segmentRef === "string"
       ? segmentRef
-      : typeof segmentRef === "object"
+      : isRecord(segmentRef) && typeof segmentRef.$id === "string"
         ? segmentRef.$id
         : null;
 
@@ -87,19 +119,46 @@ function normalizeSegmentRef(
     return null;
   }
 
-  if (typeof segmentRef !== "string" && segmentRef.$id) {
+  if (typeof segmentRef !== "string" && isRecord(segmentRef) && segmentRef.$id) {
+    const name =
+      typeof segmentRef.name === "string" ? segmentRef.name : "";
+    const description =
+      typeof segmentRef.description === "string" ? segmentRef.description : "";
+    const earlyAdopterFlag =
+      typeof segmentRef.earlyAdopterFlag === "boolean"
+        ? segmentRef.earlyAdopterFlag
+        : false;
+    const priorityScore =
+      typeof segmentRef.priorityScore === "number"
+        ? segmentRef.priorityScore
+        : 50;
+    const demographics =
+      typeof segmentRef.demographics === "string" ? segmentRef.demographics : "";
+    const psychographics =
+      typeof segmentRef.psychographics === "string"
+        ? segmentRef.psychographics
+        : "";
+    const behavioral =
+      typeof segmentRef.behavioral === "string" ? segmentRef.behavioral : "";
+    const geographic =
+      typeof segmentRef.geographic === "string" ? segmentRef.geographic : "";
+    const estimatedSize =
+      typeof segmentRef.estimatedSize === "string" ? segmentRef.estimatedSize : "";
+    const colorHex =
+      typeof segmentRef.colorHex === "string" ? segmentRef.colorHex : undefined;
+
     return {
-      $id: segmentRef.$id,
-      name: segmentRef.name ?? "",
-      description: segmentRef.description ?? "",
-      earlyAdopterFlag: segmentRef.earlyAdopterFlag ?? false,
-      priorityScore: segmentRef.priorityScore ?? 50,
-      demographics: segmentRef.demographics ?? "",
-      psychographics: segmentRef.psychographics ?? "",
-      behavioral: segmentRef.behavioral ?? "",
-      geographic: segmentRef.geographic ?? "",
-      estimatedSize: segmentRef.estimatedSize ?? "",
-      colorHex: segmentRef.colorHex,
+      $id: String(segmentRef.$id),
+      name,
+      description,
+      earlyAdopterFlag,
+      priorityScore,
+      demographics,
+      psychographics,
+      behavioral,
+      geographic,
+      estimatedSize,
+      colorHex,
     };
   }
 
@@ -109,47 +168,66 @@ function normalizeSegmentRef(
 export default async function CanvasPage({ params }: PageProps) {
   const { slug } = await params;
   const user = await getSessionUser();
+  let isReadOnly = true;
 
-  console.log('🔍 [Canvas Page] Accessing:', { slug, userId: user?.$id, hasUser: !!user });
+  const canvasSelect = [
+    "$id",
+    "title",
+    "slug",
+    "description",
+    "isPublic",
+    "users",
+  ];
 
-  if (!user) {
-    console.log('❌ [Canvas Page] No user session - redirecting to auth');
-    redirect("/?error=unauthorized");
+  let canvas: Record<string, unknown> | null = null;
+  try {
+    if (user) {
+      const ownerResult = await serverTablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: CANVASES_TABLE_ID,
+        queries: [
+          Query.equal("users", user.$id),
+          Query.equal("slug", slug),
+          Query.select(canvasSelect),
+          Query.limit(1),
+        ],
+      });
+
+      if (ownerResult.rows.length > 0) {
+        canvas = ownerResult.rows[0];
+        isReadOnly = false;
+      }
+    }
+
+    if (!canvas) {
+      const publicResult = await serverTablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: CANVASES_TABLE_ID,
+        queries: [
+          Query.equal("isPublic", true),
+          Query.equal("slug", slug),
+          Query.select(canvasSelect),
+          Query.limit(1),
+        ],
+      });
+
+      if (publicResult.rows.length === 0) {
+        redirect("/dashboard");
+      }
+      canvas = publicResult.rows[0];
+    }
+  } catch (error) {
+    console.error("Error loading canvas:", error);
+    redirect("/dashboard");
   }
 
-  // 1. Fetch canvas by slug
-  // Index required: slug (key)
-  // Note: "users" relationship field is automatically loaded (can't be in Query.select)
-  let canvas;
-  try {
-    console.log('🔍 [Canvas Page] Querying database for slug:', slug);
-    const result = await serverTablesDB.listRows({
-      databaseId: DATABASE_ID,
-      tableId: CANVASES_TABLE_ID,
-      queries: [
-        Query.equal("slug", slug),
-        Query.select(["$id", "title", "slug", "description", "isPublic"]),
-        Query.limit(1),
-      ],
-    });
-    console.log('✅ [Canvas Page] Query result:', {
-      found: result.rows.length,
-      canvasId: result.rows[0]?.$id,
-      title: result.rows[0]?.title
-    });
-    if (result.rows.length === 0) {
-      console.log('❌ [Canvas Page] Canvas not found - redirecting to dashboard');
-      redirect("/dashboard");
-    }
-    canvas = result.rows[0];
-  } catch (error) {
-    console.error('❌ [Canvas Page] Database error:', error);
+  if (!canvas) {
     redirect("/dashboard");
   }
 
   // 2. Fetch blocks and segments for this canvas
-  let blockDocs: any[] = [];
-  let segmentDocs: any[] = [];
+  let blockDocs: Array<Record<string, unknown>> = [];
+  let segmentDocs: Array<Record<string, unknown>> = [];
 
   try {
     // Index required: blocks.canvas (key), segments.canvas + priorityScore (composite, desc)
@@ -158,7 +236,7 @@ export default async function CanvasPage({ params }: PageProps) {
         databaseId: DATABASE_ID,
         tableId: BLOCKS_TABLE_ID,
         queries: [
-          Query.equal("canvas", canvas.$id),
+          Query.equal("canvas", canvas.$id as string),
           Query.select([
             "$id", "$createdAt", "blockType", "contentJson",
             "aiAnalysisJson", "confidenceScore", "riskScore",
@@ -171,7 +249,7 @@ export default async function CanvasPage({ params }: PageProps) {
         databaseId: DATABASE_ID,
         tableId: SEGMENTS_TABLE_ID,
         queries: [
-          Query.equal("canvas", canvas.$id),
+          Query.equal("canvas", canvas.$id as string),
           Query.select([
             "$id", "name", "description", "earlyAdopterFlag",
             "priorityScore", "demographics", "psychographics",
@@ -186,7 +264,9 @@ export default async function CanvasPage({ params }: PageProps) {
     segmentDocs = segmentsRes.rows;
 
     // Debug: Log how many blocks we have
-    console.log(`[Canvas ${canvas.$id}] Loaded ${blockDocs.length} blocks from database`);
+    console.log(
+      `[Canvas ${canvas.$id as string}] Loaded ${blockDocs.length} blocks from database`,
+    );
     if (blockDocs.length > 9) {
       console.log('Block types:', blockDocs.map(d => d.blockType));
     }
@@ -195,18 +275,18 @@ export default async function CanvasPage({ params }: PageProps) {
   }
 
   // 3. Map segments for easy lookup
-  const initialSegments: Segment[] = segmentDocs.map((doc: any) => ({
-    $id: doc.$id,
-    name: doc.name,
-    description: doc.description ?? "",
-    earlyAdopterFlag: doc.earlyAdopterFlag ?? false,
-    priorityScore: doc.priorityScore ?? 50,
-    demographics: doc.demographics ?? "",
-    psychographics: doc.psychographics ?? "",
-    behavioral: doc.behavioral ?? "",
-    geographic: doc.geographic ?? "",
-    estimatedSize: doc.estimatedSize ?? "",
-    colorHex: doc.colorHex,
+  const initialSegments: Segment[] = segmentDocs.map((doc) => ({
+    $id: readString(doc.$id),
+    name: readString(doc.name),
+    description: readString(doc.description),
+    earlyAdopterFlag: readBoolean(doc.earlyAdopterFlag),
+    priorityScore: readNumber(doc.priorityScore, 50),
+    demographics: readString(doc.demographics),
+    psychographics: readString(doc.psychographics),
+    behavioral: readString(doc.behavioral),
+    geographic: readString(doc.geographic),
+    estimatedSize: readString(doc.estimatedSize),
+    colorHex: readString(doc.colorHex) || undefined,
   }));
 
   const segmentById = new Map(
@@ -214,9 +294,9 @@ export default async function CanvasPage({ params }: PageProps) {
   );
 
   // 4. Group blocks by blockType (handle multiple blocks per type)
-  const blocksByType = new Map<string, any[]>();
+  const blocksByType = new Map<string, Array<Record<string, unknown>>>();
   for (const doc of blockDocs) {
-    const type = doc.blockType;
+    const type = readString(doc.blockType);
     if (!blocksByType.has(type)) {
       blocksByType.set(type, []);
     }
@@ -243,14 +323,14 @@ export default async function CanvasPage({ params }: PageProps) {
 
     // Use first block as the "main" block
     const mainDoc = docsForType[0];
-    const content = parseContentJson(mainDoc?.contentJson);
+    const content = parseContentJson(readString(mainDoc?.contentJson));
 
     // Convert remaining blocks to items
     if (docsForType.length > 1) {
       console.log(`[${def.type}] Converting ${docsForType.length - 1} extra blocks to items`);
 
       const extraItems = docsForType.slice(1).map((doc, idx) => {
-        const extraContent = parseContentJson(doc.contentJson);
+        const extraContent = parseContentJson(readString(doc.contentJson));
         // Use the bmc content as the item name
         const name = extraContent.bmc || extraContent.lean || `Item ${idx + 1}`;
         const description = extraContent.bmc !== extraContent.lean && extraContent.lean
@@ -258,12 +338,12 @@ export default async function CanvasPage({ params }: PageProps) {
           : "";
 
         return {
-          id: doc.$id,
+          id: readString(doc.$id),
           name,
           description,
           linkedSegmentIds: [],
           linkedItemIds: [],
-          createdAt: doc.$createdAt || new Date().toISOString(),
+          createdAt: readString(doc.$createdAt) || new Date().toISOString(),
         };
       });
 
@@ -272,8 +352,9 @@ export default async function CanvasPage({ params }: PageProps) {
 
     // Relationship attributes for segments
     const linkedSegments: Segment[] = Array.isArray(mainDoc?.segments)
-      ? mainDoc.segments
-          .map((s: any) => normalizeSegmentRef(s, segmentById))
+      ? (mainDoc.segments as SegmentRef[]).map((s) =>
+          normalizeSegmentRef(s, segmentById),
+        )
           .filter((s): s is Segment => s !== null)
       : [];
 
@@ -281,30 +362,32 @@ export default async function CanvasPage({ params }: PageProps) {
       blockType: def.type as BlockType,
       content,
       state: "calm" as const,
-      aiAnalysis: parseAiAnalysis(mainDoc?.aiAnalysisJson),
-      confidenceScore: mainDoc?.confidenceScore ?? 0,
-      riskScore: mainDoc?.riskScore ?? 0,
-      deepDiveData: parseDeepDiveJson(mainDoc?.deepDiveJson),
+      aiAnalysis: parseAiAnalysis(readString(mainDoc?.aiAnalysisJson)),
+      confidenceScore: readNumber(mainDoc?.confidenceScore, 0),
+      riskScore: readNumber(mainDoc?.riskScore, 0),
+      deepDiveData: parseDeepDiveJson(readString(mainDoc?.deepDiveJson)),
       linkedSegments,
     };
   });
 
   const canvasData: CanvasData = {
-    $id: canvas.$id,
-    title: canvas.title,
-    slug: canvas.slug,
-    description: canvas.description ?? "",
-    isPublic: canvas.isPublic ?? false,
-    users: canvas.users?.$id || canvas.users || "", // Handle relationship object or ID
+    $id: canvas.$id as string,
+    title: readString(canvas.title),
+    slug: readString(canvas.slug),
+    description: readString(canvas.description),
+    isPublic: readBoolean(canvas.isPublic),
+    users: readString((canvas.users as Record<string, unknown>)?.$id) ||
+      readString(canvas.users) || "", // Handle relationship object or ID
   };
 
   return (
     <div className="canvas-page-bg text-lg">
       <CanvasClient
-        canvasId={canvas.$id}
+        canvasId={canvas.$id as string}
         initialCanvasData={canvasData}
         initialBlocks={initialBlocks}
         initialSegments={initialSegments}
+        readOnly={isReadOnly}
       />
     </div>
   );

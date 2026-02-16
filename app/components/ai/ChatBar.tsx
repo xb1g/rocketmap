@@ -210,8 +210,11 @@ function ChatBarInner({
   );
 
   const transport = useMemo(
-    () => new DefaultChatTransport({ api: endpoint }),
-    [endpoint],
+    () => new DefaultChatTransport({
+      api: endpoint,
+      body: { chatKey: sessionKey },
+    }),
+    [endpoint, sessionKey],
   );
 
   const { messages, sendMessage, stop, regenerate, status } = useChat({

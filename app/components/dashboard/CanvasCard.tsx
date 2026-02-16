@@ -8,9 +8,12 @@ interface CanvasCardProps {
     $id: string;
     title: string;
     slug: string;
+    isPublic: boolean;
     $updatedAt: string;
     blocksCount: number;
   };
+  onShare: (slug: string) => void;
+  onTogglePublic: (canvasId: string, isPublic: boolean) => void;
   onDuplicate: (canvasId: string) => void;
   onDelete: (canvasId: string) => void;
 }
@@ -29,7 +32,13 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(days / 30)}mo ago`;
 }
 
-export function CanvasCard({ canvas, onDuplicate, onDelete }: CanvasCardProps) {
+export function CanvasCard({
+  canvas,
+  onShare,
+  onTogglePublic,
+  onDuplicate,
+  onDelete,
+}: CanvasCardProps) {
   const filledBlocks = canvas.blocksCount;
   const progressPct = Math.round((filledBlocks / 9) * 100);
 
@@ -66,6 +75,9 @@ export function CanvasCard({ canvas, onDuplicate, onDelete }: CanvasCardProps) {
               marginTop: "0.25rem",
             }}
           >
+            <span className={`mode-badge ${canvas.isPublic ? "mode-badge-lean" : "mode-badge-bmc"}`}>
+              {canvas.isPublic ? "Public" : "Private"}
+            </span>
             <span className="mode-badge mode-badge-bmc">BMC</span>
             <span className="canvas-card-meta">
               {timeAgo(canvas.$updatedAt)}
@@ -170,6 +182,16 @@ export function CanvasCard({ canvas, onDuplicate, onDelete }: CanvasCardProps) {
               >
                 Open
               </Link>
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              onSelect={() => onShare(canvas.slug)}
+            >
+              Copy link
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              onSelect={() => onTogglePublic(canvas.$id, !canvas.isPublic)}
+            >
+              {canvas.isPublic ? "Make private" : "Make public"}
             </DropdownMenu.Item>
             <DropdownMenu.Item onClick={() => onDuplicate(canvas.$id)}>
               Duplicate

@@ -53,6 +53,7 @@ export default async function DashboardPage() {
     title: string;
     slug: string;
     $updatedAt: string;
+    isPublic: boolean;
     blocksCount: number;
   }[] = [];
   try {
@@ -62,7 +63,7 @@ export default async function DashboardPage() {
       queries: [
         Query.equal("users", user.$id),
         Query.orderDesc("$updatedAt"),
-        Query.select(["$id", "title", "slug", "$updatedAt"]),
+        Query.select(["$id", "title", "slug", "$updatedAt", "isPublic"]),
         Query.limit(25),
       ],
     });
@@ -101,6 +102,7 @@ export default async function DashboardPage() {
           title: doc.title as string,
           slug: doc.slug as string,
           $updatedAt: doc.$updatedAt,
+          isPublic: doc.isPublic ?? false,
           blocksCount,
         };
       }),

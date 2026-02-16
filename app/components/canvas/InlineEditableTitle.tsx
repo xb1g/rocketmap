@@ -4,11 +4,13 @@ import { useState, useRef, useEffect } from "react";
 
 interface InlineEditableTitleProps {
   value: string;
+  readOnly?: boolean;
   onSave: (value: string) => void;
 }
 
 export function InlineEditableTitle({
   value,
+  readOnly = false,
   onSave,
 }: InlineEditableTitleProps) {
   const [editing, setEditing] = useState(false);
@@ -36,6 +38,14 @@ export function InlineEditableTitle({
     setDraft(value);
     setEditing(false);
   };
+
+  if (readOnly) {
+    return (
+      <span className="font-display text-lg font-semibold truncate max-w-80 text-foreground/90">
+        {value}
+      </span>
+    );
+  }
 
   if (editing) {
     return (

@@ -18,7 +18,7 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
     const { canvasId } = await context.params;
-    const { messages } = await request.json();
+    const { messages, chatKey } = await request.json();
 
     const blocks = await getCanvasBlocks(canvasId, user.$id);
     const config = getAgentConfig('general', blocks);
@@ -52,7 +52,7 @@ export async function POST(request: Request, context: RouteContext) {
         }
       }
       if (parts.length > 0) {
-        saveChatMessage(canvasId, 'general', user.$id, {
+        saveChatMessage(canvasId, chatKey || 'general', user.$id, {
           messageId: `assistant-${Date.now()}`,
           role: 'assistant',
           content: JSON.stringify({ parts }),

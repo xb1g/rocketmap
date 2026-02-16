@@ -6,9 +6,10 @@ import { Dialog, Button, Heading, Text, Flex, VisuallyHidden } from '@radix-ui/t
 interface OnboardingModalProps {
   isOpen: boolean;
   onComplete: () => void;
+  onChatToCreate?: () => void;
 }
 
-export function OnboardingModal({ isOpen, onComplete }: OnboardingModalProps) {
+export function OnboardingModal({ isOpen, onComplete, onChatToCreate }: OnboardingModalProps) {
   const [step, setStep] = useState(1);
 
   const handleNext = () => {
@@ -117,8 +118,33 @@ export function OnboardingModal({ isOpen, onComplete }: OnboardingModalProps) {
 
           {/* Navigation */}
           <Flex justify="end" gap="3" pt="4">
+            {step === 3 && onChatToCreate && (
+              <Button
+                size="3"
+                variant="soft"
+                onClick={() => {
+                  onComplete();
+                  onChatToCreate();
+                }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ marginRight: '0.5rem' }}
+                >
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                Chat to Create
+              </Button>
+            )}
             <Button size="3" onClick={handleNext}>
-              {step === 3 ? 'Get Started' : 'Next'}
+              {step === 3 ? 'Start Blank' : 'Next'}
             </Button>
           </Flex>
         </Flex>

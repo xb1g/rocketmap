@@ -143,6 +143,7 @@ interface BlockCellProps {
   allSegments?: Segment[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   allBlockItems?: Map<BlockType, any[]>;
+  readOnly?: boolean;
   onChange: (value: string) => void;
   onFocus: () => void;
   onBlur: () => void;
@@ -179,6 +180,7 @@ export function BlockCell({
   blocks,
   allSegments,
   allBlockItems,
+  readOnly = false,
   onChange,
   onFocus,
   onBlur,
@@ -232,7 +234,7 @@ export function BlockCell({
   );
 
   const handleCreateSegment = useCallback(async () => {
-    if (!newSegmentName.trim() || !onAddSegment || isSaving) return;
+    if (readOnly || !newSegmentName.trim() || !onAddSegment || isSaving) return;
     setIsSaving(true);
     await onAddSegment(
       newSegmentName.trim(),
@@ -242,11 +244,11 @@ export function BlockCell({
     setNewSegmentDesc("");
     setAddingNew(false);
     setIsSaving(false);
-  }, [newSegmentName, newSegmentDesc, onAddSegment, isSaving]);
+  }, [newSegmentName, newSegmentDesc, onAddSegment, isSaving, readOnly]);
 
   const handleSaveSegmentEdit = useCallback(
     async (segId: string) => {
-      if (!onSegmentUpdate) {
+      if (readOnly || !onSegmentUpdate) {
         setEditingSegmentId(null);
         return;
       }
@@ -265,7 +267,7 @@ export function BlockCell({
       }
       setEditingSegmentId(null);
     },
-    [editName, editDesc, onSegmentUpdate, resolvedLinkedSegments],
+    [editName, editDesc, onSegmentUpdate, readOnly, resolvedLinkedSegments],
   );
 
   useEffect(() => {
@@ -340,61 +342,64 @@ export function BlockCell({
           </svg>
           <span>Expand</span>
         </button>
-
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddToChat();
-          }}
-          className={`block-action-btn ${isChatTarget ? "is-active" : ""}`}
-          aria-label={`Add ${label} to chat`}
-          title="Add to Canvas Chat"
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
-            <line x1="8" y1="11" x2="16" y2="11" />
-          </svg>
-          <span>{isChatTarget ? "In Chat" : "Add to Chat"}</span>
-        </button>
-
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onAnalyze();
-          }}
-          className="block-action-btn"
-          disabled={isAnalyzing}
-          aria-label={`Test ${label} with AI`}
-          title="Test with AI"
-        >
-          {isAnalyzing ? (
-            <span className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
-          ) : (
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        {!readOnly && (
+          <>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddToChat();
+              }}
+              className={`block-action-btn ${isChatTarget ? "is-active" : ""}`}
+              aria-label={`Add ${label} to chat`}
+              title="Add to Canvas Chat"
             >
-              <path d="M12 3l1.7 4.4L18 9.1l-4.3 1.7L12 15l-1.7-4.2L6 9.1l4.3-1.7L12 3z" />
-              <path d="M18 14l.9 2.2L21 17l-2.1.8L18 20l-.8-2.2L15 17l2.2-.8L18 14z" />
-            </svg>
-          )}
-          <span>{isAnalyzing ? "Testing..." : "Test with AI"}</span>
-        </button>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+                <line x1="8" y1="11" x2="16" y2="11" />
+              </svg>
+              <span>{isChatTarget ? "In Chat" : "Add to Chat"}</span>
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAnalyze();
+              }}
+              className="block-action-btn"
+              disabled={isAnalyzing}
+              aria-label={`Test ${label} with AI`}
+              title="Test with AI"
+            >
+              {isAnalyzing ? (
+                <span className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
+              ) : (
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 3l1.7 4.4L18 9.1l-4.3 1.7L12 15l-1.7-4.2L6 9.1l4.3-1.7L12 3z" />
+                  <path d="M18 14l.9 2.2L21 17l-2.1.8L18 20l-.8-2.2L15 17l2.2-.8L18 14z" />
+                </svg>
+              )}
+              <span>{isAnalyzing ? "Testing..." : "Test with AI"}</span>
+            </button>
+          </>
+        )}
       </div>
 
       <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1">
@@ -435,6 +440,7 @@ export function BlockCell({
         onFocus={onFocus}
         onBlur={onBlur}
         placeholder={`Describe your ${label.toLowerCase()}...`}
+        readOnly={readOnly}
         spellCheck={false}
       />
 
@@ -547,12 +553,14 @@ export function BlockCell({
               </div>
             </div>
           ) : (
+            !readOnly && (
             <button
               onClick={() => setAddingNew(true)}
               className="w-full rounded-md border border-dashed border-white/8 hover:border-white/15 px-2 py-1.5 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/[0.03] transition-colors text-left"
             >
               + New segment
             </button>
+            )
           )}
         </div>
       )}
