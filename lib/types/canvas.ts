@@ -14,10 +14,18 @@ export type CanvasMode = "bmc" | "lean";
 export type BlockState = "calm" | "healthy" | "warning" | "critical" | "ai";
 export type CanvasTab = "canvas" | "analysis" | "notes" | "debug";
 
-/** Content stored as JSON in contentJson column */
 export interface BlockContent {
-  text: string;      // Main content (multiline)
-  tags?: string[];   // Optional categorization tags
+  bmc: string;
+  lean: string;
+  items: BlockItem[];
+}
+
+export interface BlockItem {
+  id: string; // Internal stable ID
+  name: string;
+  description?: string;
+  linkedItemIds: string[]; // format: "blockType:itemId" - cross-block item links
+  createdAt: string;
 }
 
 export interface BlockCard {
@@ -72,16 +80,17 @@ export interface BlockSegmentLink {
 }
 
 export interface BlockData {
-  $id: string;              // Appwrite row ID (required)
+  $id?: string;
   blockType: BlockType;
-  contentJson: string;      // JSON.stringify(BlockContent)
+  content: BlockContent;
   state: BlockState;
-  segments: Segment[];      // M:M relationship (auto-loaded by Appwrite)
+  cards?: BlockCard[];
   aiAnalysis: AIAnalysis | null;
-  confidenceScore: number;  // 0-100
-  riskScore: number;        // 0-100
+  confidenceScore: number;
+  riskScore: number;
   deepDiveData: MarketResearchData | null;
   lastUsage?: AIUsage | null;
+  linkedSegments?: Segment[];
 }
 
 export interface CanvasData {

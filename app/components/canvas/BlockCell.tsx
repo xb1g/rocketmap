@@ -9,8 +9,6 @@ import type {
   Segment,
 } from "@/lib/types/canvas";
 import { BlockTooltip } from "./BlockTooltip";
-import { BlockItemCard } from "./BlockItemCard";
-import { LinkPicker } from "./LinkPicker";
 import { BlockCard } from "./BlockCard";
 import { SegmentCard } from "./SegmentCard";
 
@@ -143,11 +141,8 @@ interface BlockCellProps {
     state: BlockState;
   }>;
   allSegments?: Segment[];
-  allBlockItems?: Map<BlockType, Array<{
-    $id: string;
-    contentJson: string;
-    segments: Segment[];
-  }>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  allBlockItems?: Map<BlockType, any[]>;
   onChange: (value: string) => void;
   onFocus: () => void;
   onBlur: () => void;
@@ -211,8 +206,6 @@ export function BlockCell({
   const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
-  const [linkPickerItemId, setLinkPickerItemId] = useState<string | null>(null);
-  const linkPickerAnchorRef = useRef<HTMLElement>(null);
 
   const isSegmentBlock =
     definition.type === "customer_segments" && !!onAddSegment;
@@ -441,9 +434,9 @@ export function BlockCell({
       />
 
       {/* Block cards - NEW */}
-      {blocks && blocks.length > 0 && (
+      {((blocks && blocks.length > 0) || onBlockCreate) && (
         <div className="block-items-container">
-          {blocks.map(block => (
+          {blocks?.map(block => (
             <BlockCard
               key={block.$id}
               block={block}

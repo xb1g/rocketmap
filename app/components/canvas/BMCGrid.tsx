@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useMemo } from "react";
 import type {
   BlockData,
   BlockItem,
@@ -81,12 +81,12 @@ export function BMCGrid({
   onItemHover,
 }: BMCGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const blockRefs = useRef<Map<string, HTMLElement>>(new Map());
   const segmentRefs = useRef<Map<string, HTMLElement>>(new Map());
 
-  const itemRefCallback = useCallback((key: string, el: HTMLElement | null) => {
-    if (el) itemRefs.current.set(key, el);
-    else itemRefs.current.delete(key);
+  const blockRefCallback = useCallback((key: string, el: HTMLElement | null) => {
+    if (el) blockRefs.current.set(key, el);
+    else blockRefs.current.delete(key);
   }, []);
 
   const segmentRefCallback = useCallback(
@@ -116,6 +116,18 @@ export function BMCGrid({
             ? getBlockValue(block.content, def.type, mode)
             : "";
 
+          // Adapt items → blocks prop for BlockCard rendering
+          const items = block?.content.items ?? [];
+          const blockCards = items.map((item) => ({
+            $id: item.id,
+            blockType: def.type,
+            contentJson: JSON.stringify({ text: item.name, tags: [] }),
+            confidenceScore: block?.confidenceScore ?? 0,
+            riskScore: 0,
+            segments: (block?.linkedSegments ?? []).filter(() => true),
+            state: block?.state ?? ("calm" as const),
+          }));
+
           return (
             <BlockCell
               key={def.type}
@@ -129,7 +141,7 @@ export function BMCGrid({
               confidenceScore={block?.confidenceScore ?? 0}
               hasAnalysis={!!block?.aiAnalysis}
               linkedSegments={block?.linkedSegments}
-              items={block?.content.items}
+              blocks={blockCards.length > 0 ? blockCards : undefined}
               allSegments={allSegments}
               allBlockItems={allBlockItems}
               onChange={(v) => onBlockChange(def.type, v)}
@@ -148,42 +160,39 @@ export function BMCGrid({
               onSegmentFocus={
                 def.type === "customer_segments" ? onSegmentFocus : undefined
               }
-              onItemCreate={
+              onBlockCreate={
                 onItemCreate && def.type !== "customer_segments"
                   ? () => onItemCreate(def.type)
                   : undefined
               }
-              onItemUpdate={
+              onBlockUpdate={
                 onItemUpdate
-                  ? (itemId, updates) => onItemUpdate(def.type, itemId, updates)
+                  ? (blockId, updates) => {
+                      const parsed = JSON.parse(updates.contentJson);
+                      onItemUpdate(def.type, blockId, { name: parsed.text });
+                    }
                   : undefined
               }
-              onItemDelete={
+              onBlockDelete={
                 onItemDelete
-                  ? (itemId) => onItemDelete(def.type, itemId)
+                  ? (blockId) => onItemDelete(def.type, blockId)
                   : undefined
               }
-              onItemToggleSegment={
+              onBlockToggleSegment={
                 onItemToggleSegment
-                  ? (itemId, segId) =>
-                      onItemToggleSegment(def.type, itemId, segId)
+                  ? (blockId, segId) =>
+                      onItemToggleSegment(def.type, blockId, segId)
                   : undefined
               }
-              onItemToggleLink={
-                onItemToggleLink
-                  ? (itemId, linkedId) =>
-                      onItemToggleLink(def.type, itemId, linkedId)
-                  : undefined
-              }
-              onItemHover={
+              onBlockHover={
                 onItemHover
-                  ? (itemId) =>
+                  ? (blockId) =>
                       onItemHover(
-                        itemId ? { blockType: def.type, itemId } : null,
+                        blockId ? { blockType: def.type, itemId: blockId } : null,
                       )
                   : undefined
               }
-              itemRefCallback={itemRefCallback}
+              blockRefCallback={blockRefCallback}
               segmentRefCallback={segmentRefCallback}
             />
           );
@@ -193,7 +202,7 @@ export function BMCGrid({
         hoveredItem={hoveredItem}
         allBlockItems={allBlockItems}
         segments={allSegments}
-        itemRefs={itemRefs}
+        itemRefs={blockRefs}
         segmentRefs={segmentRefs}
         containerRef={containerRef}
       />

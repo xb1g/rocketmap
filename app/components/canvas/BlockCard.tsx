@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useCallback, forwardRef, useMemo } from "react";
-import type { BlockType, Segment, BlockContent } from "@/lib/types/canvas";
+import type { BlockType, Segment } from "@/lib/types/canvas";
+
+/** Internal content shape for BlockCard (separate from main BlockContent) */
+interface CardContent {
+  text: string;
+  tags?: string[];
+}
 
 interface BlockCardProps {
   block: {
@@ -13,7 +19,8 @@ interface BlockCardProps {
     segments: Segment[];
   };
   allSegments: Segment[];
-  allBlockItems?: Map<BlockType, { $id: string; contentJson: string; segments: Segment[] }[]>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  allBlockItems?: Map<BlockType, any[]>;
   onUpdate: (blockId: string, updates: { contentJson: string }) => void;
   onDelete: (blockId: string) => void;
   onSegmentToggle: (blockId: string, segmentId: string) => void;
@@ -27,7 +34,7 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
     ref
   ) {
     // Parse contentJson with fallback
-    const content: BlockContent = useMemo(() => {
+    const content: CardContent = useMemo(() => {
       try {
         return JSON.parse(block.contentJson);
       } catch {
