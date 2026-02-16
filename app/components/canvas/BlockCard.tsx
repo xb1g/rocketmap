@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, forwardRef, useMemo } from "react";
+import { useState, useCallback, useEffect, useRef, forwardRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import type { BlockType, Segment } from "@/lib/types/canvas";
 
 /** Internal content shape for BlockCard (separate from main BlockContent) */
@@ -46,10 +47,49 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
     const [editText, setEditText] = useState(content.text);
     const [showLinkPicker, setShowLinkPicker] = useState(false);
 
+    const linkBtnRef = useRef<HTMLButtonElement>(null);
+    const floatingRef = useRef<HTMLDivElement>(null);
+    const [floatingPos, setFloatingPos] = useState<{ top: number; left: number } | null>(null);
+
     const linkedSegmentIds = useMemo(
       () => new Set(block.segments.map(s => s.$id)),
       [block.segments],
     );
+
+    // Position the floating menu when it opens
+    useEffect(() => {
+      if (!showLinkPicker || !linkBtnRef.current) return;
+      const rect = linkBtnRef.current.getBoundingClientRect();
+      setFloatingPos({
+        top: rect.bottom + 4,
+        left: Math.max(8, rect.left - 60),
+      });
+    }, [showLinkPicker]);
+
+    // Close on outside click
+    useEffect(() => {
+      if (!showLinkPicker) return;
+      const handler = (e: MouseEvent) => {
+        if (
+          floatingRef.current && !floatingRef.current.contains(e.target as Node) &&
+          linkBtnRef.current && !linkBtnRef.current.contains(e.target as Node)
+        ) {
+          setShowLinkPicker(false);
+        }
+      };
+      document.addEventListener("mousedown", handler);
+      return () => document.removeEventListener("mousedown", handler);
+    }, [showLinkPicker]);
+
+    // Close on escape
+    useEffect(() => {
+      if (!showLinkPicker) return;
+      const handler = (e: KeyboardEvent) => {
+        if (e.key === "Escape") setShowLinkPicker(false);
+      };
+      document.addEventListener("keydown", handler);
+      return () => document.removeEventListener("keydown", handler);
+    }, [showLinkPicker]);
 
     const handleSave = useCallback(() => {
       onUpdate(block.$id, {
@@ -111,33 +151,42 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
             </div>
           )}
 
-          {/* Segment badges + confidence + actions */}
-          <div className="flex items-center gap-1.5">
-            {/* Segment color dots */}
-            {block.segments.slice(0, 3).map(seg => (
-              <span
-                key={seg.$id}
-                className="w-1.5 h-1.5 rounded-full"
-                style={{ background: seg.colorHex || 'var(--state-calm)' }}
-                title={seg.name}
-              />
-            ))}
-            {block.segments.length > 3 && (
-              <span className="text-[8px] text-foreground-muted/40">
-                +{block.segments.length - 3}
-              </span>
-            )}
+          {/* Linked segments row */}
+          {block.segments.length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap">
+              {block.segments.map(seg => (
+                <span
+                  key={seg.$id}
+                  className="inline-flex items-center gap-1 text-[8px] px-1.5 py-0.5 rounded-full border border-white/8 text-foreground-muted/70"
+                >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ background: seg.colorHex || 'var(--state-calm)' }}
+                  />
+                  {seg.name}
+                </span>
+              ))}
+            </div>
+          )}
 
+          {/* Confidence + actions */}
+          <div className="flex items-center gap-1.5">
             {/* Link to segments button */}
             <button
+              ref={linkBtnRef}
               onClick={() => setShowLinkPicker(!showLinkPicker)}
-              className="flex items-center gap-0.5 text-[9px] text-foreground-muted/40 hover:text-foreground-muted transition-colors px-1 py-0.5 rounded hover:bg-white/5"
+              className={`flex items-center gap-0.5 text-[9px] px-1 py-0.5 rounded transition-colors ${
+                showLinkPicker
+                  ? 'text-foreground-muted bg-white/8'
+                  : 'text-foreground-muted/40 hover:text-foreground-muted hover:bg-white/5'
+              }`}
               title="Link to segments"
             >
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
               </svg>
+              <span>{block.segments.length || ''}</span>
             </button>
 
             {/* Confidence score */}
@@ -161,34 +210,48 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
               ×
             </button>
           </div>
-
-          {/* Segment link picker */}
-          {showLinkPicker && allSegments.length > 0 && (
-            <div className="rounded border border-white/10 bg-white/[0.04] p-1 space-y-0.5 max-h-[120px] overflow-y-auto">
-              {allSegments.map(seg => {
-                const isLinked = linkedSegmentIds.has(seg.$id);
-                return (
-                  <button
-                    key={seg.$id}
-                    onClick={() => onSegmentToggle(block.$id, seg.$id)}
-                    className="flex items-center gap-1.5 w-full text-left px-1.5 py-0.5 rounded hover:bg-white/5 transition-colors"
-                  >
-                    <span
-                      className="w-1.5 h-1.5 rounded-full shrink-0"
-                      style={{ background: seg.colorHex || 'var(--state-calm)' }}
-                    />
-                    <span className="text-[9px] text-foreground-muted/70 truncate flex-1">
-                      {seg.name}
-                    </span>
-                    {isLinked && (
-                      <span className="text-[8px] text-emerald-400/70 shrink-0">✓</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
+
+        {/* Floating segment picker (portalled to body) */}
+        {showLinkPicker && floatingPos && allSegments.length > 0 && createPortal(
+          <div
+            ref={floatingRef}
+            className="fixed z-[100] rounded-lg border border-white/12 bg-[#1a1a1f] shadow-xl shadow-black/40 p-1 space-y-0.5 max-h-[180px] w-[180px] overflow-y-auto"
+            style={{ top: floatingPos.top, left: floatingPos.left }}
+          >
+            <div className="text-[8px] text-foreground-muted/40 uppercase tracking-wider px-1.5 py-0.5">
+              Link segments
+            </div>
+            {allSegments.map(seg => {
+              const isLinked = linkedSegmentIds.has(seg.$id);
+              return (
+                <button
+                  key={seg.$id}
+                  onClick={() => onSegmentToggle(block.$id, seg.$id)}
+                  className={`flex items-center gap-1.5 w-full text-left px-1.5 py-1 rounded transition-colors ${
+                    isLinked ? 'bg-white/8' : 'hover:bg-white/5'
+                  }`}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ background: seg.colorHex || 'var(--state-calm)' }}
+                  />
+                  <span className={`text-[9px] truncate flex-1 ${
+                    isLinked ? 'text-foreground/80' : 'text-foreground-muted/60'
+                  }`}>
+                    {seg.name}
+                  </span>
+                  {isLinked && (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400/80 shrink-0">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </button>
+              );
+            })}
+          </div>,
+          document.body
+        )}
       </div>
     );
   }
