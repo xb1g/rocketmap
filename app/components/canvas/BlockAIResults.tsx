@@ -5,6 +5,7 @@ import type { AIAnalysis, AIUsage } from "@/lib/types/canvas";
 interface BlockAIResultsProps {
   analysis: AIAnalysis | null;
   usage?: AIUsage | null;
+  isAnalyzing?: boolean;
 }
 
 function ResultSection({
@@ -42,8 +43,30 @@ function ResultSection({
   );
 }
 
-export function BlockAIResults({ analysis, usage }: BlockAIResultsProps) {
+export function BlockAIResults({ analysis, usage, isAnalyzing }: BlockAIResultsProps) {
   if (!analysis) {
+    if (isAnalyzing) {
+      return (
+        <div className="px-4 py-3 flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <div className="h-2 w-16 rounded bg-white/8 animate-pulse" />
+            <div className="h-2.5 w-full rounded bg-white/5 animate-pulse" />
+            <div className="h-2.5 w-4/5 rounded bg-white/5 animate-pulse" />
+            <div className="h-2.5 w-3/5 rounded bg-white/5 animate-pulse" />
+          </div>
+          <div className="flex flex-col gap-2">
+            <div className="h-2 w-20 rounded bg-white/8 animate-pulse" />
+            <div className="h-2.5 w-full rounded bg-white/5 animate-pulse" />
+            <div className="h-2.5 w-2/3 rounded bg-white/5 animate-pulse" />
+          </div>
+          <div className="flex flex-col gap-2">
+            <div className="h-2 w-12 rounded bg-white/8 animate-pulse" />
+            <div className="h-2.5 w-full rounded bg-white/5 animate-pulse" />
+            <div className="h-2.5 w-3/4 rounded bg-white/5 animate-pulse" />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="px-4 py-3 font-display-small text-[10px] uppercase tracking-wider text-foreground-muted/50 text-center">
         Run analysis to see insights

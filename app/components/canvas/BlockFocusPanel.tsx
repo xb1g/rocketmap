@@ -1047,6 +1047,7 @@ export function BlockFocusPanel({
             <BlockAIResults
               analysis={block.aiAnalysis}
               usage={block.lastUsage}
+              isAnalyzing={isAnalyzing}
             />
           </div>
         </div>
