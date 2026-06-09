@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { BlockEditProposal, BlockItemProposal, SegmentProposal } from "@/lib/types/canvas";
 
 interface ChatMessageProps {
@@ -80,7 +81,7 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
             : "rounded-2xl rounded-bl-md bg-white/4 text-foreground/75 border border-white/4 chat-markdown"
         }`}
       >
-        {isUser ? content : <ReactMarkdown>{content}</ReactMarkdown>}
+        {isUser ? content : <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>}
       </div>
     </div>
   );
@@ -191,7 +192,7 @@ export function ChatMessageWithParts({
                   {isUser ? (
                     part.text
                   ) : (
-                    <ReactMarkdown>{part.text}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{part.text}</ReactMarkdown>
                   )}
                 </div>
                 {/* Edit button for user messages */}
