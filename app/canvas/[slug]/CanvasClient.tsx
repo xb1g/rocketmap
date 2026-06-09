@@ -19,8 +19,6 @@ import type {
   CanvasMode,
   CanvasTab,
   CanvasData,
-  AIAnalysis,
-  AIUsage,
   MarketResearchData,
   UnitEconomicsData,
   RiskMetrics,
@@ -337,7 +335,6 @@ export function CanvasClient({
     async (blockType: BlockType) => {
       if (readOnly) return;
       setAnalyzingBlock(blockType);
-      // Set glow to AI while analyzing
       setBlocks((prev) => {
         const next = new Map(prev);
         const b = next.get(blockType);
@@ -348,32 +345,73 @@ export function CanvasClient({
       try {
         const res = await fetch(
           `/api/canvas/${canvasId}/blocks/${blockType}/analyze`,
-          {
-            method: "POST",
-          },
+          { method: "POST" },
         );
-        const data = await res.json();
 
-        if (res.ok) {
-          setBlocks((prev) => {
-            const next = new Map(prev);
-            const b = next.get(blockType);
-            if (b) {
-              const updated: BlockData = {
-                ...b,
-                aiAnalysis: data.analysis as AIAnalysis,
-                confidenceScore: data.confidenceScore,
-                riskScore: data.riskScore,
-                lastUsage: (data.usage as AIUsage) ?? null,
-              };
-              updated.state = deriveBlockState(updated);
-              next.set(blockType, updated);
+        if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            if (!line.includes('"analyzeBlock"')) continue;
+            try {
+              const json = line.startsWith("data: ") ? line.slice(6) : line;
+              const event = JSON.parse(json);
+              const items: unknown[] = Array.isArray(event) ? event : [event];
+              for (const item of items) {
+                const e = item as Record<string, unknown>;
+                if (e?.toolName === "analyzeBlock" && e?.result) {
+                  const r = e.result as {
+                    draft: string;
+                    assumptions: string[];
+                    risks: string[];
+                    questions: string[];
+                    confidenceScore?: number;
+                    riskScore?: number;
+                  };
+                  setBlocks((prev) => {
+                    const next = new Map(prev);
+                    const b = next.get(blockType);
+                    if (b) {
+                      const updated: BlockData = {
+                        ...b,
+                        aiAnalysis: {
+                          draft: r.draft,
+                          assumptions: r.assumptions,
+                          risks: r.risks,
+                          questions: r.questions,
+                          generatedAt: new Date().toISOString(),
+                        },
+                        confidenceScore: typeof r.confidenceScore === "number"
+                          ? r.confidenceScore / 100
+                          : b.confidenceScore,
+                        riskScore: typeof r.riskScore === "number"
+                          ? r.riskScore / 100
+                          : b.riskScore,
+                      };
+                      updated.state = deriveBlockState(updated);
+                      next.set(blockType, updated);
+                    }
+                    return next;
+                  });
+                }
+              }
+            } catch {
+              // partial or non-JSON line
             }
-            return next;
-          });
+          }
         }
       } catch {
-        // Reset state on error
         setBlocks((prev) => {
           const next = new Map(prev);
           const b = next.get(blockType);
