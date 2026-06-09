@@ -13,8 +13,8 @@ import { useChatSessions } from './useChatSessions';
 interface ChatBarProps {
   canvasId: string;
   chatBlock: BlockType | null;
-  docked?: boolean;
-  onDockedChange?: (docked: boolean) => void;
+  minimized?: boolean;
+  onMinimizedChange?: (minimized: boolean) => void;
   onAcceptEdit?: (proposalId: string, edit: BlockEditProposal) => void;
   onRejectEdit?: (proposalId: string, editIndex: number) => void;
   onRevertEdit?: (proposalId: string, editIndex: number) => void;
@@ -67,8 +67,8 @@ function ChatBarLoader({
   chatKey,
   sessionKey,
   endpoint,
-  docked,
-  onDockedChange,
+  minimized,
+  onMinimizedChange,
   onAcceptEdit,
   onRejectEdit,
   onRevertEdit,
@@ -84,8 +84,8 @@ function ChatBarLoader({
   chatKey: string;
   sessionKey: string;
   endpoint: string;
-  docked?: boolean;
-  onDockedChange?: (docked: boolean) => void;
+  minimized?: boolean;
+  onMinimizedChange?: (minimized: boolean) => void;
   onAcceptEdit?: (proposalId: string, edit: BlockEditProposal) => void;
   onRejectEdit?: (proposalId: string, editIndex: number) => void;
   onRevertEdit?: (proposalId: string, editIndex: number) => void;
@@ -107,43 +107,28 @@ function ChatBarLoader({
   }, [canvasId, sessionKey]);
 
   if (persistedMessages === null) {
-    if (docked) {
-      return (
-        <aside className="chat-dock glass-morphism">
-          <div className="chat-dock-header">
-            <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-wider text-foreground-muted/60">AI Copilot</div>
-              <div className="text-xs text-foreground-muted truncate">Loading conversation...</div>
-            </div>
-            <button
-              onClick={() => onDockedChange?.(false)}
-              className="ui-btn ui-btn-xs ui-btn-ghost"
-              type="button"
-            >
-              Collapse
-            </button>
-          </div>
-          <div className="flex-1 min-h-0 flex items-center justify-center px-4">
-            <span className="text-[11px] text-foreground-muted/40">Loading chat...</span>
-          </div>
-        </aside>
-      );
-    }
-
     return (
-      <div className="chat-float-wrap">
-        <div className="chat-float-card glass-morphism">
+      <aside className="chat-dock glass-morphism">
+        <div className="chat-dock-header">
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-wider text-foreground-muted/60">AI Copilot</div>
+            <div className="text-xs text-foreground-muted truncate">Loading conversation...</div>
+          </div>
           <button
-            onClick={() => onDockedChange?.(true)}
-            className="chat-float-header"
+            onClick={() => onMinimizedChange?.(true)}
+            className="ui-btn ui-btn-xs ui-btn-ghost"
             type="button"
+            title="Minimize"
           >
-            <span className="text-[11px] font-medium text-foreground-muted">AI Copilot</span>
-            <span className="text-[10px] text-foreground-muted/50">Open sidebar</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
           </button>
-          <div className="px-4 pb-4 text-[11px] text-foreground-muted/40">Loading chat...</div>
         </div>
-      </div>
+        <div className="flex-1 min-h-0 flex items-center justify-center px-4">
+          <span className="text-[11px] text-foreground-muted/40">Loading chat...</span>
+        </div>
+      </aside>
     );
   }
 
@@ -154,8 +139,8 @@ function ChatBarLoader({
       sessionKey={sessionKey}
       endpoint={endpoint}
       persistedMessages={persistedMessages}
-      docked={docked}
-      onDockedChange={onDockedChange}
+      minimized={minimized}
+      onMinimizedChange={onMinimizedChange}
       onAcceptEdit={onAcceptEdit}
       onRejectEdit={onRejectEdit}
       onRevertEdit={onRevertEdit}
@@ -176,8 +161,8 @@ function ChatBarInner({
   sessionKey,
   endpoint,
   persistedMessages,
-  docked,
-  onDockedChange,
+  minimized,
+  onMinimizedChange,
   onAcceptEdit,
   onRejectEdit,
   onRevertEdit,
@@ -194,8 +179,8 @@ function ChatBarInner({
   sessionKey: string;
   endpoint: string;
   persistedMessages: UIMessage[];
-  docked?: boolean;
-  onDockedChange?: (docked: boolean) => void;
+  minimized?: boolean;
+  onMinimizedChange?: (minimized: boolean) => void;
   onAcceptEdit?: (proposalId: string, edit: BlockEditProposal) => void;
   onRejectEdit?: (proposalId: string, editIndex: number) => void;
   onRevertEdit?: (proposalId: string, editIndex: number) => void;
@@ -207,19 +192,19 @@ function ChatBarInner({
   pendingMessage?: string | null;
   onPendingMessageSent?: () => void;
 }) {
-  const [internalDocked, setInternalDocked] = useState(false);
+  const [internalMinimized, setInternalMinimized] = useState(false);
   const [input, setInput] = useState('');
 
-  const isDocked = docked ?? internalDocked;
+  const isMinimized = minimized ?? internalMinimized;
 
-  const setDocked = useCallback(
+  const setMinimized = useCallback(
     (next: boolean) => {
-      if (docked === undefined) {
-        setInternalDocked(next);
+      if (minimized === undefined) {
+        setInternalMinimized(next);
       }
-      onDockedChange?.(next);
+      onMinimizedChange?.(next);
     },
-    [docked, onDockedChange],
+    [minimized, onMinimizedChange],
   );
 
   const transport = useMemo(
@@ -265,17 +250,17 @@ function ChatBarInner({
     const messageId = `user-${Date.now()}`;
     saveUserMessage(pendingMessage, messageId);
     sendMessage({ text: pendingMessage });
-    setDocked(true);
-    onPendingMessageSent?.();
+    const id = setTimeout(() => {
+      setMinimized(false);
+      onPendingMessageSent?.();
+    }, 0);
+    return () => clearTimeout(id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingMessage]);
 
   const onSubmit = () => {
     const text = input.trim();
     if (!text || isLoading) return;
-    if (!isDocked) {
-      setDocked(true);
-    }
     setInput('');
     const messageId = `user-${Date.now()}`;
     saveUserMessage(text, messageId);
@@ -286,65 +271,19 @@ function ChatBarInner({
     ? 'Canvas Scope'
     : chatKey.replace(/_/g, ' ');
 
-  if (!isDocked) {
+  if (isMinimized) {
     return (
-      <div className="chat-float-wrap">
-        <div className="chat-float-card glass-morphism">
-          <div
-            onClick={() => setDocked(true)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                setDocked(true);
-              }
-            }}
-            className="chat-float-header"
-            role="button"
-            tabIndex={0}
-          >
-            <div className="min-w-0 text-left">
-              <div className="text-[11px] font-medium text-foreground-muted">AI Copilot</div>
-              <div className="text-[10px] text-foreground-muted/50 truncate">{label}</div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onNewSession();
-                  setDocked(true);
-                }}
-                className="text-[10px] px-1.5 py-0.5 rounded border transition-colors"
-                style={{
-                  borderColor: 'var(--chroma-indigo, #6366f1)',
-                  color: 'var(--chroma-indigo, #6366f1)',
-                }}
-                title="New chat session"
-              >
-                +
-              </button>
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className="text-foreground-muted/70"
-              >
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </div>
-          </div>
-          <ChatInput
-            value={input}
-            onChange={setInput}
-            onSubmit={onSubmit}
-            onStop={stop}
-            isLoading={isLoading}
-            placeholder={isLoading ? 'Thinking...' : 'Ask AI and press enter...'}
-          />
-        </div>
+      <div className="chat-minimized">
+        <button
+          onClick={() => setMinimized(false)}
+          className="chat-minimized-btn"
+          type="button"
+          title="AI Copilot — Click to restore"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        </button>
       </div>
     );
   }
@@ -357,11 +296,14 @@ function ChatBarInner({
           <div className="text-xs text-foreground-muted truncate">{label}</div>
         </div>
         <button
-          onClick={() => setDocked(false)}
+          onClick={() => setMinimized(true)}
           className="ui-btn ui-btn-xs ui-btn-ghost"
           type="button"
+          title="Minimize"
         >
-          Collapse
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
         </button>
       </div>
 
@@ -398,7 +340,7 @@ function ChatBarInner({
   );
 }
 
-export function ChatBar({ canvasId, chatBlock, docked, onDockedChange, onAcceptEdit, onRejectEdit, onRevertEdit, pendingMessage, onPendingMessageSent }: ChatBarProps) {
+export function ChatBar({ canvasId, chatBlock, minimized, onMinimizedChange, onAcceptEdit, onRejectEdit, onRevertEdit, pendingMessage, onPendingMessageSent }: ChatBarProps) {
   const chatKey = chatBlock ?? 'general';
   const endpoint = chatBlock
     ? `/api/canvas/${canvasId}/blocks/${chatBlock}/chat`
@@ -419,8 +361,8 @@ export function ChatBar({ canvasId, chatBlock, docked, onDockedChange, onAcceptE
       chatKey={chatKey}
       sessionKey={activeSessionKey}
       endpoint={endpoint}
-      docked={docked}
-      onDockedChange={onDockedChange}
+      minimized={minimized}
+      onMinimizedChange={onMinimizedChange}
       onAcceptEdit={onAcceptEdit}
       onRejectEdit={onRejectEdit}
       onRevertEdit={onRevertEdit}

@@ -4,7 +4,6 @@ import {
   serverTablesDB,
   DATABASE_ID,
   USERS_TABLE_ID,
-  CANVASES_TABLE_ID,
   BLOCKS_TABLE_ID,
 } from "@/lib/appwrite";
 import { Query } from "node-appwrite";

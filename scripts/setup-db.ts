@@ -55,8 +55,9 @@ async function setup() {
       key: 'userId_idx', type: IndexType.Key, attributes: ['userId'],
     });
     console.log('Created users index');
-  } catch (e: any) {
-    if (e.code === 409) {
+  } catch (e: unknown) {
+    const err = e as { code?: number };
+    if (err.code === 409) {
       console.log('Users collection already exists, skipping...');
     } else {
       throw e;
@@ -104,8 +105,9 @@ async function setup() {
       key: 'slug_idx', type: IndexType.Unique, attributes: ['slug'],
     });
     console.log('Created canvases indexes');
-  } catch (e: any) {
-    if (e.code === 409) {
+  } catch (e: unknown) {
+    const err = e as { code?: number };
+    if (err.code === 409) {
       console.log('Canvases collection already exists, skipping...');
     } else {
       throw e;
@@ -169,8 +171,9 @@ async function setup() {
       key: 'userId_idx', type: IndexType.Key, attributes: ['userId'],
     });
     console.log('Created messages indexes');
-  } catch (e: any) {
-    if (e.code === 409) {
+  } catch (e: unknown) {
+    const err = e as { code?: number };
+    if (err.code === 409) {
       console.log('Messages collection already exists, skipping...');
     } else {
       throw e;

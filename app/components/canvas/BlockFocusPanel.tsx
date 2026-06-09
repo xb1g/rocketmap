@@ -10,7 +10,6 @@ import type {
   UnitEconomicsData,
 } from "@/lib/types/canvas";
 import { BlockFocusHeader } from "./BlockFocusHeader";
-import { BlockFocusEditor } from "./BlockFocusEditor";
 import { BlockAIResults } from "./BlockAIResults";
 import { BlockCard } from "./BlockCard";
 import { BLOCK_DEFINITIONS, getBlockValue } from "./constants";
@@ -49,7 +48,7 @@ interface BlockFocusPanelProps {
   onItemUpdate?: (
     blockType: BlockType,
     itemId: string,
-    updates: Partial<any>,
+    updates: Partial<Record<string, unknown>>,
   ) => void;
   onItemDelete?: (blockType: BlockType, itemId: string) => void;
   onItemToggleSegment?: (
@@ -63,6 +62,7 @@ interface BlockFocusPanelProps {
     linkedItemId: string,
   ) => void;
   chatSection?: React.ReactNode;
+  onWidthChange?: (width: number) => void;
 }
 
 const MIN_WIDTH = 320;
@@ -675,7 +675,7 @@ function BlockRiskSection({
                   </span>
                   {a.confidenceScore > 0 && (
                     <span className="text-[9px] font-mono text-foreground-muted/40">
-                      {a.confidenceScore}%
+                      {a.confidenceScore}
                     </span>
                   )}
                 </div>
@@ -707,7 +707,7 @@ function BlockEconomicsSection({
 
   if (blockType !== "revenue_streams" && blockType !== "cost_structure") return null;
 
-  const economics = (block.deepDiveData as any)?.unitEconomics as UnitEconomicsData | undefined;
+  const economics = (block.deepDiveData as { unitEconomics?: UnitEconomicsData } | undefined)?.unitEconomics;
 
   return (
     <div className="px-4 pb-3">
@@ -783,7 +783,6 @@ export function BlockFocusPanel({
   allBlocksFilled,
   filledCount,
   allSegments,
-  onChange,
   onClose,
   onAnalyze,
   onDeepDive,
@@ -796,15 +795,10 @@ export function BlockFocusPanel({
   onItemUpdate,
   onItemDelete,
   onItemToggleSegment,
-  onItemToggleLink,
   chatSection,
+  onWidthChange,
 }: BlockFocusPanelProps) {
   const def = BLOCK_DEFINITIONS.find((d) => d.type === blockType);
-  const label =
-    mode === "lean" && def?.leanLabel
-      ? def.leanLabel
-      : def?.bmcLabel ?? blockType;
-  const value = getBlockValue(block.content, blockType, mode);
   const [contentCollapsed, setContentCollapsed] = useState(false);
   const [showLinkPicker, setShowLinkPicker] = useState(false);
   const [creatingSegment, setCreatingSegment] = useState(false);
@@ -833,7 +827,9 @@ export function BlockFocusPanel({
       if (!isDragging.current) return;
       const newWidth = window.innerWidth - e.clientX;
       const maxWidth = window.innerWidth * MAX_WIDTH_RATIO;
-      setWidth(Math.max(MIN_WIDTH, Math.min(maxWidth, newWidth)));
+      const clamped = Math.max(MIN_WIDTH, Math.min(maxWidth, newWidth));
+      setWidth(clamped);
+      onWidthChange?.(clamped);
     };
 
     const handleMouseUp = () => {
@@ -853,14 +849,12 @@ export function BlockFocusPanel({
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="focus-backdrop" onClick={onClose} />
-
       {/* Panel */}
       <div
         ref={panelRef}
-        className="focus-panel glass-morphism"
+        className="focus-panel"
         style={{ width: `${width}px` }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Resize handle */}
         {!readOnly && (
@@ -979,7 +973,8 @@ export function BlockFocusPanel({
                         key={renderKey}
                         block={blockCardData}
                         allSegments={allSegments ?? []}
-                        onUpdate={(id: string, updates: any) => {
+                        onUpdate={(id: string, updates: { contentJson?: string }) => {
+                          if (!updates.contentJson) return;
                           const parsed = JSON.parse(updates.contentJson);
                           onItemUpdate?.(blockType, id, { name: parsed.text });
                         }}

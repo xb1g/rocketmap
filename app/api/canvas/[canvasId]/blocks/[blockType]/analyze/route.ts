@@ -25,10 +25,12 @@ export async function POST(_request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
     const { canvasId, blockType } = await context.params;
+    console.log(`[analyze] canvasId=${canvasId} blockType=${blockType} userId=${user.$id}`);
 
     const blocks = await getCanvasBlocks(canvasId, user.$id);
     const config = getAgentConfig(blockType as BlockType, blocks);
     const tools = getToolsForAgent(config.toolNames);
+    console.log(`[analyze] blocks loaded=${blocks.length} tools=[${Object.keys(tools).join(', ')}]`);
 
     const targetBlock = blocks.find((b) => b.blockType === blockType);
     let content = '';
@@ -54,6 +56,7 @@ export async function POST(_request: Request, context: RouteContext) {
           },
         ],
         tools,
+        toolChoice: 'required',
         stopWhen: stepCountIs(3),
       },
       {

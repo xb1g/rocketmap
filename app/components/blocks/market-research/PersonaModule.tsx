@@ -30,8 +30,8 @@ function PersonaCard({
 }) {
   const segment = segments.find(
     (s) =>
-      (s as any).$id === persona.segmentId ||
-      (s as any).id === persona.segmentId,
+      (s as { $id?: string }).$id === persona.segmentId ||
+      (s as { id?: string }).id === persona.segmentId,
   );
   const initials = persona.name
     .split(" ")

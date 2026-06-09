@@ -88,43 +88,6 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
     setSessions(loaded);
   }, []);
 
-  // When modal opens, decide what to show
-  useEffect(() => {
-    if (!open) return;
-    const loaded = loadSessions();
-    setSessions(loaded);
-    if (loaded.length > 0 && !activeSessionId) {
-      setView('browse');
-    } else if (!activeSessionId) {
-      startNewSession();
-    }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Sync messages to localStorage whenever they change
-  useEffect(() => {
-    if (!activeSessionId || messages.length === 0) return;
-    const userMsgs = messages.filter((m) => m.role === 'user');
-    if (userMsgs.length === 0) return;
-
-    setSessions((prev) => {
-      const updated = prev.map((s) =>
-        s.id === activeSessionId
-          ? {
-              ...s,
-              messages,
-              preview: userMsgs[0]?.parts
-                ?.filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-                .map((p) => p.text)
-                .join(' ')
-                .slice(0, 80) || s.preview,
-            }
-          : s,
-      );
-      saveSessions(updated);
-      return updated;
-    });
-  }, [messages, activeSessionId]);
-
   const startNewSession = useCallback(() => {
     const id = `guided-${Date.now()}`;
     const session: GuidedSession = {
@@ -147,7 +110,8 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
     lastRedirectSlugRef.current = null;
     setMessages([]);
     setView('chat');
-  }, [setMessages]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const resumeSession = useCallback((session: GuidedSession) => {
     setActiveSessionId(session.id);
@@ -158,7 +122,52 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
     creatingRef.current = session.status === 'completed';
     lastRedirectSlugRef.current = session.canvasSlug ?? null;
     setView('chat');
-  }, [setMessages]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // When modal opens, decide what to show
+  useEffect(() => {
+    if (!open) return;
+    const loaded = loadSessions();
+    const id = setTimeout(() => {
+      setSessions(loaded);
+      if (loaded.length > 0 && !activeSessionId) {
+        setView('browse');
+      } else if (!activeSessionId) {
+        startNewSession();
+      }
+    }, 0);
+    return () => clearTimeout(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  // Sync messages to localStorage whenever they change
+  useEffect(() => {
+    if (!activeSessionId || messages.length === 0) return;
+    const userMsgs = messages.filter((m) => m.role === 'user');
+    if (userMsgs.length === 0) return;
+
+    const id = setTimeout(() => {
+      setSessions((prev) => {
+        const updated = prev.map((s) =>
+          s.id === activeSessionId
+            ? {
+                ...s,
+                messages,
+                preview: userMsgs[0]?.parts
+                  ?.filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+                  .map((p) => p.text)
+                  .join(' ')
+                  .slice(0, 80) || s.preview,
+              }
+            : s,
+        );
+        saveSessions(updated);
+        return updated;
+      });
+    }, 0);
+    return () => clearTimeout(id);
+  }, [messages, activeSessionId]);
 
   const deleteSession = useCallback((id: string) => {
     setSessions((prev) => {
@@ -172,6 +181,37 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
   }, [startNewSession]);
 
   // Watch for generateCanvas tool completion (server-side creation)
+  const handleCanvasReady = useCallback((slug: string, title: string) => {
+    if (lastRedirectSlugRef.current === slug) return;
+    lastRedirectSlugRef.current = slug;
+
+    setCanvasTitle(title);
+    setCreationState('creating');
+    setCreationStep(0);
+
+    // Mark session as completed
+    if (activeSessionId) {
+      setSessions((prev) => {
+        const updated = prev.map((s) =>
+          s.id === activeSessionId
+            ? { ...s, status: 'completed' as const, canvasSlug: slug }
+            : s,
+        );
+        saveSessions(updated);
+        return updated;
+      });
+    }
+
+    // Brief animation then redirect
+    setTimeout(() => {
+      setCreationState('done');
+      setTimeout(() => {
+        onOpenChange(false);
+        router.push(`/canvas/${slug}`);
+      }, 1200);
+    }, 1500);
+  }, [router, onOpenChange, activeSessionId]);
+
   useEffect(() => {
     if (creatingRef.current) return;
 
@@ -223,7 +263,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
         }
       }
     }
-  }, [messages]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [messages, handleCanvasReady]);
 
   // Animate creation steps
   useEffect(() => {
@@ -233,37 +273,6 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
     }, 1200);
     return () => clearInterval(interval);
   }, [creationState]);
-
-  const handleCanvasReady = useCallback((slug: string, title: string) => {
-    if (lastRedirectSlugRef.current === slug) return;
-    lastRedirectSlugRef.current = slug;
-
-    setCanvasTitle(title);
-    setCreationState('creating');
-    setCreationStep(0);
-
-    // Mark session as completed
-    if (activeSessionId) {
-      setSessions((prev) => {
-        const updated = prev.map((s) =>
-          s.id === activeSessionId
-            ? { ...s, status: 'completed' as const, canvasSlug: slug }
-            : s,
-        );
-        saveSessions(updated);
-        return updated;
-      });
-    }
-
-    // Brief animation then redirect
-    setTimeout(() => {
-      setCreationState('done');
-      setTimeout(() => {
-        onOpenChange(false);
-        router.push(`/canvas/${slug}`);
-      }, 1200);
-    }, 1500);
-  }, [router, onOpenChange, activeSessionId]);
 
   const handleSubmit = () => {
     const text = input.trim();

@@ -102,7 +102,9 @@ export function getAnthropicUsageStatsFromUser(
 }
 
 export function getLanguageModel(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _user: Models.User<Models.Preferences>,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _modelId: string,
 ) {
   return deepseek.chat("deepseek-v4-flash");

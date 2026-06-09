@@ -61,7 +61,7 @@ function BlockSummary({ block, mode }: { block: BlockData; mode: CanvasMode }) {
           )}
           <span className="text-[10px] text-foreground-muted">
             {hasAnalysis
-              ? `${Math.round(block.confidenceScore * 100)}%`
+              ? `${Math.round(block.confidenceScore * 100)}`
               : "Not analyzed"}
           </span>
         </div>

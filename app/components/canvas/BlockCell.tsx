@@ -186,7 +186,6 @@ export function BlockCell({
   allSegments,
   allBlockItems,
   readOnly = false,
-  onChange,
   onFocus,
   onBlur,
   onExpand,
@@ -213,13 +212,9 @@ export function BlockCell({
   const [newSegmentDesc, setNewSegmentDesc] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [addingNew, setAddingNew] = useState(false);
-  const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editDesc, setEditDesc] = useState("");
 
   const isSegmentBlock =
     definition.type === "customer_segments" && !!onAddSegment;
-  const hasBlocks = !!onBlockCreate;
 
   const dedupedBlocks = useMemo(() => {
     if (!blocks) return [];
@@ -277,27 +272,20 @@ export function BlockCell({
   }, [newSegmentName, newSegmentDesc, onAddSegment, isSaving, readOnly]);
 
   const handleSaveSegmentEdit = useCallback(
-    async (segId: string) => {
-      if (readOnly || !onSegmentUpdate) {
-        setEditingSegmentId(null);
-        return;
-      }
+    async (segId: string, updates: { name: string; description: string }) => {
+      if (readOnly || !onSegmentUpdate) return;
       const original = resolvedLinkedSegments.find((s) => s.$id === segId);
-      if (!original) {
-        setEditingSegmentId(null);
-        return;
+      if (!original) return;
+      const payload: Partial<Pick<Segment, "name" | "description">> = {};
+      if (updates.name.trim() && updates.name.trim() !== original.name)
+        payload.name = updates.name.trim();
+      if (updates.description.trim() !== (original.description || ""))
+        payload.description = updates.description.trim();
+      if (Object.keys(payload).length > 0) {
+        await onSegmentUpdate(segId, payload);
       }
-      const updates: Partial<Pick<Segment, "name" | "description">> = {};
-      if (editName.trim() && editName.trim() !== original.name)
-        updates.name = editName.trim();
-      if (editDesc.trim() !== (original.description || ""))
-        updates.description = editDesc.trim();
-      if (Object.keys(updates).length > 0) {
-        await onSegmentUpdate(segId, updates);
-      }
-      setEditingSegmentId(null);
     },
-    [editName, editDesc, onSegmentUpdate, readOnly, resolvedLinkedSegments],
+    [onSegmentUpdate, readOnly, resolvedLinkedSegments],
   );
 
   useEffect(() => {
@@ -471,7 +459,7 @@ export function BlockCell({
                     ? "var(--state-critical)"
                     : "var(--state-warning)",
               }}
-              title={`Risk: ${riskMetrics.riskScore}% | ${riskMetrics.untestedHighRisk} high, ${riskMetrics.untestedMediumRisk} med untested`}
+              title={`Risk: ${riskMetrics.riskScore} | ${riskMetrics.untestedHighRisk} high, ${riskMetrics.untestedMediumRisk} med untested`}
             >
               <span
                 className="w-1 h-1 rounded-full shrink-0"
@@ -483,7 +471,7 @@ export function BlockCell({
                 }}
               />
               {riskMetrics.confidenceScore > 0 &&
-                `${riskMetrics.confidenceScore}%`}
+                `${riskMetrics.confidenceScore}`}
             </span>
           )}
         {hasAnalysis && (
@@ -497,7 +485,7 @@ export function BlockCell({
                     ? "var(--state-warning)"
                     : "var(--state-critical)",
             }}
-            title={`${Math.round(confidenceScore * 100)}% confidence`}
+            title={`${Math.round(confidenceScore * 100)} confidence`}
           />
         )}
       </div>
@@ -545,14 +533,7 @@ export function BlockCell({
               key={seg.$id}
               segment={seg}
               mode="full"
-              isEditing={editingSegmentId === seg.$id}
-              onEdit={() => {
-                setEditingSegmentId(seg.$id);
-                setEditName(seg.name);
-                setEditDesc(seg.description || "");
-              }}
-              onSave={(updates) => handleSaveSegmentEdit(seg.$id)}
-              onCancel={() => setEditingSegmentId(null)}
+              onSave={(updates) => handleSaveSegmentEdit(seg.$id, updates)}
               onFocus={() => onSegmentFocus?.(seg.$id)}
               onLink={() => onSegmentClick?.(seg.$id)}
               segmentRefCallback={(el) => segmentRefCallback?.(seg.$id, el)}

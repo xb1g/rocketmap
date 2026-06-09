@@ -25,12 +25,9 @@ export function ChatSessionSelector({
         type="button"
         onClick={onNewChat}
         disabled={isLoading}
-        className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors"
-        style={{
-          borderColor: 'var(--chroma-indigo, #6366f1)',
-          color: 'var(--chroma-indigo, #6366f1)',
-          opacity: isLoading ? 0.5 : 1,
-        }}
+        className="ui-btn ui-btn-xs ui-btn-ghost"
+        style={{ opacity: isLoading ? 0.5 : 1 }}
+        title="New chat session"
       >
         + New
       </button>

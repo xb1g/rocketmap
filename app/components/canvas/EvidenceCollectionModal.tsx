@@ -35,7 +35,7 @@ export function EvidenceCollectionModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    setLoading(true);
+    const id = setTimeout(() => setLoading(true), 0);
     fetch(
       `/api/canvas/${canvasId}/assumptions/${assumption.$id}/experiments`,
     )
@@ -47,6 +47,7 @@ export function EvidenceCollectionModal({
       })
       .catch(() => setExperiments([]))
       .finally(() => setLoading(false));
+    return () => clearTimeout(id);
   }, [isOpen, canvasId, assumption.$id]);
 
   if (!isOpen) return null;

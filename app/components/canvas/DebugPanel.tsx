@@ -169,13 +169,13 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                     <div className="bg-black/20 rounded p-2">
                       <div className="text-foreground-muted">Confidence</div>
                       <div className="font-semibold text-white">
-                        {(block.confidenceScore * 100).toFixed(0)}%
+                        {(block.confidenceScore * 100).toFixed(0)}
                       </div>
                     </div>
                     <div className="bg-black/20 rounded p-2">
                       <div className="text-foreground-muted">Risk</div>
                       <div className="font-semibold text-white">
-                        {(block.riskScore * 100).toFixed(0)}%
+                        {(block.riskScore * 100).toFixed(0)}
                       </div>
                     </div>
                   </div>

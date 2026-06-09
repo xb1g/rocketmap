@@ -50,7 +50,7 @@ export async function POST(
         databaseId: DATABASE_ID,
         tableId: BLOCKS_TABLE_ID,
         queries: [
-          Query.equal('canvas', canvasId),
+          Query.equal('canvas', source.$id),
           Query.select(["$id", "blockType", "contentJson"]),
           Query.limit(9),
         ],
@@ -63,7 +63,7 @@ export async function POST(
             tableId: BLOCKS_TABLE_ID,
             rowId: ID.unique(),
             data: {
-              canvas: newCanvas.$id,
+              canvasId: newCanvas.$id,
               blockType: block.blockType,
               contentJson: block.contentJson,
             },

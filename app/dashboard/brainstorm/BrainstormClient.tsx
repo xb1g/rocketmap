@@ -43,7 +43,11 @@ export function BrainstormClient() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) setSavedIdeas(JSON.parse(stored));
+      if (stored) {
+        const parsed = JSON.parse(stored) as SavedIdea[];
+        const id = setTimeout(() => setSavedIdeas(parsed), 0);
+        return () => clearTimeout(id);
+      }
     } catch {
       // ignore
     }

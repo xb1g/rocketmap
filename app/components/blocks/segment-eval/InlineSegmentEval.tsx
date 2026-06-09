@@ -22,7 +22,7 @@ interface InlineSegmentEvalProps {
 export function InlineSegmentEval({
   canvasId,
   block,
-  segments,
+  segments: _segments,
   onDataChange,
 }: InlineSegmentEvalProps) {
   const data: MarketResearchData = block.deepDiveData ?? {

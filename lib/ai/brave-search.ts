@@ -255,7 +255,7 @@ export async function searchBrave(
     // Extract web results
     const results: SearchResult[] = (data.web?.results || [])
       .slice(0, maxResults)
-      .map((item: any) => ({
+      .map((item: { title?: string; url?: string; description?: string }) => ({
         title: item.title || '',
         url: item.url || '',
         description: item.description || '',

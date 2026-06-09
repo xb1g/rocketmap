@@ -31,7 +31,7 @@ interface MobileFocusSheetProps {
   onItemUpdate?: (
     blockType: BlockType,
     itemId: string,
-    updates: Partial<any>,
+    updates: Partial<Record<string, unknown>>,
   ) => void;
   onItemDelete?: (blockType: BlockType, itemId: string) => void;
   onItemToggleSegment?: (
@@ -69,13 +69,6 @@ export function MobileFocusSheet({
   const dragStartY = useRef(0);
   const dragStartTime = useRef(0);
   const isDragging = useRef(false);
-
-  const def = BLOCK_DEFINITIONS.find((d) => d.type === blockType);
-  const label =
-    mode === "lean" && def?.leanLabel
-      ? def.leanLabel
-      : def?.bmcLabel ?? blockType;
-  const value = getBlockValue(block.content, blockType, mode);
 
   // Animate in on mount
   useEffect(() => {
@@ -166,7 +159,7 @@ export function MobileFocusSheet({
         }}
         role="dialog"
         aria-modal="true"
-        aria-label={`${label} focus panel`}
+        aria-label={`${blockType.replace(/_/g, " ")} focus panel`}
       >
         {/* Drag handle */}
         <div
@@ -228,8 +221,8 @@ export function MobileFocusSheet({
                       key={`${item.id}-${idx}`}
                       block={blockCardData}
                       allSegments={allSegments ?? []}
-                      onUpdate={(id: string, updates: any) => {
-                        const parsed = JSON.parse(updates.contentJson);
+                      onUpdate={(id: string, updates: { contentJson?: string }) => {
+                        const parsed = JSON.parse(updates.contentJson ?? '{}');
                         onItemUpdate?.(blockType, id, { name: parsed.text });
                       }}
                       onDelete={(id: string) => onItemDelete?.(blockType, id)}

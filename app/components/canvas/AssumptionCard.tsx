@@ -84,7 +84,7 @@ export function AssumptionCard({
               />
             </div>
             <span className="text-[10px] text-foreground-muted">
-              {assumption.confidenceScore}%
+              {assumption.confidenceScore}
             </span>
           </div>
         </div>

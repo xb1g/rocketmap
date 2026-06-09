@@ -18,9 +18,10 @@ export async function POST() {
           onboardingCompleted: true,
         },
       });
-    } catch (updateError: any) {
+    } catch (updateError: unknown) {
       // If row doesn't exist (e.g., user created before this fix), create it
-      if (updateError?.code === 404 || updateError?.type === 'row_not_found') {
+      const err = updateError as { code?: number; type?: string };
+      if (err?.code === 404 || err?.type === 'row_not_found') {
         await serverTablesDB.createRow({
           databaseId: DATABASE_ID,
           tableId: USERS_TABLE_ID,

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
-import { serverTablesDB, DATABASE_ID, CANVASES_TABLE_ID, BLOCKS_TABLE_ID } from '@/lib/appwrite';
+import { serverTablesDB, DATABASE_ID, BLOCKS_TABLE_ID } from '@/lib/appwrite';
 import { listCanvasesByOwner } from '@/lib/utils';
 
 export async function GET() {

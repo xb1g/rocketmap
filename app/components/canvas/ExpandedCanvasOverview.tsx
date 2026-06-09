@@ -9,7 +9,7 @@ import type {
   Segment,
   MarketResearchData,
 } from "@/lib/types/canvas";
-import { BLOCK_DEFINITIONS, getBlockValue } from "./constants";
+import { BLOCK_DEFINITIONS } from "./constants";
 import { SEGMENT_COLORS } from "@/lib/types/canvas";
 
 // ─── Block Icons (inline SVGs matching BlockCell) ────────────────────────────

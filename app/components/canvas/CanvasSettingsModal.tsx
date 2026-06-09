@@ -80,7 +80,7 @@ export function CanvasSettingsModal({
                 className="w-full accent-[var(--chroma-indigo)]"
               />
               <span className="text-xs font-mono text-foreground-muted min-w-12 text-right">
-                {Math.round(textZoom * 100)}%
+                {Math.round(textZoom * 100)}
               </span>
             </div>
             <div className="flex justify-end">

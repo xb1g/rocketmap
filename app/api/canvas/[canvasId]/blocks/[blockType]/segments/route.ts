@@ -60,7 +60,7 @@ export async function POST(request: Request, context: RouteContext) {
 
     // Get current segment IDs
     const currentSegments = Array.isArray(block.segments)
-      ? block.segments.map((s: any) => (typeof s === 'string' ? s : s.$id))
+      ? block.segments.map((s: unknown) => (typeof s === 'string' ? s : (s as { $id: string }).$id))
       : [];
 
     // Add new segment if not already linked
@@ -100,7 +100,7 @@ export async function DELETE(request: Request, context: RouteContext) {
 
     // Get current segment IDs
     const currentSegments = Array.isArray(block.segments)
-      ? block.segments.map((s: any) => (typeof s === 'string' ? s : s.$id))
+      ? block.segments.map((s: unknown) => (typeof s === 'string' ? s : (s as { $id: string }).$id))
       : [];
 
     // Remove segment

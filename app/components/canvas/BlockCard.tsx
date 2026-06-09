@@ -45,9 +45,9 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
       }
     }, [block.contentJson]);
 
-    const [isEditing, setIsEditing] = useState(false);
-    const [editText, setEditText] = useState(content.text);
     const [showLinkPicker, setShowLinkPicker] = useState(false);
+    const textRef = useRef<HTMLDivElement>(null);
+    const savedTextRef = useRef(content.text);
 
     const linkBtnRef = useRef<HTMLButtonElement>(null);
     const floatingRef = useRef<HTMLDivElement>(null);
@@ -96,12 +96,26 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
       return () => document.removeEventListener("keydown", handler);
     }, [showLinkPicker]);
 
-    const handleSave = useCallback(() => {
-      onUpdate(block.$id, {
-        contentJson: JSON.stringify({ text: editText, tags: content.tags })
-      });
-      setIsEditing(false);
-    }, [editText, content.tags, block.$id, onUpdate]);
+    // Sync text when it changes externally
+    useEffect(() => {
+      if (textRef.current && document.activeElement !== textRef.current) {
+        textRef.current.innerText = content.text;
+        savedTextRef.current = content.text;
+      }
+    }, [content.text]);
+
+    const handleTextFocus = useCallback(() => {
+      savedTextRef.current = textRef.current?.innerText || '';
+    }, []);
+
+    const handleTextBlur = useCallback(() => {
+      const currentText = textRef.current?.innerText?.trim() || '';
+      if (currentText !== savedTextRef.current.trim()) {
+        onUpdate(block.$id, {
+          contentJson: JSON.stringify({ text: currentText, tags: content.tags })
+        });
+      }
+    }, [block.$id, content.tags, onUpdate]);
 
     // Whether this card contains the globally-hovered segment
     const cardHasHighlightedSegment = highlightedSegmentId
@@ -117,36 +131,44 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
     return (
       <div
         ref={ref}
-        className={`block-item-card${cardHasHighlightedSegment ? ' ring-1 ring-white/25' : ''}`}
+        className={`block-item-card group relative${cardHasHighlightedSegment ? ' ring-1 ring-white/25' : ''}`}
         style={cardHasHighlightedSegment ? { transition: 'box-shadow 150ms ease, ring 150ms ease' } : undefined}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       >
+        {/* Delete button — top-right, always visible */}
+        <button
+          onClick={() => {
+            if (confirm('Delete this block? This cannot be undone.')) {
+              onDelete(block.$id);
+            }
+          }}
+          className="absolute top-1 right-1 text-[9px] px-1 py-0.5 rounded text-red-400/60 hover:text-red-400 transition-all cursor-pointer z-10"
+          title="Delete block"
+        >
+          ×
+        </button>
+
         <div className="p-1.5 space-y-1">
-          {/* Text content (view or edit) */}
-          {isEditing ? (
-            <textarea
-              value={editText}
-              onChange={(e) => setEditText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  setEditText(content.text);
-                  setIsEditing(false);
-                }
-              }}
-              onBlur={handleSave}
-              className="w-full bg-white/5 rounded px-1.5 py-0.5 text-[10px] text-foreground outline-none border border-white/12 focus:border-white/25 resize-none"
-              rows={3}
-              autoFocus
-            />
-          ) : (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="text-[10px] text-foreground/80 hover:text-foreground text-left w-full transition-colors whitespace-pre-wrap break-words leading-relaxed"
-            >
-              {content.text || 'Enter block content...'}
-            </button>
-          )}
+          {/* Text content — inline contenteditable */}
+          <div
+            ref={textRef}
+            contentEditable
+            suppressContentEditableWarning
+            onFocus={handleTextFocus}
+            onBlur={handleTextBlur}
+            onClick={(e) => {
+              // Place caret at click position (browser handles this natively for contenteditable)
+              e.stopPropagation();
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="text-[10px] text-foreground/80 text-left w-full transition-colors whitespace-pre-wrap break-words leading-relaxed cursor-text outline-none hover:text-foreground [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-foreground/30"
+            data-placeholder="Enter block content..."
+            spellCheck={false}
+            style={{ minHeight: '18px' }}
+          >
+            {content.text}
+          </div>
 
           {/* Tags — always visible, styled as primary pills */}
           {hasTags && (
@@ -194,7 +216,7 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
             </div>
           )}
 
-          {/* Footer: link button + confidence + delete */}
+          {/* Footer: link button + confidence (only when > 0) + delete (hover only) */}
           <div className="flex items-center gap-1.5">
             {/* Link to segments button */}
             <button
@@ -214,26 +236,16 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
               <span>{block.segments.length || ''}</span>
             </button>
 
-            {/* Confidence score */}
-            <span
-              className="text-[9px] font-mono ml-auto"
-              style={{ color: block.confidenceScore > 0 ? confidenceColor : 'var(--foreground-muted)' }}
-            >
-              {block.confidenceScore > 0 ? `${block.confidenceScore}%` : '\u2014'}
-            </span>
+            {/* Confidence score — only when meaningful */}
+            {block.confidenceScore > 0 && (
+              <span
+                className="text-[9px] font-mono ml-auto"
+                style={{ color: confidenceColor }}
+              >
+                {block.confidenceScore}
+              </span>
+            )}
 
-            {/* Delete button */}
-            <button
-              onClick={() => {
-                if (confirm('Delete this block? This cannot be undone.')) {
-                  onDelete(block.$id);
-                }
-              }}
-              className="text-[9px] px-1.5 py-0.5 rounded text-red-400/50 hover:text-red-400 transition-colors"
-              title="Delete block"
-            >
-              ×
-            </button>
           </div>
         </div>
 

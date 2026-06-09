@@ -266,7 +266,7 @@ export function ChatMessageWithParts({
                         isPending={isPending}
                         isAccepted={isAccepted}
                         isRejected={isRejected}
-                        onAccept={() => onAcceptEdit?.(proposalId, edit)}
+                        onAccept={(newContent) => onAcceptEdit?.(proposalId, { ...edit, newContent: newContent ?? edit.newContent })}
                         onReject={() => onRejectEdit?.(proposalId, editIdx)}
                         onRevert={
                           isAccepted && onRevertEdit
@@ -431,7 +431,7 @@ function SingleEditCard({
   isPending: boolean;
   isAccepted: boolean;
   isRejected: boolean;
-  onAccept: () => void;
+  onAccept: (newContent?: string) => void;
   onReject: () => void;
   onRevert?: () => void;
 }) {
@@ -439,10 +439,9 @@ function SingleEditCard({
   const [editedContent, setEditedContent] = useState(edit.newContent);
 
   const handleAcceptEdited = () => {
-    // Mutate the edit's newContent before accepting
-    edit.newContent = editedContent;
+    // Pass the edited content up via onAccept callback
     setIsEditing(false);
-    onAccept();
+    onAccept(editedContent);
   };
 
   const handleCancelEdit = () => {
@@ -525,7 +524,7 @@ function SingleEditCard({
       {!isPending && !isAccepted && !isRejected && !isEditing && (
         <div className="flex gap-2 px-3 pb-3">
           <button
-            onClick={onAccept}
+            onClick={() => onAccept()}
             className="flex-1 px-3 py-1.5 rounded-lg bg-green-500/15 hover:bg-green-500/25 text-green-400/90 text-[11px] font-display-small uppercase tracking-wider transition-colors"
           >
             Accept

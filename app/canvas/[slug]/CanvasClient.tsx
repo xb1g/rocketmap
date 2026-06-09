@@ -98,7 +98,7 @@ export function CanvasClient({
   const [chatTargetBlock, setChatTargetBlock] = useState<BlockType | null>(
     null,
   );
-  const [chatDocked, setChatDocked] = useState(false);
+  const [chatMinimized, setChatMinimized] = useState(false);
   const [pendingChatMessage, setPendingChatMessage] = useState<string | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -127,16 +127,19 @@ export function CanvasClient({
   const [viabilityData, setViabilityData] = useState<ViabilityData | null>(
     initialViabilityData ?? null,
   );
-  const [viabilityOutdated, setViabilityOutdated] = useState(false);
+  const [, setViabilityOutdated] = useState(false);
   const [riskHeatmap, setRiskHeatmap] = useState<Record<
     BlockType,
     RiskMetrics
   > | null>(null);
   const [economicsData, setEconomicsData] = useState<UnitEconomicsData | null>(() => {
     const revenueBlock = initialBlocks.find((b) => b.blockType === "revenue_streams");
-    const dd = revenueBlock?.deepDiveData;
-    return (dd as any)?.unitEconomics ?? null;
+    const dd = revenueBlock?.deepDiveData as { unitEconomics?: UnitEconomicsData } | undefined;
+    return dd?.unitEconomics ?? null;
   });
+  const [economicsGenerating, setEconomicsGenerating] = useState(false);
+  const [economicsProgress, setEconomicsProgress] = useState<string | null>(null);
+  const [focusPanelWidth, setFocusPanelWidth] = useState(420);
 
   const saveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
@@ -167,16 +170,20 @@ export function CanvasClient({
 
   useEffect(() => {
     if (expandedBlock) {
-      setChatDocked(false);
+      // Use a microtask to avoid synchronous setState in effect body
+      const id = setTimeout(() => setChatMinimized(true), 0);
+      return () => clearTimeout(id);
     }
   }, [expandedBlock]);
 
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(`canvas:textZoom:${canvasId}`);
-      if (!stored) return;
-      const parsed = Number.parseFloat(stored);
-      setTextZoom(clampTextZoom(parsed));
+      if (stored) {
+        const parsed = Number.parseFloat(stored);
+        const id = setTimeout(() => setTextZoom(clampTextZoom(parsed)), 0);
+        return () => clearTimeout(id);
+      }
     } catch {
       // ignore storage errors
     } finally {
@@ -199,9 +206,6 @@ export function CanvasClient({
   // Viability recalculation on block changes
   useEffect(() => {
     if (!viabilityData || readOnly) return;
-
-    // Mark as outdated when blocks change
-    setViabilityOutdated(true);
 
     // Debounced auto-recalculation (5s)
     const timer = setTimeout(async () => {
@@ -344,6 +348,7 @@ export function CanvasClient({
       });
 
       try {
+        console.log(`[analyze] POST /api/canvas/${canvasId}/blocks/${blockType}/analyze`);
         const res = await fetch(
           `/api/canvas/${canvasId}/blocks/${blockType}/analyze`,
           { method: "POST" },
@@ -512,7 +517,7 @@ export function CanvasClient({
     if (!viabilityData) return;
 
     // Open chat bar
-    setChatDocked(true);
+    setChatMinimized(false);
     setChatTargetBlock(null); // System-level chat
 
     // Pre-fill message with viability context
@@ -907,7 +912,7 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
   }, []);
 
   const handleRevertEdit = useCallback(
-    async (proposalId: string, _editIndex: number) => {
+    async (proposalId: string) => {
       if (readOnly) return;
       // Find stored old content for this proposal
       for (const [key, entry] of revertMapRef.current) {
@@ -1108,12 +1113,13 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
     : undefined;
   const activeChatBlock = expandedBlock ?? chatTargetBlock;
   const reservedRightSpace =
-    chatDocked && isDesktop && !expandedBlock ? "460px" : undefined;
+    !chatMinimized && isDesktop && !expandedBlock ? "460px" : undefined;
   const showPublicReadOnlyBanner = readOnly && canvasData.isPublic;
 
   useEffect(() => {
     if (readOnly && activeTab === "analysis") {
-      setActiveTab("canvas");
+      const id = setTimeout(() => setActiveTab("canvas"), 0);
+      return () => clearTimeout(id);
     }
   }, [activeTab, readOnly]);
 
@@ -1174,6 +1180,7 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
         readOnly={readOnly}
         onExplainViability={handleExplainViability}
         onViabilityDataChange={setViabilityData}
+        economicsGenerating={economicsGenerating}
       />
 
       {/* Tab content */}
@@ -1185,7 +1192,7 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
           readOnly={readOnly}
           analyzingBlock={analyzingBlock}
           chatTargetBlock={activeChatBlock}
-          dimmed={!!expandedBlock}
+          dimmed={false}
           allSegments={Array.from(segments.values())}
           hoveredItem={hoveredItem}
           onBlockChange={handleBlockChange}
@@ -1212,7 +1219,7 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
           onSegmentUpdate={async (segmentId, updates) => {
             await handleSegmentUpdate(segmentId, updates);
           }}
-          onSegmentFocus={(segmentId) => {
+          onSegmentFocus={() => {
             setExpandedBlock("customer_segments");
           }}
           onItemCreate={handleItemCreate}
@@ -1256,7 +1263,7 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
           onSegmentUpdate={async (segmentId, updates) => {
             await handleSegmentUpdate(segmentId, updates);
           }}
-          onSegmentFocus={(segmentId) => {
+          onSegmentFocus={() => {
             setMobileSheetBlock("customer_segments");
           }}
           onItemCreate={handleItemCreate}
@@ -1288,6 +1295,12 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
             canvasId={canvasId}
             blockType="revenue_streams"
             aiEnabled={allBlocksFilled}
+            isGenerating={economicsGenerating}
+            progress={economicsProgress}
+            onGeneratingChange={(generating, progress) => {
+              setEconomicsGenerating(generating);
+              setEconomicsProgress(progress ?? null);
+            }}
             onDataChange={(data) => setEconomicsData(data)}
           />
         </div>
@@ -1370,6 +1383,7 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
           onItemDelete={handleItemDelete}
           onItemToggleSegment={handleItemToggleSegment}
           onItemToggleLink={handleItemToggleLink}
+          onWidthChange={setFocusPanelWidth}
           chatSection={
             !readOnly ? (
               <BlockChatSection
@@ -1386,9 +1400,9 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
         />
       )}
 
-      {/* Expanded block detail — sits beside the focus panel at z-50 */}
+      {/* Expanded block detail — sits above backdrop (z-40) but below focus panel (z-50) */}
       {activeTab === "canvas" && !isMobile && expandedBlock && expandedBlockData && (
-          <div className="fixed top-0 bottom-0 left-0 z-50 overflow-y-auto bg-[var(--color-background)]" style={{ right: `${420}px` }}>
+          <div className="fixed top-0 bottom-0 left-0 z-40 overflow-y-auto bg-[var(--color-background)]" style={{ right: `${focusPanelWidth}px` }}>
               <ExpandedCanvasOverview
                 blocks={blocks}
                 mode={mode}
@@ -1429,12 +1443,8 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
         <ChatBar
           canvasId={canvasId}
           chatBlock={activeChatBlock}
-          docked={expandedBlock ? false : chatDocked}
-          onDockedChange={(next) => {
-            if (!expandedBlock) {
-              setChatDocked(next);
-            }
-          }}
+          minimized={chatMinimized}
+          onMinimizedChange={(next) => setChatMinimized(next)}
           onAcceptEdit={handleAcceptEdit}
           onRejectEdit={handleRejectEdit}
           onRevertEdit={handleRevertEdit}

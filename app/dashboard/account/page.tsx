@@ -3,7 +3,6 @@ import { getSessionUser } from "@/lib/appwrite-server";
 import {
   serverTablesDB,
   DATABASE_ID,
-  CANVASES_TABLE_ID,
   BLOCKS_TABLE_ID,
 } from "@/lib/appwrite";
 import { Query } from "node-appwrite";

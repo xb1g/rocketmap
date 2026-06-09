@@ -113,7 +113,8 @@ export function ConnectionOverlay({
 
   // Recompute on hover change
   useEffect(() => {
-    computeLines();
+    const id = requestAnimationFrame(() => computeLines());
+    return () => cancelAnimationFrame(id);
   }, [computeLines]);
 
   // Recompute on scroll/resize
@@ -132,8 +133,11 @@ export function ConnectionOverlay({
   useEffect(() => {
     if (!hoveredItem) {
       const timer = setTimeout(() => setLines([]), 150);
-      setVisible(false);
-      return () => clearTimeout(timer);
+      const id = setTimeout(() => setVisible(false), 0);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(id);
+      };
     }
   }, [hoveredItem]);
 

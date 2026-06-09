@@ -58,7 +58,7 @@ export function BlockFocusHeader({
         </span>
         {confidenceScore > 0 && (
           <span className="text-[10px] font-mono text-foreground-muted">
-            {Math.round(confidenceScore * 100)}% confidence
+            {Math.round(confidenceScore * 100)} confidence
           </span>
         )}
       </div>

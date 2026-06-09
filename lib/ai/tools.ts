@@ -361,11 +361,7 @@ export const generateCanvas = tool({
   execute: async (params) => params,
 });
 
-const ALL_BLOCK_TYPES: BlockType[] = [
-  'key_partnerships', 'key_activities', 'key_resources',
-  'value_prop', 'customer_relationships', 'channels',
-  'customer_segments', 'cost_structure', 'revenue_streams',
-];
+
 
 /**
  * Factory: creates a generateCanvas tool that persists the canvas + blocks
@@ -540,11 +536,7 @@ export function createGenerateCanvasTool(userId: string) {
 
 // ─── Surgical Card Tools (Atomic CRUD) ───────────────────────────────────────
 
-const blockTypeEnum = z.enum([
-  'key_partnerships', 'key_activities', 'key_resources',
-  'value_prop', 'customer_relationships', 'channels',
-  'customer_segments', 'cost_structure', 'revenue_streams',
-]);
+
 
 // ─── Unit Economics Tools ────────────────────────────────────────────────────
 

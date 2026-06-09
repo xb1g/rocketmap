@@ -45,7 +45,7 @@ export function CanvasHelpTooltip() {
 
         <div className="pt-2 border-t border-white/10">
           <span className="block text-[11px] italic text-(--state-ai)/90 leading-tight">
-            "Calm Until Critical" — colors represent validation health. Gray is
+            &ldquo;Calm Until Critical&rdquo; — colors represent validation health. Gray is
             calm, Red is high-risk.
           </span>
         </div>

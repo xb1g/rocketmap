@@ -85,7 +85,7 @@ async function migrate() {
         const segIntId = Math.floor(Math.random() * 2_000_000_000);
 
         // Create segment document
-        const segDoc = await databases.createDocument(
+        await databases.createDocument(
           DATABASE_ID,
           SEGMENTS_COLLECTION_ID,
           ID.unique(),

@@ -48,7 +48,11 @@ export function SettingsClient({ initialAnthropicKeyStatus }: SettingsClientProp
   useEffect(() => {
     try {
       const stored = localStorage.getItem(SETTINGS_KEY);
-      if (stored) setSettings(JSON.parse(stored));
+      if (stored) {
+        const parsed = JSON.parse(stored) as Settings;
+        const id = setTimeout(() => setSettings(parsed), 0);
+        return () => clearTimeout(id);
+      }
     } catch {
       // ignore
     }

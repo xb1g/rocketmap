@@ -45,6 +45,7 @@ export async function POST(request: Request, context: RouteContext) {
       module: DeepDiveModule;
       inputs: Record<string, string>;
     };
+    console.log(`[deep-dive] canvasId=${canvasId} blockType=${blockType} module=${module}`);
 
     if (!VALID_MODULES.includes(module)) {
       return NextResponse.json({ error: 'Invalid module' }, { status: 400 });
@@ -53,6 +54,7 @@ export async function POST(request: Request, context: RouteContext) {
     const blocks = await getCanvasBlocks(canvasId, user.$id);
     const targetBlock = blocks.find((b) => b.blockType === blockType);
     const existingDeepDive = targetBlock?.deepDiveData ?? null;
+    console.log(`[deep-dive] blocks=${blocks.length} targetBlock found=${!!targetBlock} existingDeepDive=${!!existingDeepDive}`);
 
     const systemPrompt = buildDeepDivePrompt(module, blocks, existingDeepDive, inputs);
     const toolName = getDeepDiveToolName(module);
@@ -129,6 +131,7 @@ export async function POST(request: Request, context: RouteContext) {
         system: systemPrompt,
         messages: [{ role: 'user', content: userMessage }],
         tools,
+        toolChoice: { type: 'tool', toolName },
         stopWhen: stepCountIs(3),
       },
       {
@@ -146,11 +149,11 @@ export async function POST(request: Request, context: RouteContext) {
       }
     }
 
+    const allToolCalls = result.steps.flatMap(s => s.toolResults.map(tc => tc.toolName));
+    console.log(`[deep-dive] AI done. steps=${result.steps.length} tools called=[${allToolCalls.join(', ')}] toolResult found=${!!toolResult}`);
+
     if (!toolResult) {
-      // Log debug info for troubleshooting
-      const stepCount = result.steps.length;
-      const allToolCalls = result.steps.flatMap(s => s.toolResults.map(tc => tc.toolName));
-      console.error(`[deep-dive] No tool result for ${toolName}. Steps: ${stepCount}, tools called: [${allToolCalls.join(', ')}], text: "${result.text?.slice(0, 200) ?? '(none)'}"`);
+      console.error(`[deep-dive] No tool result for ${toolName}. text: "${result.text?.slice(0, 200) ?? '(none)'}"`);
       return NextResponse.json({ error: 'AI did not produce a result' }, { status: 500 });
     }
 

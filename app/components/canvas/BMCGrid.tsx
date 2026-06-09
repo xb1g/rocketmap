@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback, useMemo } from "react";
+import { useRef, useState, useCallback } from "react";
 import type {
   BlockData,
   BlockItem,
@@ -81,7 +81,6 @@ export function BMCGrid({
   onItemUpdate,
   onItemDelete,
   onItemToggleSegment,
-  onItemToggleLink,
   onItemHover,
   riskHeatmap,
 }: BMCGridProps) {

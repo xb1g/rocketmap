@@ -32,7 +32,7 @@ async function findSegmentDoc(segmentId: string, canvasId: string) {
   });
 
   // Verify segment belongs to this canvas
-  if (segment.canvas !== canvasId && (segment.canvas as any)?.$id !== canvasId) {
+  if (segment.canvas !== canvasId && (segment.canvas as { $id?: string } | undefined)?.$id !== canvasId) {
     throw new Error('Not found');
   }
 

@@ -355,14 +355,14 @@ export function StaticBMC() {
                              <span className="text-[8px] text-amber-500/80 font-mono font-bold uppercase">Assumption</span>
                              <span className="text-[8px] text-white/40 font-mono">P: 0.85</span>
                           </div>
-                          <div className="text-[10px] leading-tight text-white/90">"Hosts accept strangers without professional insurance."</div>
+                          <div className="text-[10px] leading-tight text-white/90">&ldquo;Hosts accept strangers without professional insurance.&rdquo;</div>
                        </div>
                        <div className="p-2 rounded border border-indigo-500/20 bg-indigo-500/[0.03] flex flex-col gap-1.5 translate-x-1 opacity-0 animate-[fade-in_0.6s_1s_forwards,translate-x_0.6s_1s_forwards]">
                           <div className="flex items-center justify-between">
                              <span className="text-[8px] text-indigo-400 font-mono font-bold uppercase">Strategy</span>
                              <span className="text-[8px] text-white/40 font-mono">MITIGATE</span>
                           </div>
-                          <div className="text-[10px] leading-tight text-white/90">Deploy "Host Guarantee" $1M default coverage program.</div>
+                          <div className="text-[10px] leading-tight text-white/90">Deploy &ldquo;Host Guarantee&rdquo; $1M default coverage program.</div>
                        </div>
                     </div>
                   </div>

@@ -13,6 +13,9 @@ interface EconomicsViewProps {
   canvasId: string;
   blockType: BlockType;
   aiEnabled: boolean;
+  isGenerating?: boolean;
+  progress?: string | null;
+  onGeneratingChange?: (generating: boolean, progress?: string) => void;
   onDataChange: (data: UnitEconomicsData) => void;
 }
 
@@ -30,30 +33,66 @@ export function EconomicsView({
   canvasId,
   blockType,
   aiEnabled,
+  isGenerating: isGeneratingProp,
+  progress: progressProp,
+  onGeneratingChange,
   onDataChange,
 }: EconomicsViewProps) {
   const [tab, setTab] = useState<EconomicsTab>(
     activeModule === 'sensitivity_analysis' ? 'sensitivity' : 'overview'
   );
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [localGenerating, setLocalGenerating] = useState(false);
+  const [localProgress, setLocalProgress] = useState<string | null>(null);
+
+  // Use lifted state if provided, otherwise local
+  const isGenerating = isGeneratingProp ?? localGenerating;
+  const progress = progressProp ?? localProgress;
+
+  const setGenerating = (val: boolean, msg?: string) => {
+    setLocalGenerating(val);
+    setLocalProgress(msg ?? null);
+    onGeneratingChange?.(val, msg);
+  };
+
+  const PROGRESS_STEPS = [
+    'Reading canvas context...',
+    'Estimating segment metrics...',
+    'Calculating LTV & CAC...',
+    'Detecting economic alerts...',
+    'Finalizing analysis...',
+  ];
 
   const handleGenerate = async () => {
     if (!aiEnabled) return;
-    setIsGenerating(true);
+    let stepIdx = 0;
+    setGenerating(true, PROGRESS_STEPS[0]);
+    const ticker = setInterval(() => {
+      stepIdx = Math.min(stepIdx + 1, PROGRESS_STEPS.length - 1);
+      setGenerating(true, PROGRESS_STEPS[stepIdx]);
+    }, 8000);
     try {
+      console.log(`[economics] POST /api/canvas/${canvasId}/blocks/${blockType}/deep-dive`);
       const res = await fetch(`/api/canvas/${canvasId}/blocks/${blockType}/deep-dive`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ module: 'unit_economics', inputs: {} }),
       });
+      const json = await res.json();
+      console.log(`[economics] response status=${res.status}`, json);
       if (res.ok) {
-        const json = await res.json();
         if (json.updatedDeepDive?.unitEconomics) {
           onDataChange(json.updatedDeepDive.unitEconomics);
+        } else {
+          console.warn('[economics] no unitEconomics in updatedDeepDive', json.updatedDeepDive);
         }
+      } else {
+        console.error('[economics] error response:', json);
       }
+    } catch (err) {
+      console.error('[economics] fetch threw:', err);
     } finally {
-      setIsGenerating(false);
+      clearInterval(ticker);
+      setGenerating(false);
     }
   };
 
@@ -94,7 +133,7 @@ export function EconomicsView({
         }`}
       >
         {isGenerating
-          ? 'Generating economics...'
+          ? (progress ?? 'Generating economics...')
           : !aiEnabled
             ? 'Fill all blocks to unlock AI'
             : 'Generate Economics'}

@@ -13,6 +13,7 @@ interface CanvasTabsProps {
   readOnly?: boolean;
   onExplainViability: () => void;
   onViabilityDataChange?: (data: ViabilityData) => void;
+  economicsGenerating?: boolean;
 }
 
 const BASE_TABS: { value: CanvasTab; label: string }[] = [
@@ -39,6 +40,7 @@ export function CanvasTabs({
   readOnly = false,
   onExplainViability,
   onViabilityDataChange,
+  economicsGenerating = false,
 }: CanvasTabsProps) {
   return (
     <div className="flex items-center justify-between gap-4 px-2">
@@ -51,7 +53,14 @@ export function CanvasTabs({
               onClick={() => onTabChange(tab.value)}
               className={`ui-segmented-btn ${activeTab === tab.value ? "is-active" : ""}`}
             >
-              {tab.label}
+              {tab.value === "economics" && economicsGenerating ? (
+                <span className="flex items-center gap-1.5">
+                  {tab.label}
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--state-ai)] animate-pulse" />
+                </span>
+              ) : (
+                tab.label
+              )}
             </button>
           ))}
         </div>

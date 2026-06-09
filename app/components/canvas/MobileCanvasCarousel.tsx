@@ -125,7 +125,6 @@ export function MobileCanvasCarousel({
   onItemUpdate,
   onItemDelete,
   onItemToggleSegment,
-  onItemToggleLink,
 }: MobileCanvasCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentSection, setCurrentSection] = useState(3); // Start at Value (index 3)

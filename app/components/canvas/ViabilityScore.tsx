@@ -20,10 +20,6 @@ type ViabilityStatus =
   | "outdated"
   | "error";
 
-const CLAUDE_MASCOT = ` \u25D0\u2589\u2589\u2589\u2589\u25D1
-\u2599\u2589\u2589\u2589\u2589\u2589\u259D
-  \u2598\u2598 \u259D\u259D`;
-
 function getScoreColor(score: number) {
   if (score < 50)
     return {
@@ -108,9 +104,6 @@ export function ViabilityScore({
   if (status === "not_calculated" || status === "error") {
     return (
       <div className="flex items-center gap-2">
-        <pre className="font-mono text-[10px] leading-tight opacity-60 select-none">
-          {CLAUDE_MASCOT}
-        </pre>
         <button
           onClick={handleCalculate}
           className="ui-btn ui-btn-sm ui-btn-primary flex items-center gap-1.5"
@@ -130,9 +123,6 @@ export function ViabilityScore({
   if (status === "calculating") {
     return (
       <div className="flex items-center gap-2">
-        <pre className="font-mono text-[10px] leading-tight opacity-60 select-none">
-          {CLAUDE_MASCOT}
-        </pre>
         <div className="flex items-center gap-1.5">
           <span className="animate-spin inline-block w-3 h-3 border border-foreground-muted border-t-transparent rounded-full" />
           <span className="text-xs text-foreground-muted uppercase tracking-wider">
@@ -152,15 +142,11 @@ export function ViabilityScore({
   return (
     <Popover.Root>
       <div className="flex items-center gap-2">
-        <pre className="font-mono text-[10px] leading-tight opacity-60 select-none">
-          {CLAUDE_MASCOT}
-        </pre>
-
         <Popover.Trigger asChild>
           <button
             className={`${colors.bg} ${colors.text} ${colors.glow} px-3 py-1.5 rounded-lg font-mono text-sm font-bold transition-all hover:scale-105 cursor-pointer`}
           >
-            {data.score}%
+            {data.score}
           </button>
         </Popover.Trigger>
 
@@ -222,12 +208,9 @@ export function ViabilityScore({
           <div className="space-y-3">
             {/* Header */}
             <div className="flex items-center gap-2 pb-2 border-b border-white/10">
-              <pre className="font-mono text-[8px] leading-tight opacity-40 select-none">
-                {CLAUDE_MASCOT}
-              </pre>
               <div>
                 <div className="font-display-small text-sm uppercase tracking-wider text-foreground">
-                  Viability Score: {data.score}%
+                  Viability Score: {data.score}
                 </div>
                 <div className="text-[10px] text-foreground-muted">
                   {colors.label}
@@ -243,15 +226,15 @@ export function ViabilityScore({
               <div className="space-y-1 text-xs text-foreground-muted">
                 <div className="flex justify-between">
                   <span>Assumptions:</span>
-                  <span className="font-mono">{data.breakdown.assumptions}%</span>
+                  <span className="font-mono">{data.breakdown.assumptions}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Market:</span>
-                  <span className="font-mono">{data.breakdown.market}%</span>
+                  <span className="font-mono">{data.breakdown.market}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Unmet Need:</span>
-                  <span className="font-mono">{data.breakdown.unmetNeed}%</span>
+                  <span className="font-mono">{data.breakdown.unmetNeed}</span>
                 </div>
               </div>
             </div>

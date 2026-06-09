@@ -122,7 +122,8 @@ function summarizeDeepDive(data: MarketResearchData): string {
  * have the same content in both modes. Non-shared blocks include both BMC and
  * Lean content so the AI can reason across both canvases.
  */
-export function serializeCanvasState(blocks: BlockData[], mode: 'bmc' | 'lean' = 'bmc'): string {
+export function serializeCanvasState(blocks: BlockData[], _mode: 'bmc' | 'lean' = 'bmc'): string {
+  void _mode;
   return blocks
     .map((b) => {
       const def = BLOCK_DEFINITIONS.find((d) => d.type === b.blockType);

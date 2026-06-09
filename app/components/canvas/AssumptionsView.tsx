@@ -206,7 +206,8 @@ export function AssumptionsView({ canvasId }: AssumptionsViewProps) {
   }, [canvasId]);
 
   useEffect(() => {
-    fetchAssumptions();
+    const id = setTimeout(() => fetchAssumptions(), 0);
+    return () => clearTimeout(id);
   }, [fetchAssumptions]);
 
   const handleAnalyze = useCallback(async () => {
