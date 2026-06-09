@@ -991,6 +991,35 @@ body {
   text-underline-offset: 2px;
 }
 
+/* Table styling for Chat Markdown */
+.chat-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+}
+
+.chat-markdown th {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.375rem 0.5rem;
+  font-weight: 600;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.chat-markdown td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0.375rem 0.5rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.chat-markdown tr:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+
 /* =============================================
    ACCESSIBILITY
    ============================================= */
