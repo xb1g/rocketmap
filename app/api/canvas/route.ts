@@ -21,7 +21,6 @@ export async function POST(request: Request) {
       tableId: CANVASES_TABLE_ID,
       rowId: ID.unique(),
       data: {
-        id: Date.now(),
         title: title.trim(),
         slug,
         description: '',

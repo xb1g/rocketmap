@@ -1,5 +1,10 @@
-import { anthropic, createAnthropic } from "@ai-sdk/anthropic";
+import { createOpenAI } from "@ai-sdk/openai";
 import type { Models } from "node-appwrite";
+
+const deepseek = createOpenAI({
+  baseURL: "https://api.deepseek.com/v1",
+  apiKey: process.env.DEEPSEEK_API_KEY ?? "",
+});
 import { serverUsers } from "@/lib/appwrite";
 import type { AIUsageInfo } from "@/lib/ai/logger";
 
@@ -96,17 +101,15 @@ export function getAnthropicUsageStatsFromUser(
   };
 }
 
-export function getAnthropicModelForUser(
-  user: Models.User<Models.Preferences>,
-  modelId: Parameters<typeof anthropic>[0],
+export function getLanguageModel(
+  _user: Models.User<Models.Preferences>,
+  _modelId: string,
 ) {
-  const userApiKey = getAnthropicApiKeyFromUser(user);
-  if (!userApiKey) {
-    return anthropic(modelId);
-  }
-
-  return createAnthropic({ apiKey: userApiKey })(modelId);
+  return deepseek.chat("deepseek-v4-flash");
 }
+
+/** @deprecated use getLanguageModel */
+export const getAnthropicModelForUser = getLanguageModel;
 
 async function getUserPreferences(userId: string): Promise<PreferenceMap> {
   const prefs = await serverUsers.getPrefs({ userId });

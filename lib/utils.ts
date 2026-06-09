@@ -1,4 +1,4 @@
-import { serverTablesDB, DATABASE_ID, CANVASES_TABLE_ID } from './appwrite';
+import { serverTablesDB, DATABASE_ID, CANVASES_TABLE_ID, ASSUMPTIONS_TABLE_ID, EXPERIMENTS_TABLE_ID } from './appwrite';
 import { Query } from 'node-appwrite';
 import type { CanvasData } from './types/canvas';
 
@@ -70,6 +70,57 @@ export async function listCanvasesByOwner(
   }
 
   throw lastError ?? new Error("Unable to locate a valid canvas ownership field");
+}
+
+/** Throws 'Forbidden' if userId does not own canvasId. */
+export async function verifyCanvasOwnership(canvasId: string, userId: string): Promise<void> {
+  const result = await listCanvasesByOwner(userId, [
+    Query.equal('$id', canvasId),
+    Query.limit(1),
+  ]);
+  if (result.rows.length === 0) {
+    throw new Error('Forbidden');
+  }
+}
+
+/** Throws 'Forbidden' if the assumption does not belong to the given canvas. */
+export async function verifyAssumptionBelongsToCanvas(
+  canvasId: string,
+  assumptionId: string,
+): Promise<void> {
+  const row = await serverTablesDB.getRow({
+    databaseId: DATABASE_ID,
+    tableId: ASSUMPTIONS_TABLE_ID,
+    rowId: assumptionId,
+  });
+  const rowCanvasId =
+    typeof row.canvas === 'string' ? row.canvas : (row.canvas as { $id?: string })?.$id;
+  if (rowCanvasId !== canvasId) {
+    throw new Error('Forbidden');
+  }
+}
+
+/** Throws 'Forbidden' if the experiment does not belong to the given assumption. */
+export async function verifyExperimentBelongsToAssumption(
+  assumptionId: string,
+  experimentId: string,
+): Promise<void> {
+  const row = await serverTablesDB.getRow({
+    databaseId: DATABASE_ID,
+    tableId: EXPERIMENTS_TABLE_ID,
+    rowId: experimentId,
+  });
+  const rowAssumptionId =
+    typeof row.assumption === 'string'
+      ? row.assumption
+      : (row.assumption as { $id?: string })?.$id;
+  if (rowAssumptionId !== assumptionId) {
+    throw new Error('Forbidden');
+  }
+}
+
+export function isForbiddenError(error: unknown): boolean {
+  return error instanceof Error && error.message === 'Forbidden';
 }
 
 /**

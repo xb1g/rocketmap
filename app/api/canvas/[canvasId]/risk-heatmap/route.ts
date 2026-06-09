@@ -8,6 +8,7 @@ import {
 } from '@/lib/appwrite';
 import type { Assumption, BlockType, RiskMetrics } from '@/lib/types/canvas';
 import { calculateRiskMetrics } from '@/lib/utils/risk';
+import { verifyCanvasOwnership, isForbiddenError } from '@/lib/utils';
 
 interface RouteContext {
   params: Promise<{ canvasId: string }>;
@@ -21,8 +22,9 @@ const ALL_BLOCK_TYPES: BlockType[] = [
 
 export async function GET(_request: NextRequest, context: RouteContext) {
   try {
-    await requireAuth();
+    const user = await requireAuth();
     const { canvasId } = await context.params;
+    await verifyCanvasOwnership(canvasId, user.$id);
 
     const result = await serverTablesDB.listRows({
       databaseId: DATABASE_ID,
@@ -66,6 +68,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
     return NextResponse.json(heatmap);
   } catch (error) {
+    if (isForbiddenError(error)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     console.error('Error calculating risk heatmap:', error);
     return NextResponse.json({ error: 'Failed to calculate risk heatmap' }, { status: 500 });
   }

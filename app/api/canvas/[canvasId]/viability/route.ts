@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { generateObject } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
-import { z } from "zod";
+import { generateText } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
 import { requireAuth } from "@/lib/appwrite-server";
 import { getUserIdFromCanvas } from "@/lib/utils";
 import {
@@ -11,29 +10,17 @@ import {
 } from "@/lib/appwrite";
 import { getCanvasBlocks } from "@/lib/ai/canvas-state";
 import { getViabilityPrompt } from "@/lib/ai/prompts";
+import { recordAnthropicUsageForUser } from "@/lib/ai/user-preferences";
 import type { BlockData, BlockType, CanvasData, ViabilityData } from "@/lib/types/canvas";
+
+const deepseekFlash = createOpenAI({
+  baseURL: "https://api.deepseek.com/v1",
+  apiKey: process.env.DEEPSEEK_API_KEY ?? "",
+}).chat("deepseek-v4-flash");
 
 interface RouteContext {
   params: Promise<{ canvasId: string }>;
 }
-
-const viabilitySchema = z.object({
-  score: z.number().describe("0-100 viability score"),
-  breakdown: z.object({
-    assumptions: z.number().describe("0-100 assumptions sub-score"),
-    market: z.number().describe("0-100 market sub-score"),
-    unmetNeed: z.number().describe("0-100 unmet need sub-score"),
-  }),
-  reasoning: z.string(),
-  validatedAssumptions: z.array(
-    z.object({
-      blockType: z.string(),
-      assumption: z.string(),
-      status: z.enum(["validated", "invalidated", "untested"]),
-      evidence: z.string(),
-    })
-  ),
-});
 
 function getSegmentsText(block: BlockData): string {
   if (block.blockType !== "customer_segments" || !block.linkedSegments?.length) {
@@ -74,7 +61,6 @@ export async function POST(_request: Request, context: RouteContext) {
     const user = await requireAuth();
     const { canvasId } = await context.params;
 
-    // 1. Fetch canvas and verify ownership
     const canvas = await serverTablesDB.getRow({
       databaseId: DATABASE_ID,
       tableId: CANVASES_TABLE_ID,
@@ -86,18 +72,12 @@ export async function POST(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // 2. Load all blocks (reuse existing canvas-state helper which verifies ownership)
     const blocks = await getCanvasBlocks(canvasId, user.$id);
 
-    // 3. Verify all 9 blocks exist — content depth is evaluated by AI, not gated here
     if (blocks.length < 9) {
-      return NextResponse.json(
-        { error: "All 9 blocks must exist" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "All 9 blocks must exist" }, { status: 400 });
     }
 
-    // Require at least some content across the canvas (any block with text counts)
     const totalContent = blocks.reduce(
       (sum, b) => sum + getBlockViabilityText(b).trim().length,
       0
@@ -109,33 +89,51 @@ export async function POST(_request: Request, context: RouteContext) {
       );
     }
 
-    // 4. Call Opus 4.6 with viability prompt
-    const result = await generateObject({
-      model: anthropic("claude-opus-4-6"),
+    const result = await generateText({
+      model: deepseekFlash,
       temperature: 0.3,
       prompt: getViabilityPrompt(blocks),
-      schema: viabilitySchema,
     });
 
-    // 5. Calculate overall score (weighted average)
-    const { assumptions, market, unmetNeed } = result.object.breakdown;
-    const calculatedScore = Math.round(
-      assumptions * 0.4 + market * 0.3 + unmetNeed * 0.3
-    );
+    void recordAnthropicUsageForUser(user.$id, {
+      inputTokens: result.usage.inputTokens ?? 0,
+      outputTokens: result.usage.outputTokens ?? 0,
+      totalTokens: (result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0),
+    });
 
-    // 6. Prepare viability data
+    // Extract JSON from the response text
+    const text = result.text;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("Model did not return valid JSON");
+    }
+
+    const obj = JSON.parse(jsonMatch[0]) as {
+      score: number;
+      breakdown: { assumptions: number; market: number; unmetNeed: number };
+      reasoning: string;
+      validatedAssumptions?: Array<{
+        blockType: string;
+        assumption: string;
+        status: "validated" | "invalidated" | "untested";
+        evidence: string;
+      }>;
+    };
+
+    const { assumptions, market, unmetNeed } = obj.breakdown;
+    const calculatedScore = Math.round(assumptions * 0.4 + market * 0.3 + unmetNeed * 0.3);
+
     const viabilityData: ViabilityData = {
       score: calculatedScore,
-      breakdown: result.object.breakdown,
-      reasoning: result.object.reasoning,
-      validatedAssumptions: result.object.validatedAssumptions.map(item => ({
+      breakdown: obj.breakdown,
+      reasoning: obj.reasoning,
+      validatedAssumptions: (obj.validatedAssumptions ?? []).map(item => ({
         ...item,
         blockType: item.blockType as BlockType,
       })),
       calculatedAt: new Date().toISOString(),
     };
 
-    // 7. Save to canvases table
     await serverTablesDB.updateRow({
       databaseId: DATABASE_ID,
       tableId: CANVASES_TABLE_ID,
@@ -147,7 +145,6 @@ export async function POST(_request: Request, context: RouteContext) {
       },
     });
 
-    // 8. Return viability data
     return NextResponse.json({ viability: viabilityData });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);

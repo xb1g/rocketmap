@@ -7,6 +7,7 @@ import {
   EXPERIMENTS_TABLE_ID,
   ASSUMPTIONS_TABLE_ID,
 } from '@/lib/appwrite';
+import { verifyCanvasOwnership, verifyAssumptionBelongsToCanvas, isForbiddenError } from '@/lib/utils';
 
 interface RouteContext {
   params: Promise<{ canvasId: string; assumptionId: string }>;
@@ -14,8 +15,10 @@ interface RouteContext {
 
 export async function GET(_request: NextRequest, context: RouteContext) {
   try {
-    await requireAuth();
-    const { assumptionId } = await context.params;
+    const user = await requireAuth();
+    const { canvasId, assumptionId } = await context.params;
+    await verifyCanvasOwnership(canvasId, user.$id);
+    await verifyAssumptionBelongsToCanvas(canvasId, assumptionId);
 
     const result = await serverTablesDB.listRows({
       databaseId: DATABASE_ID,
@@ -25,6 +28,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
     return NextResponse.json(result.rows);
   } catch (error) {
+    if (isForbiddenError(error)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     console.error('Error fetching experiments:', error);
     return NextResponse.json({ error: 'Failed to fetch experiments' }, { status: 500 });
   }
@@ -32,8 +36,10 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
-    await requireAuth();
-    const { assumptionId } = await context.params;
+    const user = await requireAuth();
+    const { canvasId, assumptionId } = await context.params;
+    await verifyCanvasOwnership(canvasId, user.$id);
+    await verifyAssumptionBelongsToCanvas(canvasId, assumptionId);
     const body = await request.json();
 
     const { type, description, successCriteria, costEstimate, durationEstimate } = body;
@@ -73,6 +79,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     return NextResponse.json(experiment, { status: 201 });
   } catch (error) {
+    if (isForbiddenError(error)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     console.error('Error creating experiment:', error);
     return NextResponse.json({ error: 'Failed to create experiment' }, { status: 500 });
   }

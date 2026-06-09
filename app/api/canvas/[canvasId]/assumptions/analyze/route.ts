@@ -1,5 +1,4 @@
-import { generateObject } from 'ai';
-import { z } from 'zod';
+import { generateText } from 'ai';
 import { ID, Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
 import {
@@ -19,15 +18,6 @@ interface RouteContext {
   params: Promise<{ canvasId: string }>;
 }
 
-const assumptionsSchema = z.object({
-  reasoning: z.string().describe('Brief step-by-step reasoning about the canvas before listing assumptions'),
-  assumptions: z.array(z.object({
-    statement: z.string().describe('A clear, testable assumption statement'),
-    category: z.enum(['market', 'product', 'ops', 'legal']),
-    severityScore: z.number().describe('Impact if wrong, integer 0-10: 0=negligible, 10=catastrophic'),
-    blockTypes: z.array(z.string()).describe('BMC block types this assumption relates to'),
-  })),
-});
 
 function sseEvent(data: Record<string, unknown>): string {
   return `data: ${JSON.stringify(data)}\n\n`;
@@ -54,8 +44,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
         send({ type: 'step', step: 'analyzing' });
 
-        // Use generateObject for reliable structured output
-        const { object, usage } = await generateObject({
+        const { text, usage } = await generateText({
           model: getAnthropicModelForUser(user, 'claude-sonnet-4-5-20250929'),
           system: systemPrompt,
           prompt: `Analyze this entire business model canvas and extract ALL hidden assumptions the founder is making. Focus on:
@@ -70,22 +59,37 @@ For each assumption:
 - Link it to the relevant block types (use exact block type keys like "customer_segments", "value_prop", etc.)
 - Score severity 0-10 based on impact if the assumption is wrong (10 = catastrophic)
 
-Think through the canvas step by step in your reasoning, then list all assumptions.`,
-          schema: assumptionsSchema,
+Return ONLY valid JSON (no markdown, no explanation):
+{
+  "reasoning": "step-by-step reasoning about the canvas",
+  "assumptions": [
+    {
+      "statement": "clear testable assumption",
+      "category": "market|product|ops|legal",
+      "severityScore": 7,
+      "blockTypes": ["customer_segments"]
+    }
+  ]
+}`,
         });
 
-        console.log(`[assumptions] Generated ${object.assumptions.length} assumptions, tokens: ${usage.totalTokens}`);
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error('Model did not return valid JSON');
+        const object = JSON.parse(jsonMatch[0]) as {
+          reasoning?: string;
+          assumptions: Array<{ statement: string; category: 'market' | 'product' | 'ops' | 'legal'; severityScore: number; blockTypes: string[] }>;
+        };
 
-        // Send reasoning as thinking
+        console.log(`[assumptions] Generated ${object.assumptions.length} assumptions, tokens: ${(usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)}`);
+
         if (object.reasoning) {
           send({ type: 'thinking', text: object.reasoning });
         }
 
-        // Record usage
         recordAnthropicUsageForUser(user.$id, {
           inputTokens: usage.inputTokens ?? 0,
           outputTokens: usage.outputTokens ?? 0,
-          totalTokens: usage.totalTokens ?? 0,
+          totalTokens: (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0),
         });
 
         const extracted = object.assumptions;

@@ -6,6 +6,7 @@ import {
   EXPERIMENTS_TABLE_ID,
   ASSUMPTIONS_TABLE_ID,
 } from '@/lib/appwrite';
+import { verifyCanvasOwnership, verifyAssumptionBelongsToCanvas, verifyExperimentBelongsToAssumption, isForbiddenError } from '@/lib/utils';
 
 interface RouteContext {
   params: Promise<{ canvasId: string; assumptionId: string; id: string }>;
@@ -13,8 +14,11 @@ interface RouteContext {
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
-    await requireAuth();
-    const { assumptionId, id } = await context.params;
+    const user = await requireAuth();
+    const { canvasId, assumptionId, id } = await context.params;
+    await verifyCanvasOwnership(canvasId, user.$id);
+    await verifyAssumptionBelongsToCanvas(canvasId, assumptionId);
+    await verifyExperimentBelongsToAssumption(assumptionId, id);
     const body = await request.json();
 
     const updates: Record<string, unknown> = {};
@@ -55,6 +59,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     return NextResponse.json(experiment);
   } catch (error) {
+    if (isForbiddenError(error)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     console.error('Error updating experiment:', error);
     return NextResponse.json({ error: 'Failed to update experiment' }, { status: 500 });
   }
@@ -62,8 +67,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
 export async function DELETE(_request: NextRequest, context: RouteContext) {
   try {
-    await requireAuth();
-    const { id } = await context.params;
+    const user = await requireAuth();
+    const { canvasId, assumptionId, id } = await context.params;
+    await verifyCanvasOwnership(canvasId, user.$id);
+    await verifyAssumptionBelongsToCanvas(canvasId, assumptionId);
+    await verifyExperimentBelongsToAssumption(assumptionId, id);
 
     await serverTablesDB.deleteRow({
       databaseId: DATABASE_ID,
@@ -73,6 +81,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (isForbiddenError(error)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     console.error('Error deleting experiment:', error);
     return NextResponse.json({ error: 'Failed to delete experiment' }, { status: 500 });
   }

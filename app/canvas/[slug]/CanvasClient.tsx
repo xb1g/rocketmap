@@ -99,6 +99,7 @@ export function CanvasClient({
     null,
   );
   const [chatDocked, setChatDocked] = useState(false);
+  const [pendingChatMessage, setPendingChatMessage] = useState<string | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileSheetBlock, setMobileSheetBlock] = useState<BlockType | null>(
@@ -524,9 +525,7 @@ Current breakdown:
 
 ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
 
-    // Note: This message context will be sent to chat copilot
-    // The actual message sending is handled by ChatBar component
-    console.log("Viability explanation request:", message);
+    setPendingChatMessage(message);
   }, [viabilityData]);
 
   const handleDeepDiveDataChange = useCallback(
@@ -1439,6 +1438,8 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
           onAcceptEdit={handleAcceptEdit}
           onRejectEdit={handleRejectEdit}
           onRevertEdit={handleRevertEdit}
+          pendingMessage={pendingChatMessage}
+          onPendingMessageSent={() => setPendingChatMessage(null)}
         />
       )}
 
