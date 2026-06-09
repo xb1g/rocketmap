@@ -443,23 +443,33 @@ export function CanvasClient({
         }),
       });
 
-      // Parse streaming response for tool results
-      const text = await res.text();
-      const lines = text.split("\n");
-      for (const line of lines) {
-        if (
-          line.includes('"toolName":"checkConsistency"') &&
-          line.includes('"result"')
-        ) {
+      // Parse streaming response for checkConsistency tool result
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.includes('"checkConsistency"')) continue;
           try {
-            // Try to extract the result from the stream
-            const match = line.match(/"result":(\{[^}]+\})/);
-            if (match) {
-              const result = JSON.parse(match[1]);
-              setConsistencyData(result as ConsistencyData);
+            const json = line.startsWith("data: ") ? line.slice(6) : line;
+            const event = JSON.parse(json);
+            const items: unknown[] = Array.isArray(event) ? event : [event];
+            for (const item of items) {
+              const e = item as Record<string, unknown>;
+              if (e?.toolName === "checkConsistency" && e?.result) {
+                setConsistencyData(e.result as ConsistencyData);
+              }
             }
           } catch {
-            // parsing stream is best-effort
+            // partial or non-JSON line
           }
         }
       }
