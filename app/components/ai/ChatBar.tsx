@@ -18,6 +18,8 @@ interface ChatBarProps {
   onAcceptEdit?: (proposalId: string, edit: BlockEditProposal) => void;
   onRejectEdit?: (proposalId: string, editIndex: number) => void;
   onRevertEdit?: (proposalId: string, editIndex: number) => void;
+  pendingMessage?: string | null;
+  onPendingMessageSent?: () => void;
 }
 
 function toUIMessages(msgs: { id: string; role: string; content: string; createdAt: string }[]): UIMessage[] {
@@ -75,6 +77,8 @@ function ChatBarLoader({
   onSelectSession,
   onNewSession,
   sessionsLoaded,
+  pendingMessage,
+  onPendingMessageSent,
 }: {
   canvasId: string;
   chatKey: string;
@@ -90,6 +94,8 @@ function ChatBarLoader({
   onSelectSession: (key: string) => void;
   onNewSession: () => void;
   sessionsLoaded: boolean;
+  pendingMessage?: string | null;
+  onPendingMessageSent?: () => void;
 }) {
   const [persistedMessages, setPersistedMessages] = useState<UIMessage[] | null>(null);
 
@@ -158,6 +164,8 @@ function ChatBarLoader({
       onSelectSession={onSelectSession}
       onNewSession={onNewSession}
       sessionsLoaded={sessionsLoaded}
+      pendingMessage={pendingMessage}
+      onPendingMessageSent={onPendingMessageSent}
     />
   );
 }
@@ -178,6 +186,8 @@ function ChatBarInner({
   onSelectSession,
   onNewSession,
   sessionsLoaded,
+  pendingMessage,
+  onPendingMessageSent,
 }: {
   canvasId: string;
   chatKey: string;
@@ -194,6 +204,8 @@ function ChatBarInner({
   onSelectSession: (key: string) => void;
   onNewSession: () => void;
   sessionsLoaded: boolean;
+  pendingMessage?: string | null;
+  onPendingMessageSent?: () => void;
 }) {
   const [internalDocked, setInternalDocked] = useState(false);
   const [input, setInput] = useState('');
@@ -247,6 +259,16 @@ function ChatBarInner({
     },
     [canvasId, sessionKey],
   );
+
+  useEffect(() => {
+    if (!pendingMessage || isLoading) return;
+    const messageId = `user-${Date.now()}`;
+    saveUserMessage(pendingMessage, messageId);
+    sendMessage({ text: pendingMessage });
+    setDocked(true);
+    onPendingMessageSent?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingMessage]);
 
   const onSubmit = () => {
     const text = input.trim();
@@ -376,7 +398,7 @@ function ChatBarInner({
   );
 }
 
-export function ChatBar({ canvasId, chatBlock, docked, onDockedChange, onAcceptEdit, onRejectEdit, onRevertEdit }: ChatBarProps) {
+export function ChatBar({ canvasId, chatBlock, docked, onDockedChange, onAcceptEdit, onRejectEdit, onRevertEdit, pendingMessage, onPendingMessageSent }: ChatBarProps) {
   const chatKey = chatBlock ?? 'general';
   const endpoint = chatBlock
     ? `/api/canvas/${canvasId}/blocks/${chatBlock}/chat`
@@ -407,6 +429,8 @@ export function ChatBar({ canvasId, chatBlock, docked, onDockedChange, onAcceptE
       onSelectSession={setActiveSessionKey}
       onNewSession={createNewSession}
       sessionsLoaded={sessionsLoaded}
+      pendingMessage={pendingMessage}
+      onPendingMessageSent={onPendingMessageSent}
     />
   );
 }

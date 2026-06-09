@@ -34,7 +34,6 @@ export async function POST(
       tableId: CANVASES_TABLE_ID,
       rowId: ID.unique(),
       data: {
-        id: Date.now(),
         title: newTitle,
         slug,
         description: source.description || '',
@@ -51,7 +50,7 @@ export async function POST(
         databaseId: DATABASE_ID,
         tableId: BLOCKS_TABLE_ID,
         queries: [
-          Query.equal('canvasId', source.id as number),
+          Query.equal('canvas', canvasId),
           Query.select(["$id", "blockType", "contentJson"]),
           Query.limit(9),
         ],
@@ -64,8 +63,7 @@ export async function POST(
             tableId: BLOCKS_TABLE_ID,
             rowId: ID.unique(),
             data: {
-              id: Date.now() + Math.floor(Math.random() * 1000),
-              canvasId: newCanvas.id,
+              canvas: newCanvas.$id,
               blockType: block.blockType,
               contentJson: block.contentJson,
             },

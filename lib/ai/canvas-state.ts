@@ -2,10 +2,10 @@ import { Query } from 'node-appwrite';
 import {
   serverTablesDB,
   DATABASE_ID,
-  CANVASES_TABLE_ID,
   BLOCKS_TABLE_ID,
   SEGMENTS_TABLE_ID,
 } from '@/lib/appwrite';
+import { verifyCanvasOwnership } from '@/lib/utils';
 import { BLOCK_DEFINITIONS } from '@/app/components/canvas/constants';
 import type { BlockData, BlockType, BlockContent, BlockItem, MarketResearchData, Segment } from '@/lib/types/canvas';
 
@@ -32,20 +32,8 @@ function parseContentJson(raw: string | undefined): BlockContent {
 }
 
 export async function getCanvasBlocks(canvasId: string, userId: string): Promise<BlockData[]> {
-  // Verify canvas exists and belongs to this user
-  // Use listRows with both filters — avoids unreliable relationship auto-loading
-  const canvasCheck = await serverTablesDB.listRows({
-    databaseId: DATABASE_ID,
-    tableId: CANVASES_TABLE_ID,
-    queries: [
-      Query.equal('$id', canvasId),
-      Query.select(['$id']),
-      Query.limit(1),
-    ],
-  });
-  if (canvasCheck.rows.length === 0) {
-    throw new Error('Canvas not found');
-  }
+  // Verify canvas exists AND belongs to this user
+  await verifyCanvasOwnership(canvasId, userId);
 
   // Index required: blocks collection — composite [canvas] key index
   // Index required: segments collection — composite [canvas] key index

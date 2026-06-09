@@ -6,6 +6,7 @@ import {
   DATABASE_ID,
   ASSUMPTIONS_TABLE_ID,
 } from '@/lib/appwrite';
+import { verifyCanvasOwnership, isForbiddenError } from '@/lib/utils';
 import type { Assumption, BlockType } from '@/lib/types/canvas';
 
 interface RouteContext {
@@ -49,8 +50,9 @@ function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
 
 export async function GET(_request: NextRequest, context: RouteContext) {
   try {
-    await requireAuth();
+    const user = await requireAuth();
     const { canvasId } = await context.params;
+    await verifyCanvasOwnership(canvasId, user.$id);
 
     const result = await serverTablesDB.listRows({
       databaseId: DATABASE_ID,
@@ -64,6 +66,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     const assumptions = result.rows.map(parseAssumptionRow);
     return NextResponse.json(assumptions);
   } catch (error) {
+    if (isForbiddenError(error)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     console.error('Error fetching assumptions:', error);
     return NextResponse.json({ error: 'Failed to fetch assumptions' }, { status: 500 });
   }
@@ -71,8 +74,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
-    await requireAuth();
+    const user = await requireAuth();
     const { canvasId } = await context.params;
+    await verifyCanvasOwnership(canvasId, user.$id);
     const body = await request.json();
 
     const { statement, riskLevel, category, blockTypes, segmentIds, source } = body;
@@ -130,6 +134,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     return NextResponse.json(parseAssumptionRow(row as unknown as Record<string, unknown>), { status: 201 });
   } catch (error) {
+    if (isForbiddenError(error)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     console.error('Error creating assumption:', error);
     return NextResponse.json({ error: 'Failed to create assumption' }, { status: 500 });
   }

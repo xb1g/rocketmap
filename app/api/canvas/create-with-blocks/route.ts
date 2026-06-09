@@ -57,7 +57,7 @@ export async function POST(request: Request) {
           tableId: BLOCKS_TABLE_ID,
           rowId: ID.unique(),
           data: {
-            canvasId: doc.$id,
+            canvas: doc.$id,
             blockType,
             contentJson,
           },

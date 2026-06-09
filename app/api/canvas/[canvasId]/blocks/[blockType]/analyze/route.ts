@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server';
 import { stepCountIs } from 'ai';
-import { generateTextWithLogging } from '@/lib/ai/logger';
+import { streamTextWithLogging } from '@/lib/ai/logger';
 import { ID, Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
 import {
@@ -43,7 +42,7 @@ export async function POST(_request: Request, context: RouteContext) {
       content = parts.join('\n').trim();
     }
 
-    const { result, usage } = await generateTextWithLogging(
+    const result = streamTextWithLogging(
       `analyze:${blockType}`,
       {
         model: getAnthropicModelForUser(user, 'claude-sonnet-4-5-20250929'),
@@ -62,134 +61,125 @@ export async function POST(_request: Request, context: RouteContext) {
       },
     );
 
-    // Extract tool call results
-    let analysis: {
-      draft: string;
-      assumptions: string[];
-      risks: string[];
-      questions: string[];
-      confidenceScore?: number;
-      riskScore?: number;
-    } = { draft: '', assumptions: [], risks: [], questions: [] };
-    let identifiedAssumptions: Array<{
-      statement: string;
-      riskLevel: 'high' | 'medium' | 'low';
-      reasoning: string;
-      affectedBlocks: string[];
-    }> = [];
+    // Persist results to Appwrite after stream completes (fire-and-forget)
+    Promise.resolve(result.steps).then(async (steps) => {
+      let analysis: {
+        draft: string;
+        assumptions: string[];
+        risks: string[];
+        questions: string[];
+        confidenceScore?: number;
+        riskScore?: number;
+      } = { draft: '', assumptions: [], risks: [], questions: [] };
+      let identifiedAssumptions: Array<{
+        statement: string;
+        riskLevel: 'high' | 'medium' | 'low';
+        reasoning: string;
+        affectedBlocks: string[];
+      }> = [];
 
-    for (const step of result.steps) {
-      for (const tc of step.toolResults) {
-        if (tc.toolName === 'analyzeBlock') {
-          const toolResult = (tc as unknown as { result: typeof analysis }).result;
-          if (toolResult) {
-            analysis = toolResult;
+      for (const step of steps) {
+        for (const tc of step.toolResults) {
+          if (tc.toolName === 'analyzeBlock') {
+            const toolResult = (tc as unknown as { result: typeof analysis }).result;
+            if (toolResult) analysis = toolResult;
+          }
+          if (tc.toolName === 'identifyAssumptions') {
+            const res = (tc as unknown as { result: { assumptions: typeof identifiedAssumptions } }).result;
+            identifiedAssumptions = res?.assumptions ?? [];
           }
         }
-        if (tc.toolName === 'identifyAssumptions') {
-          const res = (tc as unknown as { result: { assumptions: typeof identifiedAssumptions } }).result;
-          identifiedAssumptions = res?.assumptions ?? [];
-        }
       }
-    }
 
-    // Use AI-calculated scores (0-100), normalize to 0-1 for storage
-    const aiConfidence = typeof analysis.confidenceScore === 'number' ? analysis.confidenceScore : null;
-    const aiRisk = typeof analysis.riskScore === 'number' ? analysis.riskScore : null;
-    const confidenceScore = aiConfidence !== null
-      ? aiConfidence / 100
-      : (content.length > 20 ? 0.4 : 0.2);
-    const riskScore = aiRisk !== null
-      ? aiRisk / 100
-      : Math.min(1, analysis.risks.length * 0.15);
+      const aiConfidence = typeof analysis.confidenceScore === 'number' ? analysis.confidenceScore : null;
+      const aiRisk = typeof analysis.riskScore === 'number' ? analysis.riskScore : null;
+      const confidenceScore = aiConfidence !== null
+        ? aiConfidence / 100
+        : (content.length > 20 ? 0.4 : 0.2);
+      const riskScore = aiRisk !== null
+        ? aiRisk / 100
+        : Math.min(1, analysis.risks.length * 0.15);
 
-    // Persist to Appwrite — canvas ownership already verified by getCanvasBlocks above
-    // Find existing block doc — only need $id for update target
-    // Index required: composite [canvas, blockType]
-    const existing = await serverTablesDB.listRows({
-      databaseId: DATABASE_ID,
-      tableId: BLOCKS_TABLE_ID,
-      queries: [
-        Query.equal('canvas', canvasId),
-        Query.equal('blockType', blockType),
-        Query.select(['$id']),
-        Query.limit(1),
-      ],
-    });
-
-    const aiAnalysisJson = JSON.stringify({
-      ...analysis,
-      generatedAt: new Date().toISOString(),
-    });
-
-    if (existing.rows.length > 0) {
-      await serverTablesDB.updateRow({
-        databaseId: DATABASE_ID,
-        tableId: BLOCKS_TABLE_ID,
-        rowId: existing.rows[0].$id,
-        data: { aiAnalysisJson, confidenceScore, riskScore },
-      });
-    }
-
-    // Persist identified assumptions to the assumptions table
-    if (identifiedAssumptions.length > 0) {
-      // Resolve block type strings to block $ids for M:M relationship
-      const blocksLookup = await serverTablesDB.listRows({
+      const existing = await serverTablesDB.listRows({
         databaseId: DATABASE_ID,
         tableId: BLOCKS_TABLE_ID,
         queries: [
           Query.equal('canvas', canvasId),
-          Query.select(['$id', 'blockType']),
-          Query.limit(100),
+          Query.equal('blockType', blockType),
+          Query.select(['$id']),
+          Query.limit(1),
         ],
       });
-      const blockIdMap = new Map<string, string>();
-      for (const doc of blocksLookup.rows) {
-        blockIdMap.set(doc.blockType as string, doc.$id as string);
+
+      const aiAnalysisJson = JSON.stringify({
+        ...analysis,
+        generatedAt: new Date().toISOString(),
+      });
+
+      if (existing.rows.length > 0) {
+        await serverTablesDB.updateRow({
+          databaseId: DATABASE_ID,
+          tableId: BLOCKS_TABLE_ID,
+          rowId: existing.rows[0].$id,
+          data: { aiAnalysisJson, confidenceScore, riskScore },
+        });
       }
 
-      const now = new Date().toISOString();
-      await Promise.allSettled(
-        identifiedAssumptions.map((assumption) => {
-          const affectedBlockIds = assumption.affectedBlocks
-            .map((bt) => blockIdMap.get(bt))
-            .filter((id): id is string => !!id);
-          const severityScore = assumption.riskLevel === 'high' ? 8 : assumption.riskLevel === 'medium' ? 5 : 2;
+      if (identifiedAssumptions.length > 0) {
+        const blocksLookup = await serverTablesDB.listRows({
+          databaseId: DATABASE_ID,
+          tableId: BLOCKS_TABLE_ID,
+          queries: [
+            Query.equal('canvas', canvasId),
+            Query.select(['$id', 'blockType']),
+            Query.limit(100),
+          ],
+        });
+        const blockIdMap = new Map<string, string>();
+        for (const doc of blocksLookup.rows) {
+          blockIdMap.set(doc.blockType as string, doc.$id as string);
+        }
 
-          return serverTablesDB.createRow({
-            databaseId: DATABASE_ID,
-            tableId: ASSUMPTIONS_TABLE_ID,
-            rowId: ID.unique(),
-            data: {
-              canvas: canvasId,
-              assumptionText: assumption.statement,
-              category: 'product',
-              status: 'untested',
-              riskLevel: assumption.riskLevel,
-              severityScore,
-              confidenceScore: 0,
-              source: 'ai',
-              segmentIds: JSON.stringify([]),
-              linkedValidationItemIds: JSON.stringify([]),
-              createdAt: now,
-              updatedAt: now,
-              ...(affectedBlockIds.length > 0 ? { blocks: affectedBlockIds } : {}),
-            },
-          });
-        }),
-      );
-    }
+        const now = new Date().toISOString();
+        await Promise.allSettled(
+          identifiedAssumptions.map((assumption) => {
+            const affectedBlockIds = assumption.affectedBlocks
+              .map((bt) => blockIdMap.get(bt))
+              .filter((id): id is string => !!id);
+            const severityScore = assumption.riskLevel === 'high' ? 8 : assumption.riskLevel === 'medium' ? 5 : 2;
 
-    return NextResponse.json({
-      analysis: { ...analysis, generatedAt: new Date().toISOString() },
-      confidenceScore,
-      riskScore,
-      assumptionsCreated: identifiedAssumptions.length,
-      usage,
-    });
+            return serverTablesDB.createRow({
+              databaseId: DATABASE_ID,
+              tableId: ASSUMPTIONS_TABLE_ID,
+              rowId: ID.unique(),
+              data: {
+                canvas: canvasId,
+                assumptionText: assumption.statement,
+                category: 'product',
+                status: 'untested',
+                riskLevel: assumption.riskLevel,
+                severityScore,
+                confidenceScore: 0,
+                source: 'ai',
+                segmentIds: JSON.stringify([]),
+                linkedValidationItemIds: JSON.stringify([]),
+                createdAt: now,
+                updatedAt: now,
+                ...(affectedBlockIds.length > 0 ? { blocks: affectedBlockIds } : {}),
+              },
+            });
+          }),
+        );
+      }
+    }).catch((err) => console.error('[analyze-persist] Failed to save analysis:', err));
+
+    return result.toUIMessageStreamResponse();
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('Block analyze error:', message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return new Response(JSON.stringify({ error: message }), {
+      status: message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
