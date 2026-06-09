@@ -998,6 +998,8 @@ body {
   margin: 0.5rem 0;
   font-size: 0.75rem;
   line-height: 1.25rem;
+  display: block;
+  overflow-x: auto;
 }
 
 .chat-markdown th {
