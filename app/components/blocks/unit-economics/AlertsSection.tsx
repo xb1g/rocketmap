@@ -23,7 +23,7 @@ export function AlertsSection({ alerts }: AlertsSectionProps) {
 
   return (
     <div className="space-y-2 animate-in fade-in">
-      <h3 className="font-display-small text-xs text-foreground-muted uppercase tracking-wider">
+      <h3 className="font-mono text-xs text-foreground-muted uppercase tracking-wider">
         Alerts
       </h3>
       <div className="space-y-1.5">

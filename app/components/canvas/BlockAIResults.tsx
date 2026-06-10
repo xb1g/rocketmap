@@ -77,7 +77,7 @@ export function BlockAIResults({ analysis, usage, isAnalyzing }: BlockAIResultsP
   return (
     <div className="px-4 py-3 flex flex-col gap-5">
       {analysis.draft && (
-        <div className="font-body text-xs text-foreground/70 leading-relaxed border-l-2 border-(--chroma-indigo)/30 pl-3 py-0.5">
+        <div className="font-body text-xs text-foreground/70 leading-relaxed border-t-2 border-(--chroma-indigo)/30 pt-3">
           {analysis.draft}
         </div>
       )}

@@ -99,8 +99,8 @@ export function DeepDiveOverlay({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {!allBlocksFilled && (
-            <div className="mb-4 px-4 py-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
-              <div className="text-xs font-medium text-amber-400/80 mb-0.5">Canvas incomplete</div>
+            <div className="mb-4 px-4 py-3 rounded-lg bg-state-warning/5 border border-state-warning/10">
+              <div className="text-xs font-medium text-state-warning/80 mb-0.5">Canvas incomplete</div>
               <div className="text-[11px] text-foreground-muted/50">
                 Fill all 9 blocks before running AI research.
                 {filledCount !== undefined && ` (${filledCount}/9 filled)`}

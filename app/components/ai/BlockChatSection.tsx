@@ -35,8 +35,9 @@ function toUIMessages(msgs: { id: string; role: string; content: string; created
                 toolName: p.toolName,
                 toolCallId: p.toolCallId,
                 state: 'output-available',
-                args: p.args ?? {},
-                output: p.result,
+                providerExecuted: true,
+                input: p.args ?? p.result ?? {},
+                output: p.result ?? p.args ?? {},
               };
             }
             return p;
@@ -83,7 +84,7 @@ function BlockChatLoader({
   if (persistedMessages === null) {
     return (
       <div className="flex flex-col flex-1 min-h-0 items-center justify-center">
-        <span className="text-[11px] text-foreground-muted/40">Loading chat...</span>
+        <span className="text-[11px] font-mono text-foreground-muted/40 uppercase tracking-wider">Loading chat...</span>
       </div>
     );
   }

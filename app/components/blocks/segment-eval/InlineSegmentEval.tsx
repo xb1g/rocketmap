@@ -299,7 +299,7 @@ export function InlineSegmentEval({
     <div className="px-4 pb-4 space-y-3">
       {/* Section header */}
       <div className="flex items-center gap-2">
-        <span className="font-display-small text-[10px] uppercase tracking-wider text-foreground-muted/60">
+        <span className="font-mono text-[10px] uppercase tracking-wider text-foreground-muted/60">
           Evaluation
         </span>
         <div className="flex-1 h-px bg-white/5" />

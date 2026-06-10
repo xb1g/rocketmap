@@ -15,8 +15,9 @@ import { buildDeepDivePrompt, getDeepDiveToolName } from '@/lib/ai/prompts';
 import type { DeepDiveModule, MarketResearchData, UnitEconomicsData, CanvasData } from '@/lib/types/canvas';
 import {
   getAnthropicModelForUser,
-  recordAnthropicUsageForUser,
+  recordAiUsage,
 } from '@/lib/ai/user-preferences';
+import { checkAiQuota, createQuotaExceededResponse } from '@/lib/ai/quota';
 import { getUserIdFromCanvas } from '@/lib/utils';
 
 interface RouteContext {
@@ -40,6 +41,10 @@ const VALID_MODULES: DeepDiveModule[] = [
 export async function POST(request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
+    const quota = await checkAiQuota(user);
+    if (!quota.allowed) {
+      return createQuotaExceededResponse(quota);
+    }
     const { canvasId, blockType } = await context.params;
     const { module, inputs } = (await request.json()) as {
       module: DeepDiveModule;
@@ -135,7 +140,7 @@ export async function POST(request: Request, context: RouteContext) {
         stopWhen: stepCountIs(3),
       },
       {
-        onUsage: (usageData) => recordAnthropicUsageForUser(user.$id, usageData),
+        onUsage: (usageData) => recordAiUsage(user.$id, `deep-dive:${blockType}`, usageData, { canvasId }),
       },
     );
 

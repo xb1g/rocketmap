@@ -12,9 +12,9 @@ interface CompetitiveLandscapeModuleProps {
 }
 
 const THREAT_STYLES: Record<string, string> = {
-  high: "text-red-400 bg-red-400/10",
-  medium: "text-amber-400 bg-amber-400/10",
-  low: "text-emerald-400 bg-emerald-400/10",
+  high: "text-state-critical bg-state-critical/10",
+  medium: "text-state-warning bg-state-warning/10",
+  low: "text-state-healthy bg-state-healthy/10",
 };
 
 function CompetitorCard({
@@ -43,7 +43,7 @@ function CompetitorCard({
           </span>
           <button
             onClick={onRemove}
-            className="text-foreground-muted/40 hover:text-red-400 text-xs"
+            className="text-foreground-muted/40 hover:text-state-critical text-xs"
           >
             ×
           </button>
@@ -62,28 +62,28 @@ function CompetitorCard({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <span className="text-[9px] text-foreground-muted/60 uppercase tracking-wider">
+          <span className="text-[9px] text-foreground-muted/60 uppercase tracking-wider font-mono">
             Strengths
           </span>
           {competitor.strengths.map((s, i) => (
-            <div key={i} className="text-xs text-emerald-400/80">
+            <div key={i} className="text-xs text-state-healthy/80">
               + {s}
             </div>
           ))}
         </div>
         <div className="space-y-1">
-          <span className="text-[9px] text-foreground-muted/60 uppercase tracking-wider">
+          <span className="text-[9px] text-foreground-muted/60 uppercase tracking-wider font-mono">
             Weaknesses
           </span>
           {competitor.weaknesses.map((w, i) => (
-            <div key={i} className="text-xs text-red-400/80">
+            <div key={i} className="text-xs text-state-critical/80">
               - {w}
             </div>
           ))}
         </div>
       </div>
 
-      <div className="text-[10px] text-foreground-muted/50">
+      <div className="text-[10px] font-mono text-foreground-muted/50">
         Market share: {competitor.marketShareEstimate || "—"}
       </div>
     </div>
@@ -142,7 +142,7 @@ export function CompetitiveLandscapeModule({
         disabled={isGenerating || !aiEnabled}
         className={`ui-btn ui-btn-sm ui-btn-block ${
           isGenerating
-            ? "ui-btn-secondary glow-ai text-[var(--state-ai)]"
+            ? "ui-btn-secondary glow-ai text-state-ai"
             : !aiEnabled
               ? "ui-btn-ghost text-foreground-muted/40 cursor-not-allowed"
               : "ui-btn-secondary text-foreground-muted hover:text-foreground"

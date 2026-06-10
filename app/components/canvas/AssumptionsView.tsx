@@ -79,7 +79,7 @@ function StepIndicator({
   const currentIdx = stepOrder.indexOf(currentStep);
 
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.02] p-4 space-y-2">
+    <div className="rounded-[14px] border border-white/6 bg-white/2 p-4 space-y-2">
       {STEPS.map((s, i) => {
         const isActive = s.key === currentStep;
         const isDone = currentIdx > i || currentStep === "done";
@@ -96,7 +96,7 @@ function StepIndicator({
             <div className="w-4 h-4 flex items-center justify-center shrink-0">
               {isDone ? (
                 <svg
-                  className="w-4 h-4 text-[var(--state-healthy)]"
+                  className="w-4 h-4 text-state-healthy"
                   viewBox="0 0 16 16"
                   fill="none"
                 >
@@ -109,7 +109,7 @@ function StepIndicator({
                   />
                 </svg>
               ) : isActive ? (
-                <div className="w-3 h-3 rounded-full border-2 border-[var(--state-ai)] border-t-transparent animate-spin" />
+                <div className="w-3 h-3 rounded-full border-2 border-state-ai border-t-transparent animate-spin" />
               ) : (
                 <div className="w-2 h-2 rounded-full bg-white/20" />
               )}
@@ -119,7 +119,7 @@ function StepIndicator({
                 isDone
                   ? "text-foreground-muted"
                   : isActive
-                    ? "text-[var(--state-ai)] font-medium"
+                    ? "text-state-ai font-medium"
                     : isPending
                       ? "text-foreground-muted/50"
                       : ""
@@ -140,7 +140,7 @@ function ThinkingPanel({ text }: { text: string }) {
   if (!text) return null;
 
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.02] overflow-hidden">
+    <div className="rounded-[14px] border border-white/6 bg-white/2 overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between px-4 py-2.5 text-xs text-foreground-muted hover:text-foreground transition-colors"
@@ -338,7 +338,7 @@ export function AssumptionsView({
             disabled={isRunning}
             className={`ui-btn ui-btn-sm ${
               isRunning
-                ? "ui-btn-secondary glow-ai text-[var(--state-ai)]"
+                ? "ui-btn-secondary glow-ai text-state-ai"
                 : "ui-btn-secondary text-foreground-muted hover:text-foreground"
             }`}
           >
@@ -349,7 +349,7 @@ export function AssumptionsView({
 
       {/* Error */}
       {error && (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400 mb-4">
+        <div className="rounded-[14px] border border-(--state-critical)/20 bg-(--state-critical)/[0.05] px-4 py-3 text-sm text-(--state-critical) mb-4">
           {error}
         </div>
       )}
@@ -370,7 +370,7 @@ export function AssumptionsView({
 
       {/* Empty state */}
       {!loading && assumptions.length === 0 && step === "idle" && (
-        <div className="rounded-lg border border-white/10 bg-white/[0.02] p-8 text-center">
+        <div className="rounded-[14px] border border-white/6 bg-white/2 p-8 text-center">
           <p className="text-foreground-muted text-sm">
             No assumptions yet. Click &ldquo;Extract Assumptions&rdquo; to
             scan your canvas, or add one manually.
@@ -437,7 +437,7 @@ export function AssumptionsView({
                       />
                     ))}
                     {items.length === 0 && (
-                      <div className="rounded-lg border border-dashed border-white/10 p-4 text-center">
+                      <div className="rounded-[14px] border border-dashed border-white/6 p-4 text-center">
                         <p className="text-[11px] text-foreground-muted/50">
                           No items
                         </p>

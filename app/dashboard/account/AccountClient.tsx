@@ -49,7 +49,7 @@ export function AccountClient({ user, stats }: AccountClientProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <UserAvatar name={user.name || user.email} size="lg" />
           <div>
-            <Heading size="5" style={{ fontFamily: 'var(--font-display)', marginBottom: '0.15rem' }}>
+            <Heading size="5" style={{ fontFamily: 'var(--font-body)', fontWeight: 600, marginBottom: '0.15rem' }}>
               {user.name || 'Anonymous'}
             </Heading>
             <Text size="2" style={{ color: 'var(--foreground-muted)', display: 'block' }}>
@@ -79,7 +79,7 @@ export function AccountClient({ user, stats }: AccountClientProps) {
 
       <div className="profile-card" style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-          <Heading size="4" style={{ fontFamily: 'var(--font-display)' }}>Plan</Heading>
+          <Heading size="4" style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}>Plan</Heading>
           <span className="mode-badge mode-badge-bmc" style={{ fontSize: '0.65rem' }}>FREE</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '1.25rem' }}>
@@ -106,7 +106,7 @@ export function AccountClient({ user, stats }: AccountClientProps) {
       </div>
 
       <div className="profile-card">
-        <Heading size="4" style={{ fontFamily: 'var(--font-display)', marginBottom: '0.75rem' }}>
+        <Heading size="4" style={{ fontFamily: 'var(--font-body)', fontWeight: 600, marginBottom: '0.75rem' }}>
           Export Data
         </Heading>
         <Text size="2" style={{ color: 'var(--foreground-muted)', marginBottom: '1rem', display: 'block' }}>

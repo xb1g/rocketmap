@@ -117,7 +117,7 @@ export function ViabilityScore({
           Calculate Evidence
         </button>
         {error && (
-          <span className="text-xs text-[#f43f5e]" title={error}>
+          <span className="text-xs text-state-critical" title={error}>
             Error
           </span>
         )}
@@ -188,7 +188,8 @@ export function ViabilityScore({
         </span>
 
         {status === "outdated" && (
-          <span className="px-2 py-0.5 bg-[#f59e0b]/20 text-[#f59e0b] text-[10px] font-mono uppercase tracking-wider rounded border border-[#f59e0b]/30">
+          <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-state-warning">
+            <span className="w-1.5 h-1.5 rounded-full bg-state-warning animate-pulse" />
             Outdated
           </span>
         )}
@@ -210,28 +211,7 @@ export function ViabilityScore({
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
-          </svg>
-        </button>
-
-        <button
-          onClick={onExplainClick}
-          className="ui-btn ui-btn-xs ui-btn-ghost"
-          title="Explain evidence score"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-            <path d="M12 17h.01" />
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
           </svg>
         </button>
       </div>

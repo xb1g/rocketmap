@@ -14,8 +14,9 @@ import { getToolsForAgent } from '@/lib/ai/tools';
 import type { BlockType } from '@/lib/types/canvas';
 import {
   getAnthropicModelForUser,
-  recordAnthropicUsageForUser,
+  recordAiUsage,
 } from '@/lib/ai/user-preferences';
+import { checkAiQuota, createQuotaExceededResponse } from '@/lib/ai/quota';
 
 interface RouteContext {
   params: Promise<{ canvasId: string; blockType: string }>;
@@ -60,7 +61,7 @@ export async function POST(_request: Request, context: RouteContext) {
         stopWhen: stepCountIs(3),
       },
       {
-        onUsage: (usageData) => recordAnthropicUsageForUser(user.$id, usageData),
+        onUsage: (usageData) => recordAiUsage(user.$id, `block-analyze:${blockType}`, usageData, { canvasId }),
       },
     );
 

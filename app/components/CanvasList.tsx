@@ -27,7 +27,7 @@ export function CanvasList({ canvases, onNewCanvas }: CanvasListProps) {
           <Text size="3" className="text-foreground-muted">
             Create a business model canvas to validate your startup assumptions.
           </Text>
-          <Button size="3" onClick={onNewCanvas}>
+          <Button size="3" onClick={onNewCanvas} className="ui-btn ui-btn-primary">
             + New Canvas
           </Button>
         </Flex>
@@ -41,7 +41,7 @@ export function CanvasList({ canvases, onNewCanvas }: CanvasListProps) {
         <Heading size="7" className="font-display">
           Your Canvases
         </Heading>
-        <Button onClick={onNewCanvas}>
+        <Button onClick={onNewCanvas} className="ui-btn ui-btn-primary">
           + New Canvas
         </Button>
       </Flex>
@@ -49,9 +49,9 @@ export function CanvasList({ canvases, onNewCanvas }: CanvasListProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {canvases.map((canvas) => (
           <Link key={canvas.$id} href={`/canvas/${canvas.slug}`}>
-            <Card className="glow-calm state-transition hover:glow-healthy cursor-pointer p-4 h-full">
+            <Card className="glow-calm state-transition hover:glow-healthy cursor-pointer p-4 h-full bg-[rgba(255,255,255,0.025)] border border-[rgba(255,255,255,0.06)] rounded-[14px]">
               <Flex direction="column" gap="2">
-                <Heading size="4" className="font-display">
+                <Heading size="4" className="font-body">
                   {canvas.title}
                 </Heading>
                 <Text size="2" className="text-foreground-muted">

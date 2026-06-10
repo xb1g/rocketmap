@@ -44,7 +44,7 @@ function PersonaCard({
     <div className="p-4 rounded-lg bg-white/3 border border-white/5 space-y-3">
       <div className="flex items-start gap-3">
         {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-linear-to-br from-indigo-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center text-xs font-semibold text-foreground shrink-0">
+        <div className="w-10 h-10 rounded-full bg-linear-to-br from-chroma-indigo/20 to-chroma-pink/20 border border-white/10 flex items-center justify-center text-xs font-semibold text-foreground shrink-0">
           {initials || "?"}
         </div>
         <div className="flex-1 min-w-0">
@@ -57,7 +57,7 @@ function PersonaCard({
             />
             <button
               onClick={onRemove}
-              className="text-foreground-muted/40 hover:text-red-400 text-xs"
+              className="text-foreground-muted/40 hover:text-state-critical text-xs"
             >
               ×
             </button>
@@ -82,7 +82,7 @@ function PersonaCard({
             />
           </div>
           {segment && (
-            <span className="text-[10px] text-foreground-muted/50 mt-0.5 block">
+            <span className="text-[10px] font-mono text-foreground-muted/50 mt-0.5 block">
               Segment: {segment.name}
             </span>
           )}
@@ -91,14 +91,14 @@ function PersonaCard({
 
       {/* Quote */}
       {persona.quote && (
-        <div className="text-xs italic text-foreground-muted/60 border-l-2 border-white/10 pl-3">
+        <div className="text-xs italic text-foreground-muted/60 pt-2 border-t border-white/5">
           &ldquo;{persona.quote}&rdquo;
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <span className="text-[9px] text-foreground-muted/60 uppercase tracking-wider">
+          <span className="text-[9px] font-mono text-foreground-muted/60 uppercase tracking-wider">
             Goals
           </span>
           {persona.goals.map((g, i) => (
@@ -108,7 +108,7 @@ function PersonaCard({
           ))}
         </div>
         <div className="space-y-1">
-          <span className="text-[9px] text-foreground-muted/60 uppercase tracking-wider">
+          <span className="text-[9px] font-mono text-foreground-muted/60 uppercase tracking-wider">
             Frustrations
           </span>
           {persona.frustrations.map((f, i) => (
@@ -159,7 +159,7 @@ export function PersonaModule({
         disabled={isGenerating || !aiEnabled}
         className={`ui-btn ui-btn-sm ui-btn-block ${
           isGenerating
-            ? "ui-btn-secondary glow-ai text-[var(--state-ai)]"
+            ? "ui-btn-secondary glow-ai text-state-ai"
             : !aiEnabled
               ? "ui-btn-ghost text-foreground-muted/40 cursor-not-allowed"
               : "ui-btn-secondary text-foreground-muted hover:text-foreground"

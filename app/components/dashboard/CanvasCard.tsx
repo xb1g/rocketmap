@@ -1,22 +1,11 @@
-"use client";
-
 import Link from "next/link";
-import { DropdownMenu } from "@radix-ui/themes";
-import type { BlockType } from "@/lib/types/canvas";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import type { BlockType, CanvasData } from "@/lib/types/canvas";
 
 interface CanvasCardProps {
-  canvas: {
-    $id: string;
-    title: string;
-    slug: string;
-    description: string;
-    isPublic: boolean;
-    $updatedAt: string;
-    $createdAt: string;
+  canvas: CanvasData & {
     blocksCount: number;
     filledBlocks: BlockType[];
-    viabilityScore: number | null;
-    viabilityPotentialScore: number | null;
   };
   onShare: (slug: string) => void;
   onTogglePublic: (canvasId: string, isPublic: boolean) => void;
@@ -155,7 +144,7 @@ export function CanvasCard({
           <div className="canvas-card-viability canvas-card-viability--empty">
             <div className="canvas-card-viability-ring canvas-card-viability-ring--empty">
               <span className="canvas-card-viability-value" style={{ opacity: 0.3 }}>
-                —
+                -
               </span>
             </div>
             <span

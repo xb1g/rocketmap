@@ -41,7 +41,7 @@ function ProfileInput({
 }) {
   return (
     <div>
-      <div className="text-[9px] text-foreground-muted/50 uppercase tracking-wider mb-1">
+      <div className="text-[9px] font-mono text-foreground-muted/50 uppercase tracking-wider mb-1">
         {label}
       </div>
       <input
@@ -128,7 +128,7 @@ export function SegmentSnapshot({
     <div className="glass-morphism rounded-xl p-5 space-y-4">
       {/* Header row */}
       <div className="flex items-center gap-3 flex-wrap">
-        <h3 className="font-display-small text-base text-foreground flex-1">
+        <h3 className="font-body text-base font-semibold text-foreground flex-1">
           {segment.name}
         </h3>
         {scorecard && (
@@ -138,7 +138,7 @@ export function SegmentSnapshot({
           </>
         )}
         {segment.earlyAdopterFlag && (
-          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-400/10 text-emerald-400/70">
+          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-state-healthy/10 text-state-healthy/70">
             EA
           </span>
         )}
@@ -160,7 +160,7 @@ export function SegmentSnapshot({
             Segment Profile
           </span>
           {canScore && (
-            <span className="text-[8px] text-emerald-400/60">Ready</span>
+            <span className="text-[8px] text-state-healthy/60">Ready</span>
           )}
           <span className="text-foreground-muted/40 text-[10px]">
             {profileOpen ? '−' : '+'}
@@ -171,7 +171,7 @@ export function SegmentSnapshot({
           <div className="px-3 pb-3 space-y-4">
             {/* Market Definition */}
             <div className="space-y-2.5">
-              <div className="text-[10px] font-medium text-foreground-muted/70 uppercase tracking-wider">
+              <div className="text-[10px] font-mono text-foreground-muted/70 uppercase tracking-wider">
                 Market Definition
               </div>
               <ProfileInput
@@ -202,7 +202,7 @@ export function SegmentSnapshot({
 
             {/* Buyer Structure */}
             <div className="space-y-2.5">
-              <div className="text-[10px] font-medium text-foreground-muted/70 uppercase tracking-wider">
+              <div className="text-[10px] font-mono text-foreground-muted/70 uppercase tracking-wider">
                 Buyer Structure
               </div>
               <ProfileInput
@@ -237,8 +237,8 @@ export function SegmentSnapshot({
               disabled={isSuggestingProfile}
               className={`w-full py-2 rounded-lg text-[10px] font-medium transition-all ${
                 isSuggestingProfile
-                  ? 'bg-[var(--chroma-cyan)]/10 text-[var(--chroma-cyan)]/60 glow-ai'
-                  : 'bg-[var(--chroma-cyan)]/10 text-[var(--chroma-cyan)]/80 hover:bg-[var(--chroma-cyan)]/20 border border-[var(--chroma-cyan)]/10'
+                  ? 'bg-chroma-cyan/10 text-chroma-cyan/60 glow-ai'
+                  : 'bg-chroma-cyan/10 text-chroma-cyan/80 hover:bg-chroma-cyan/20 border border-chroma-cyan/10'
               }`}
             >
               {isSuggestingProfile ? 'AI Suggesting…' : 'AI Suggest Profile'}
@@ -269,7 +269,7 @@ export function SegmentSnapshot({
       {/* ARPU + Revenue potential */}
       <div className="grid grid-cols-2 gap-3">
         <div className="px-3 py-2.5 rounded-lg bg-white/3 border border-white/5">
-          <div className="text-[9px] text-foreground-muted/50 uppercase tracking-wider mb-1">
+          <div className="text-[9px] font-mono text-foreground-muted/50 uppercase tracking-wider mb-1">
             ARPU (Monthly)
           </div>
           <div className="flex items-center gap-1">
@@ -301,8 +301,8 @@ export function SegmentSnapshot({
           disabled={isScoring}
           className={`w-full py-2.5 rounded-lg text-xs font-medium transition-all ${
             isScoring
-              ? 'bg-[var(--chroma-indigo)]/10 text-[var(--chroma-indigo)]/60 glow-ai'
-              : 'bg-[var(--chroma-indigo)]/20 text-[var(--chroma-indigo)] hover:bg-[var(--chroma-indigo)]/30'
+              ? 'bg-chroma-indigo/10 text-chroma-indigo/60 glow-ai'
+              : 'bg-chroma-indigo/20 text-chroma-indigo hover:bg-chroma-indigo/30'
           }`}
         >
           {isScoring ? 'AI Scoring…' : 'Score This Segment'}

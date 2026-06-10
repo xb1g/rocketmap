@@ -126,7 +126,7 @@ export function EconomicsView({
         disabled={isGenerating || !aiEnabled}
         className={`ui-btn ui-btn-sm ui-btn-block ${
           isGenerating
-            ? 'ui-btn-secondary glow-ai text-[var(--state-ai)]'
+            ? 'ui-btn-secondary glow-ai text-state-ai'
             : !aiEnabled
               ? 'ui-btn-ghost text-foreground-muted/40 cursor-not-allowed'
               : 'ui-btn-secondary text-foreground-muted hover:text-foreground'
@@ -157,7 +157,7 @@ export function EconomicsView({
           {/* Segment detail cards */}
           {economicsData.segments.length > 0 && (
             <div className="space-y-2">
-              <h3 className="font-display-small text-xs text-foreground-muted uppercase tracking-wider">
+              <h3 className="font-mono text-xs text-foreground-muted uppercase tracking-wider">
                 Segment Details
               </h3>
               <div className="grid grid-cols-1 gap-3">
@@ -171,7 +171,7 @@ export function EconomicsView({
           {/* Global metrics summary */}
           {economicsData.globalMetrics && (
             <div className="glass-morphism rounded-lg p-4 space-y-3">
-              <h3 className="font-display-small text-xs text-foreground-muted uppercase tracking-wider">
+              <h3 className="font-mono text-xs text-foreground-muted uppercase tracking-wider">
                 Blended Metrics
               </h3>
               <div className="grid grid-cols-2 gap-3 text-[11px]">

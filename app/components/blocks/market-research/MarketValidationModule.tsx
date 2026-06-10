@@ -12,9 +12,9 @@ interface MarketValidationModuleProps {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  confirmed: "text-emerald-400 bg-emerald-400/10",
-  questioned: "text-amber-400 bg-amber-400/10",
-  contradicted: "text-red-400 bg-red-400/10",
+  confirmed: "text-state-healthy bg-state-healthy/10",
+  questioned: "text-state-warning bg-state-warning/10",
+  contradicted: "text-state-critical bg-state-critical/10",
 };
 
 function ValidationItemCard({
@@ -47,7 +47,7 @@ function ValidationItemCard({
         rows={2}
         placeholder="Evidence..."
       />
-      <div className="text-[10px] text-foreground-muted/50">
+      <div className="text-[10px] font-mono text-foreground-muted/50">
         Source: {item.source || "—"}
       </div>
     </div>
@@ -85,7 +85,7 @@ export function MarketValidationModule({
         disabled={isGenerating || !aiEnabled}
         className={`ui-btn ui-btn-sm ui-btn-block ${
           isGenerating
-            ? "ui-btn-secondary glow-ai text-[var(--state-ai)]"
+            ? "ui-btn-secondary glow-ai text-state-ai"
             : !aiEnabled
               ? "ui-btn-ghost text-foreground-muted/40 cursor-not-allowed"
               : "ui-btn-secondary text-foreground-muted hover:text-foreground"
@@ -112,7 +112,7 @@ export function MarketValidationModule({
 
       {current.overallAssessment && (
         <div className="p-3 rounded-lg bg-white/3 space-y-1">
-          <span className="text-[10px] text-foreground-muted uppercase tracking-wider">
+          <span className="text-[10px] font-mono text-foreground-muted uppercase tracking-wider">
             Overall Assessment
           </span>
           <textarea

@@ -35,11 +35,11 @@ export function BlockFocusHeader({
   const stateInfo = STATE_LABELS[state];
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+    <div className="flex items-center justify-between px-4 py-3 border-b border-foreground/5">
       <div className="flex items-center gap-3">
         {def ? (
           <BlockTooltip definition={def} mode={mode}>
-            <h2 className="font-display font-semibold text-[15px] cursor-help decoration-dotted underline-offset-4 hover:decoration-solid hover:text-(--chroma-indigo) transition-all">
+            <h2 className="font-display font-semibold text-[15px] cursor-help decoration-dotted underline-offset-4 hover:decoration-solid hover:text-chroma-indigo transition-all">
               {label}
             </h2>
           </BlockTooltip>

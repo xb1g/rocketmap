@@ -11,10 +11,10 @@ interface AssumptionCardProps {
 }
 
 const CATEGORY_STYLES: Record<string, { bg: string; text: string }> = {
-  market: { bg: "bg-blue-500/15", text: "text-blue-400" },
-  product: { bg: "bg-purple-500/15", text: "text-purple-400" },
-  ops: { bg: "bg-amber-500/15", text: "text-amber-400" },
-  legal: { bg: "bg-red-500/15", text: "text-red-400" },
+  market: { bg: "bg-(--chroma-indigo)/[0.15]", text: "text-(--chroma-indigo)" },
+  product: { bg: "bg-(--chroma-pink)/[0.15]", text: "text-(--chroma-pink)" },
+  ops: { bg: "bg-(--chroma-amber)/[0.15]", text: "text-(--chroma-amber)" },
+  legal: { bg: "bg-(--state-critical)/[0.15]", text: "text-(--state-critical)" },
 };
 
 function getRiskColor(level: string): string {
@@ -41,7 +41,7 @@ export function AssumptionCard({
   const riskColor = getRiskColor(assumption.riskLevel);
 
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 space-y-2">
+    <div className="rounded-[14px] border border-white/6 bg-white/[2.5%] p-3 space-y-2">
       {/* Risk indicator + statement */}
       <div className="flex items-start gap-2.5">
         <div
@@ -57,13 +57,13 @@ export function AssumptionCard({
           {assumption.blockTypes.map((bt) => (
             <span
               key={bt}
-              className="px-2 py-0.5 rounded bg-white/5 text-[10px] text-foreground-muted"
+              className="px-2 py-0.5 rounded bg-white/5 text-[10px] font-mono uppercase tracking-wider text-foreground-muted"
             >
               {getBlockLabel(bt)}
             </span>
           ))}
           <span
-            className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider ${catStyle.bg} ${catStyle.text}`}
+            className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider ${catStyle.bg} ${catStyle.text}`}
           >
             {assumption.category}
           </span>
@@ -83,7 +83,7 @@ export function AssumptionCard({
                 }}
               />
             </div>
-            <span className="text-[10px] text-foreground-muted">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-foreground-muted">
               {assumption.confidenceScore}
             </span>
           </div>
@@ -102,7 +102,7 @@ export function AssumptionCard({
         {assumption.status === "untested" && onDesignTest && (
           <button
             onClick={onDesignTest}
-            className="ui-btn ui-btn-xs ui-btn-ghost text-[var(--state-ai)]"
+            className="ui-btn ui-btn-xs ui-btn-ghost text-state-ai"
           >
             Design Test
           </button>
@@ -110,7 +110,7 @@ export function AssumptionCard({
         {assumption.status === "testing" && onUpdateProgress && (
           <button
             onClick={onUpdateProgress}
-            className="ui-btn ui-btn-xs ui-btn-ghost text-[var(--state-warning)]"
+            className="ui-btn ui-btn-xs ui-btn-ghost text-state-warning"
           >
             Update Progress
           </button>

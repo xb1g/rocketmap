@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Query } from "node-appwrite";
-import { generateText } from "ai";
+import { generateTextWithLogging } from '@/lib/ai/logger';
 import { createOpenAI } from "@ai-sdk/openai";
 import { requireAuth } from "@/lib/appwrite-server";
 import { getUserIdFromCanvas } from "@/lib/utils";
@@ -12,7 +12,8 @@ import {
 } from "@/lib/appwrite";
 import { getCanvasBlocks } from "@/lib/ai/canvas-state";
 import { getViabilityPrompt } from "@/lib/ai/prompts";
-import { recordAnthropicUsageForUser } from "@/lib/ai/user-preferences";
+import { recordAiUsage } from "@/lib/ai/user-preferences";
+import { checkAiQuota, createQuotaExceededResponse } from '@/lib/ai/quota';
 import { parseAssumptionRow } from "@/lib/utils/assumptions";
 import {
   computeWeightedScore,
@@ -99,6 +100,10 @@ function buildUnlockSteps(
 export async function POST(_request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
+    const quota = await checkAiQuota(user);
+    if (!quota.allowed) {
+      return createQuotaExceededResponse(quota);
+    }
     const { canvasId } = await context.params;
 
     const canvas = await serverTablesDB.getRow({
@@ -140,16 +145,12 @@ export async function POST(_request: Request, context: RouteContext) {
       );
     }
 
-    const result = await generateText({
+    const { result, usage } = await generateTextWithLogging('viability', {
       model: deepseekFlash,
       temperature: 0.3,
       prompt: getViabilityPrompt(blocks, assumptions),
-    });
-
-    void recordAnthropicUsageForUser(user.$id, {
-      inputTokens: result.usage.inputTokens ?? 0,
-      outputTokens: result.usage.outputTokens ?? 0,
-      totalTokens: (result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0),
+    }, {
+      onUsage: (usageData) => recordAiUsage(user.$id, 'viability', usageData, { canvasId }),
     });
 
     const text = result.text;

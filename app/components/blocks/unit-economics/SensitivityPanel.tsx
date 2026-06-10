@@ -82,7 +82,7 @@ export function SensitivityPanel({
     <div className="space-y-6 animate-in fade-in">
       {/* Presets */}
       <div className="space-y-2">
-        <h3 className="font-display-small text-xs text-foreground-muted uppercase tracking-wider">
+        <h3 className="font-mono text-xs text-foreground-muted uppercase tracking-wider">
           Preset Scenarios
         </h3>
         <div className="flex flex-wrap gap-2">
@@ -122,7 +122,7 @@ export function SensitivityPanel({
             <select
               value={customParam}
               onChange={(e) => setCustomParam(e.target.value)}
-              className="bg-white/5 border border-white/8 rounded-md px-2 py-1 text-xs text-foreground outline-none"
+              className="input-soft px-2 py-1 text-xs text-foreground"
             >
               <option value="cac">CAC</option>
               <option value="churn">Churn</option>
@@ -135,7 +135,7 @@ export function SensitivityPanel({
               max={100}
               value={customDelta}
               onChange={(e) => setCustomDelta(Number(e.target.value))}
-              className="flex-1 accent-[var(--state-ai)]"
+              className="flex-1 accent-chroma-indigo"
             />
             <span className="text-xs text-foreground-muted w-12 text-right">
               {customDelta > 0 ? '+' : ''}{customDelta}%
@@ -150,7 +150,7 @@ export function SensitivityPanel({
         disabled={isRunning || (!selectedPreset && !useCustom)}
         className={`ui-btn ui-btn-sm ui-btn-block ${
           isRunning
-            ? 'ui-btn-secondary glow-ai text-[var(--state-ai)]'
+            ? 'ui-btn-secondary glow-ai text-state-ai'
             : !selectedPreset && !useCustom
               ? 'ui-btn-ghost text-foreground-muted/40 cursor-not-allowed'
               : 'ui-btn-secondary text-foreground-muted hover:text-foreground'
@@ -162,7 +162,7 @@ export function SensitivityPanel({
       {/* Results */}
       {results.length > 0 && (
         <div className="space-y-3">
-          <h3 className="font-display-small text-xs text-foreground-muted uppercase tracking-wider">
+          <h3 className="font-mono text-xs text-foreground-muted uppercase tracking-wider">
             Results
           </h3>
           {results.map((result, i) => {

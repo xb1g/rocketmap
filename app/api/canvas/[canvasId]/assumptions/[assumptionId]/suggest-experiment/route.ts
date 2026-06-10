@@ -1,11 +1,12 @@
-import { generateText } from 'ai';
+import { generateTextWithLogging } from '@/lib/ai/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/appwrite-server';
-import { getAnthropicModelForUser, recordAnthropicUsageForUser } from '@/lib/ai/user-preferences';
+import { getAnthropicModelForUser, recordAiUsage } from '@/lib/ai/user-preferences';
 import { buildSystemPrompt } from '@/lib/ai/prompts';
 import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { serverTablesDB, DATABASE_ID, ASSUMPTIONS_TABLE_ID } from '@/lib/appwrite';
 import { verifyCanvasOwnership, verifyAssumptionBelongsToCanvas, isForbiddenError } from '@/lib/utils';
+import { checkAiQuota, createQuotaExceededResponse } from '@/lib/ai/quota';
 
 interface RouteContext {
   params: Promise<{ canvasId: string; assumptionId: string }>;
@@ -14,6 +15,10 @@ interface RouteContext {
 export async function POST(_request: NextRequest, context: RouteContext) {
   try {
     const user = await requireAuth();
+    const quota = await checkAiQuota(user);
+    if (!quota.allowed) {
+      return createQuotaExceededResponse(quota);
+    }
     const { canvasId, assumptionId } = await context.params;
     await verifyCanvasOwnership(canvasId, user.$id);
     await verifyAssumptionBelongsToCanvas(canvasId, assumptionId);
@@ -29,7 +34,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
     const blocks = await getCanvasBlocks(canvasId, user.$id);
     const systemPrompt = buildSystemPrompt('general', blocks);
 
-    const { text, usage } = await generateText({
+    const { result, usage } = await generateTextWithLogging('suggest-experiment', {
       model: getAnthropicModelForUser(user, 'claude-haiku-4-5-20251001'),
       system: systemPrompt,
       prompt: `Suggest the cheapest and fastest experiment to validate this assumption:
@@ -47,15 +52,11 @@ Return ONLY valid JSON (no markdown, no explanation):
   "durationEstimate": "1 week",
   "reasoning": "why this is cheapest/fastest method"
 }`,
+    }, {
+      onUsage: (usageData) => recordAiUsage(user.$id, 'suggest-experiment', usageData, { canvasId }),
     });
 
-    recordAnthropicUsageForUser(user.$id, {
-      inputTokens: usage.inputTokens ?? 0,
-      outputTokens: usage.outputTokens ?? 0,
-      totalTokens: (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0),
-    });
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const jsonMatch = result.text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Model did not return valid JSON');
     const obj = JSON.parse(jsonMatch[0]) as {
       experimentType: string;

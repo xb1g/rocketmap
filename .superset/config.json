@@ -1,7 +1,9 @@
 {
-  "setup": [],
+  "setup": [
+    "bun install"
+  ],
   "teardown": [],
   "run": [
-    "pnpm dev"
+    "bun dev"
   ]
 }

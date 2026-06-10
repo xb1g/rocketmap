@@ -34,12 +34,14 @@ export function ChatSessionSelector({
 
       {sessions.length === 0 && (
         <span
-          className="shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-medium"
+          className="shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider font-medium flex items-center gap-1.5"
           style={{
-            background: 'var(--chroma-indigo, #6366f1)',
-            color: '#fff',
+            background: 'rgba(99, 102, 241, 0.08)',
+            border: '1px solid rgba(99, 102, 241, 0.2)',
+            color: 'var(--chroma-indigo)',
           }}
         >
+          <span className="w-1 h-1 rounded-full bg-chroma-indigo animate-pulse" />
           Default
         </span>
       )}
@@ -52,14 +54,15 @@ export function ChatSessionSelector({
             key={s.sessionKey}
             type="button"
             onClick={() => onSelect(s.sessionKey)}
-            className="shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-medium truncate max-w-[140px] transition-colors"
+            className="shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider font-medium truncate max-w-[140px] transition-colors flex items-center gap-1.5"
             style={{
-              background: isActive ? 'var(--chroma-indigo, #6366f1)' : 'transparent',
-              color: isActive ? '#fff' : 'var(--foreground-muted, #999)',
-              border: isActive ? '1px solid var(--chroma-indigo, #6366f1)' : '1px solid var(--foreground-muted, #444)',
+              background: isActive ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
+              color: isActive ? 'var(--chroma-indigo)' : 'var(--foreground-muted)',
+              border: isActive ? '1px solid rgba(99, 102, 241, 0.2)' : '1px solid rgba(161, 161, 161, 0.2)',
             }}
             title={label}
           >
+            {isActive && <span className="w-1 h-1 rounded-full bg-chroma-indigo animate-pulse" />}
             {label}
           </button>
         );

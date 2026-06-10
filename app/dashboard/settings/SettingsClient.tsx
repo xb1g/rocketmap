@@ -2,7 +2,27 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Heading, Text, Dialog, Button } from '@radix-ui/themes';
+import { Heading, Text, Dialog, Button, Badge } from '@radix-ui/themes';
+
+interface UsageData {
+  tier: string;
+  daily: {
+    limit: number;
+    used: number;
+    remaining: number;
+    resetsAt: string;
+  };
+  lifetime: {
+    calls: number;
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    estimatedCostUsd: number;
+    lastUsedAt: string | null;
+  };
+  byDay: Record<string, { cost: number; tokens: number; calls: number }>;
+  byFeature: Record<string, { cost: number; tokens: number; calls: number }>;
+}
 
 const SETTINGS_KEY = 'rocketmap-settings';
 
@@ -44,6 +64,8 @@ export function SettingsClient({ initialAnthropicKeyStatus }: SettingsClientProp
   const [savingAnthropicKey, setSavingAnthropicKey] = useState(false);
   const [removingAnthropicKey, setRemovingAnthropicKey] = useState(false);
   const [anthropicError, setAnthropicError] = useState<string | null>(null);
+  const [usageData, setUsageData] = useState<UsageData | null>(null);
+  const [usageLoading, setUsageLoading] = useState(true);
 
   useEffect(() => {
     try {
@@ -56,6 +78,22 @@ export function SettingsClient({ initialAnthropicKeyStatus }: SettingsClientProp
     } catch {
       // ignore
     }
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/usage')
+      .then(async (res) => {
+        const data = (await res.json()) as UsageData | { error: string };
+        if (!res.ok || 'error' in data) {
+          throw new Error('error' in data ? data.error : 'Failed to load usage');
+        }
+        setUsageData(data);
+        setUsageLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to load usage:', err);
+        setUsageLoading(false);
+      });
   }, []);
 
   const saveSettings = useCallback((updated: Settings) => {
@@ -277,6 +315,91 @@ export function SettingsClient({ initialAnthropicKeyStatus }: SettingsClientProp
           <Text size="2" style={{ color: 'var(--state-critical)', marginTop: '0.75rem', display: 'block' }}>
             {anthropicError}
           </Text>
+        )}
+      </div>
+
+      <div className="settings-section">
+        <div className="settings-section-title">AI Usage</div>
+        {usageLoading ? (
+          <Text size="2" style={{ color: 'var(--foreground-muted)' }}>Loading usage data...</Text>
+        ) : !usageData ? (
+          <Text size="2" style={{ color: 'var(--foreground-muted)' }}>Unable to load usage data.</Text>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {/* Tier badge */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Badge color={usageData.tier === 'pro' ? 'green' : 'gray'} size="2">
+                {usageData.tier === 'pro' ? 'Pro' : 'Free'}
+              </Badge>
+            </div>
+
+            {/* Daily budget meter */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <Text size="2" style={{ color: 'var(--foreground-muted)' }}>
+                  Daily budget
+                </Text>
+                <Text size="2" style={{ fontFamily: 'var(--font-mono)' }}>
+                  ${usageData.daily.used.toFixed(2)} / ${usageData.daily.limit.toFixed(2)}
+                </Text>
+              </div>
+              <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    width: `${Math.min(100, (usageData.daily.used / usageData.daily.limit) * 100)}%`,
+                    height: '100%',
+                    background: 'var(--chroma-indigo)',
+                    borderRadius: '4px',
+                    transition: 'width 300ms ease',
+                  }}
+                />
+              </div>
+              <Text size="1" style={{ color: 'var(--foreground-muted)', marginTop: '0.35rem', display: 'block' }}>
+                Resets at {new Date(usageData.daily.resetsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            </div>
+
+            {/* Lifetime stats grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
+              <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '0.75rem' }}>
+                <Text size="1" style={{ color: 'var(--foreground-muted)', display: 'block', marginBottom: '0.25rem' }}>Calls</Text>
+                <Text size="4" weight="bold" style={{ fontFamily: 'var(--font-mono)' }}>{usageData.lifetime.calls.toLocaleString()}</Text>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '0.75rem' }}>
+                <Text size="1" style={{ color: 'var(--foreground-muted)', display: 'block', marginBottom: '0.25rem' }}>Input Tokens</Text>
+                <Text size="4" weight="bold" style={{ fontFamily: 'var(--font-mono)' }}>{usageData.lifetime.inputTokens.toLocaleString()}</Text>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '0.75rem' }}>
+                <Text size="1" style={{ color: 'var(--foreground-muted)', display: 'block', marginBottom: '0.25rem' }}>Output Tokens</Text>
+                <Text size="4" weight="bold" style={{ fontFamily: 'var(--font-mono)' }}>{usageData.lifetime.outputTokens.toLocaleString()}</Text>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '0.75rem' }}>
+                <Text size="1" style={{ color: 'var(--foreground-muted)', display: 'block', marginBottom: '0.25rem' }}>Est. Cost</Text>
+                <Text size="4" weight="bold" style={{ fontFamily: 'var(--font-mono)' }}>
+                  ${usageData.lifetime.estimatedCostUsd.toFixed(2)}
+                </Text>
+              </div>
+            </div>
+
+            {/* Per-feature breakdown */}
+            {Object.keys(usageData.byFeature).length > 0 && (
+              <div>
+                <Text size="2" weight="bold" style={{ marginBottom: '0.5rem', display: 'block' }}>Per-feature breakdown</Text>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  {Object.entries(usageData.byFeature).map(([feature, stats]) => (
+                    <div key={feature} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: '6px' }}>
+                      <Text size="2" style={{ textTransform: 'capitalize' }}>{feature.replace(/-/g, ' ')}</Text>
+                      <div style={{ display: 'flex', gap: '1rem', fontFamily: 'var(--font-mono)' }}>
+                        <Text size="1" style={{ color: 'var(--foreground-muted)' }}>{stats.calls.toLocaleString()} calls</Text>
+                        <Text size="1" style={{ color: 'var(--foreground-muted)' }}>{stats.tokens.toLocaleString()} tokens</Text>
+                        <Text size="1" style={{ color: 'var(--foreground-muted)', minWidth: '3.5rem', textAlign: 'right' }}>${stats.cost.toFixed(2)}</Text>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
 

@@ -44,7 +44,7 @@ export function CanvasToolbar({
           <InlineEditableTitle value={title} readOnly={readOnly} onSave={onTitleChange} />
         </div>
         {readOnly && (
-          <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-full bg-white/10 text-foreground-muted border border-white/15">
+          <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-full bg-foreground/10 text-foreground-muted border border-white/15">
             Read-only
           </span>
         )}
@@ -100,7 +100,7 @@ export function CanvasToolbar({
       <div className="flex items-center gap-1.5 font-mono text-[10px] text-foreground-muted min-w-12 md:min-w-20 justify-end shrink-0">
         {saveStatus === "saved" && (
           <>
-            <span className="text-(--state-healthy)">&#10003;</span>
+            <span className="text-state-healthy">&#10003;</span>
             <span className="uppercase tracking-wider hidden md:inline">Saved</span>
           </>
         )}
@@ -112,7 +112,7 @@ export function CanvasToolbar({
         )}
         {saveStatus === "unsaved" && (
           <>
-            <span className="w-1.5 h-1.5 rounded-full bg-(--state-warning)" />
+            <span className="w-1.5 h-1.5 rounded-full bg-state-warning" />
             <span className="uppercase tracking-wider hidden md:inline">Unsaved</span>
           </>
         )}

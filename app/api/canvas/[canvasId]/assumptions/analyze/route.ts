@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { generateTextWithLogging } from '@/lib/ai/logger';
 import { ID, Query } from 'node-appwrite';
 import { requireAuth } from '@/lib/appwrite-server';
 import {
@@ -11,8 +11,9 @@ import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { buildSystemPrompt } from '@/lib/ai/prompts';
 import {
   getAnthropicModelForUser,
-  recordAnthropicUsageForUser,
+  recordAiUsage,
 } from '@/lib/ai/user-preferences';
+import { checkAiQuota, createQuotaExceededResponse } from '@/lib/ai/quota';
 
 interface RouteContext {
   params: Promise<{ canvasId: string }>;
@@ -34,6 +35,12 @@ export async function POST(_request: Request, context: RouteContext) {
 
       try {
         const user = await requireAuth();
+        const quota = await checkAiQuota(user);
+        if (!quota.allowed) {
+          send({ type: 'error', error: 'Daily AI budget exceeded', quota });
+          controller.close();
+          return;
+        }
         const { canvasId } = await context.params;
 
         send({ type: 'step', step: 'loading' });
@@ -44,7 +51,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
         send({ type: 'step', step: 'analyzing' });
 
-        const { text, usage } = await generateText({
+        const { result, usage } = await generateTextWithLogging('assumptions-analyze', {
           model: getAnthropicModelForUser(user, 'claude-sonnet-4-5-20250929'),
           system: systemPrompt,
           prompt: `Analyze this entire business model canvas and extract ALL hidden assumptions the founder is making. Focus on:
@@ -71,9 +78,11 @@ Return ONLY valid JSON (no markdown, no explanation):
     }
   ]
 }`,
+        }, {
+          onUsage: (usageData) => recordAiUsage(user.$id, 'assumptions-analyze', usageData, { canvasId }),
         });
 
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        const jsonMatch = result.text.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error('Model did not return valid JSON');
         const object = JSON.parse(jsonMatch[0]) as {
           reasoning?: string;
@@ -85,12 +94,6 @@ Return ONLY valid JSON (no markdown, no explanation):
         if (object.reasoning) {
           send({ type: 'thinking', text: object.reasoning });
         }
-
-        recordAnthropicUsageForUser(user.$id, {
-          inputTokens: usage.inputTokens ?? 0,
-          outputTokens: usage.outputTokens ?? 0,
-          totalTokens: (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0),
-        });
 
         const extracted = object.assumptions;
         send({ type: 'step', step: 'saving', count: extracted.length });

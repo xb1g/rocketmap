@@ -60,7 +60,7 @@ export function CanvasTabs({
               {tab.value === "economics" && economicsGenerating ? (
                 <span className="flex items-center gap-1.5">
                   {tab.label}
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--state-ai)] animate-pulse" />
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-state-ai animate-pulse" />
                 </span>
               ) : (
                 tab.label

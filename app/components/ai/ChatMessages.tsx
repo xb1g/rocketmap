@@ -122,7 +122,7 @@ export function ChatMessages({
   if (visible.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-2 px-6 text-center">
-        <div className="w-8 h-8 rounded-full bg-white/3 border border-white/5 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full bg-canvas-surface border border-white/6 flex items-center justify-center">
           <svg
             width="14"
             height="14"
@@ -137,7 +137,7 @@ export function ChatMessages({
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
         </div>
-        <span className="text-[11px] text-foreground-muted/40 leading-relaxed">
+        <span className="text-[11px] font-mono text-foreground-muted/40 leading-relaxed uppercase tracking-wider">
           Ask anything about this block
         </span>
       </div>
@@ -267,10 +267,10 @@ function AIStatusIndicator({
 
   return (
     <div className="flex justify-start">
-      <div className="flex items-center gap-2 px-3 py-2 rounded-2xl rounded-bl-md bg-white/4 border border-white/4">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-2xl rounded-bl-md bg-white/3 border border-chroma-indigo/15">
         {activity.icon === 'thinking' && <ThinkingDots />}
         {activity.icon === 'tool' && <ToolSpinner />}
-        <span className="text-[11px] text-foreground-muted/60">{activity.label}</span>
+        <span className="text-[11px] font-mono text-foreground-muted/60 uppercase tracking-wider">{activity.label}</span>
       </div>
     </div>
   );

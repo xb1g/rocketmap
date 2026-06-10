@@ -40,7 +40,7 @@ describe('BlockCard', () => {
       />
     );
 
-    expect(screen.getByText('75%')).toBeInTheDocument();
+    expect(screen.getByText('75')).toBeInTheDocument();
   });
 
   it('renders tags when present', () => {
@@ -61,7 +61,7 @@ describe('BlockCard', () => {
       contentJson: JSON.stringify({ text: '', tags: [] }),
     };
 
-    render(
+    const { container } = render(
       <BlockCard
         block={emptyBlock}
         allSegments={[]}
@@ -69,6 +69,8 @@ describe('BlockCard', () => {
       />
     );
 
-    expect(screen.getByText('Enter block content...')).toBeInTheDocument();
+    const editableDiv = container.querySelector('[contenteditable="true"]');
+    expect(editableDiv).toBeInTheDocument();
+    expect(editableDiv).toHaveAttribute('data-placeholder', 'Enter block content...');
   });
 });

@@ -87,7 +87,7 @@ export function EvidenceCollectionModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-lg mx-4 rounded-xl border border-white/[0.08] bg-[#0a0a0f]/95 backdrop-blur-xl p-6 space-y-5">
+      <div className="w-full max-w-lg mx-4 rounded-[14px] border border-white/8 bg-background p-6 space-y-5">
         <div className="flex items-center justify-between">
           <h3 className="font-display-small text-base">Collect Evidence</h3>
           <button
@@ -99,8 +99,8 @@ export function EvidenceCollectionModal({
         </div>
 
         {/* Assumption context */}
-        <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3">
-          <p className="text-[11px] text-foreground-muted/60 mb-1">Assumption:</p>
+        <div className="rounded-[12px] border border-white/6 bg-white/2 p-3">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted/60 mb-1">Assumption:</p>
           <p className="text-sm leading-relaxed">{assumption.statement}</p>
         </div>
 
@@ -117,14 +117,14 @@ export function EvidenceCollectionModal({
             {/* Experiment selector (if multiple) */}
             {experiments.length > 1 && (
               <div className="space-y-1.5">
-                <label className="text-xs text-foreground-muted">Experiment</label>
+                <label className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">Experiment</label>
                 <select
                   value={selectedExperiment?.$id ?? ""}
                   onChange={(e) => {
                     const exp = experiments.find((x) => x.$id === e.target.value);
                     if (exp) setSelectedExperiment(exp);
                   }}
-                  className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm focus:outline-none focus:border-white/20"
+                  className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
                 >
                   {experiments.map((exp) => (
                     <option key={exp.$id} value={exp.$id}>
@@ -137,12 +137,12 @@ export function EvidenceCollectionModal({
 
             {/* Selected experiment details */}
             {selectedExperiment && (
-              <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 space-y-1">
-                <p className="text-[11px] text-foreground-muted/60">
+              <div className="rounded-[12px] border border-white/6 bg-white/2 p-3 space-y-1">
+                <p className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted/60">
                   {selectedExperiment.type.toUpperCase()}
                 </p>
                 <p className="text-sm">{selectedExperiment.description}</p>
-                <p className="text-[11px] text-foreground-muted">
+                <p className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">
                   Success criteria: {selectedExperiment.successCriteria}
                 </p>
               </div>
@@ -150,28 +150,28 @@ export function EvidenceCollectionModal({
 
             {/* Evidence textarea */}
             <div className="space-y-1.5">
-              <label className="text-xs text-foreground-muted">Evidence</label>
+              <label className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">Evidence</label>
               <textarea
                 value={evidence}
                 onChange={(e) => setEvidence(e.target.value)}
                 placeholder="What did you find? Describe the evidence..."
                 rows={3}
-                className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-white/20"
+                className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
               />
             </div>
 
             {/* Result radio */}
             <div className="space-y-1.5">
-              <label className="text-xs text-foreground-muted">Result</label>
+              <label className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">Result</label>
               <div className="flex flex-wrap gap-2">
                 {RESULT_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => setResult(opt.value)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    className={`px-3 py-1.5 rounded-[12px] text-xs font-medium transition-colors ${
                       result === opt.value
                         ? "border-2"
-                        : "border border-white/[0.08] text-foreground-muted hover:text-foreground"
+                        : "border border-white/8 text-foreground-muted hover:text-foreground"
                     }`}
                     style={
                       result === opt.value
@@ -191,13 +191,13 @@ export function EvidenceCollectionModal({
 
             {/* Source URL */}
             <div className="space-y-1.5">
-              <label className="text-xs text-foreground-muted">Source URL (optional)</label>
+              <label className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">Source URL (optional)</label>
               <input
                 type="text"
                 value={sourceUrl}
                 onChange={(e) => setSourceUrl(e.target.value)}
                 placeholder="https://..."
-                className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-white/20"
+                className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
               />
             </div>
 

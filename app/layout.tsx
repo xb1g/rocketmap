@@ -35,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${crimsonText.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} ${crimsonText.variable} ${geistMono.variable} antialiased bg-background text-foreground font-body`}
       >
         <Theme
           appearance="dark"

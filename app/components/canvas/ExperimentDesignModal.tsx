@@ -100,7 +100,7 @@ export function ExperimentDesignModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-lg mx-4 rounded-xl border border-white/[0.08] bg-[#0a0a0f]/95 backdrop-blur-xl p-6 space-y-5">
+      <div className="w-full max-w-lg mx-4 rounded-[14px] border border-white/8 bg-background p-6 space-y-5">
         <div className="flex items-center justify-between">
           <h3 className="font-display-small text-base">Design Experiment</h3>
           <div className="flex items-center gap-2">
@@ -109,7 +109,7 @@ export function ExperimentDesignModal({
               disabled={generating}
               className={`ui-btn ui-btn-sm ${
                 generating
-                  ? "ui-btn-secondary glow-ai text-[var(--state-ai)]"
+                  ? "ui-btn-secondary glow-ai text-state-ai"
                   : "ui-btn-secondary text-foreground-muted hover:text-foreground"
               }`}
             >
@@ -125,18 +125,18 @@ export function ExperimentDesignModal({
         </div>
 
         {/* Assumption being tested */}
-        <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3">
-          <p className="text-[11px] text-foreground-muted/60 mb-1">Testing assumption:</p>
+        <div className="rounded-[12px] border border-white/6 bg-white/2 p-3">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted/60 mb-1">Testing assumption:</p>
           <p className="text-sm leading-relaxed">{assumption.statement}</p>
         </div>
 
         {/* Type */}
         <div className="space-y-1.5">
-          <label className="text-xs text-foreground-muted">Experiment Type</label>
+          <label className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">Experiment Type</label>
           <select
             value={type}
             onChange={(e) => setType(e.target.value as ExperimentType)}
-            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm focus:outline-none focus:border-white/20"
+            className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
           >
             {EXPERIMENT_TYPES.map((et) => (
               <option key={et.value} value={et.value}>
@@ -148,48 +148,48 @@ export function ExperimentDesignModal({
 
         {/* Description */}
         <div className="space-y-1.5">
-          <label className="text-xs text-foreground-muted">Description</label>
+          <label className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">Description</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="How will you test this assumption?"
             rows={3}
-            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-white/20"
+            className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
           />
         </div>
 
         {/* Success Criteria */}
         <div className="space-y-1.5">
-          <label className="text-xs text-foreground-muted">Success Criteria</label>
+          <label className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">Success Criteria</label>
           <textarea
             value={successCriteria}
             onChange={(e) => setSuccessCriteria(e.target.value)}
             placeholder="What result would validate this assumption?"
             rows={2}
-            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-white/20"
+            className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
           />
         </div>
 
         {/* Cost + Duration row */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <label className="text-xs text-foreground-muted">Cost Estimate</label>
+            <label className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">Cost Estimate</label>
             <input
               type="text"
               value={costEstimate}
               onChange={(e) => setCostEstimate(e.target.value)}
               placeholder="e.g. $500"
-              className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-white/20"
+              className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-foreground-muted">Duration Estimate</label>
+            <label className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">Duration Estimate</label>
             <input
               type="text"
               value={durationEstimate}
               onChange={(e) => setDurationEstimate(e.target.value)}
               placeholder="e.g. 2 weeks"
-              className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-white/20"
+              className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
             />
           </div>
         </div>

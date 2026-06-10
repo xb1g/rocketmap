@@ -1,9 +1,15 @@
 import { generateText, streamText } from 'ai';
+import { extractDeepseekCacheTokens } from '@/lib/ai/pricing';
 
 export interface AIUsageInfo {
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
+  /** Model ID used for this call (e.g. 'deepseek-v4-flash') */
+  modelId?: string;
+  /** DeepSeek cache token breakdown from providerMetadata */
+  cacheHitTokens?: number;
+  cacheMissTokens?: number;
 }
 
 type GenerateTextParams = Parameters<typeof generateText>[0];
@@ -51,6 +57,30 @@ function logUsage(label: string, usage: AIUsageInfo) {
   );
 }
 
+function extractModelId(params: GenerateTextParams | StreamTextParams): string | undefined {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const m = params.model as any;
+  if (typeof m === 'string') return m;
+  if (m?.modelId) return m.modelId;
+  if (m?.model) return m.model;
+  return undefined;
+}
+
+function buildUsageInfo(
+  usage: { inputTokens?: number; outputTokens?: number; totalTokens?: number; providerMetadata?: unknown },
+  modelId?: string,
+): AIUsageInfo {
+  const cache = extractDeepseekCacheTokens(usage.providerMetadata);
+  return {
+    inputTokens: usage.inputTokens ?? 0,
+    outputTokens: usage.outputTokens ?? 0,
+    totalTokens: usage.totalTokens ?? 0,
+    modelId,
+    cacheHitTokens: cache?.cacheHitTokens,
+    cacheMissTokens: cache?.cacheMissTokens,
+  };
+}
+
 export async function generateTextWithLogging(
   label: string,
   params: GenerateTextParams,
@@ -58,11 +88,8 @@ export async function generateTextWithLogging(
 ) {
   logParams(label, params);
   const result = await generateText(params);
-  const usage: AIUsageInfo = {
-    inputTokens: result.usage.inputTokens ?? 0,
-    outputTokens: result.usage.outputTokens ?? 0,
-    totalTokens: result.usage.totalTokens ?? 0,
-  };
+  const modelId = extractModelId(params);
+  const usage = buildUsageInfo(result.usage, modelId);
   logUsage(label, usage);
   if (options.onUsage) {
     try {
@@ -81,14 +108,11 @@ export function streamTextWithLogging(
 ) {
   logParams(label, params);
   const result = streamText(params);
+  const modelId = extractModelId(params);
 
   // Log usage when the stream completes
   Promise.resolve(result.usage).then((u) => {
-    const usage: AIUsageInfo = {
-      inputTokens: u.inputTokens ?? 0,
-      outputTokens: u.outputTokens ?? 0,
-      totalTokens: u.totalTokens ?? 0,
-    };
+    const usage = buildUsageInfo(u, modelId);
     logUsage(label, usage);
     if (options.onUsage) {
       Promise.resolve(options.onUsage(usage)).catch((error) => {

@@ -85,7 +85,7 @@ export function ConnectionOverlay({
         y1: sourcePos.y,
         x2: targetPos.x,
         y2: targetPos.y,
-        color: seg?.colorHex ?? "#6366f1",
+        color: seg?.colorHex ?? "var(--chroma-indigo)",
         dashed: true,
       });
     }
@@ -102,7 +102,7 @@ export function ConnectionOverlay({
         y1: sourcePos.y,
         x2: targetPos.x,
         y2: targetPos.y,
-        color: "#6366f1",
+        color: "var(--chroma-indigo)",
         dashed: false,
       });
     }

@@ -119,7 +119,7 @@ export function BrainstormClient() {
           onKeyDown={handleKeyDown}
         />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem' }}>
-          <Text size="1" style={{ color: 'rgba(255,255,255,0.15)', fontFamily: 'var(--font-mono)' }}>
+          <Text size="1" style={{ color: 'var(--foreground-muted)', fontFamily: 'var(--font-mono)' }}>
             &#x2318;+Enter to save
           </Text>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -142,7 +142,7 @@ export function BrainstormClient() {
       </div>
 
       <div style={{ marginBottom: '2.5rem' }}>
-        <Heading size="4" style={{ fontFamily: 'var(--font-display)', marginBottom: '1rem' }}>
+        <Heading size="4" style={{ fontFamily: 'var(--font-body)', fontWeight: 600, marginBottom: '1rem' }}>
           Start from Scratch
         </Heading>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1rem' }}>
@@ -160,7 +160,7 @@ export function BrainstormClient() {
       </div>
 
       <div style={{ marginBottom: '2.5rem' }}>
-        <Heading size="4" style={{ fontFamily: 'var(--font-display)', marginBottom: '1rem' }}>
+        <Heading size="4" style={{ fontFamily: 'var(--font-body)', fontWeight: 600, marginBottom: '1rem' }}>
           Start from Template
         </Heading>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1rem' }}>
@@ -176,7 +176,7 @@ export function BrainstormClient() {
 
       {savedIdeas.length > 0 && (
         <div>
-          <Heading size="4" style={{ fontFamily: 'var(--font-display)', marginBottom: '1rem' }}>
+          <Heading size="4" style={{ fontFamily: 'var(--font-body)', fontWeight: 600, marginBottom: '1rem' }}>
             Saved Ideas
           </Heading>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -195,7 +195,7 @@ export function BrainstormClient() {
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <Text size="2" style={{ color: '#fff', lineHeight: 1.5 }}>
+                  <Text size="2" style={{ color: 'var(--foreground)', lineHeight: 1.5 }}>
                     {idea.text}
                   </Text>
                   <Text size="1" style={{ color: 'var(--foreground-muted)', fontFamily: 'var(--font-mono)', marginTop: '0.35rem', display: 'block' }}>

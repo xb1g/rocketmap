@@ -111,7 +111,7 @@ function SegmentEditCard({
 
   if (readOnly) {
     return (
-      <div className="p-3 rounded-lg bg-white/3 border border-white/8 space-y-2.5 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
+      <div className="p-3 rounded-lg bg-foreground/3 border border-white/8 space-y-2.5 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
         <div className="flex items-center gap-2">
           <span
             className="w-2.5 h-2.5 rounded-full shrink-0"
@@ -137,7 +137,7 @@ function SegmentEditCard({
   }
 
   return (
-    <div className="p-3 rounded-lg bg-white/3 border border-white/8 space-y-2.5 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
+    <div className="p-3 rounded-lg bg-foreground/3 border border-white/8 space-y-2.5 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
       <div className="flex items-center gap-2">
         <span
           className="w-2.5 h-2.5 rounded-full shrink-0"
@@ -167,7 +167,7 @@ function SegmentEditCard({
           setDescription(e.target.value);
           debouncedUpdate({ description: e.target.value });
         }}
-        className="w-full bg-white/3 rounded px-2.5 py-1.5 text-xs text-foreground-muted outline-none resize-none border border-white/5 focus:border-white/10"
+        className="w-full bg-foreground/3 rounded px-2.5 py-1.5 text-xs text-foreground-muted outline-none resize-none border border-foreground/5 focus:border-white/10"
         rows={2}
         placeholder="Describe this segment..."
       />
@@ -186,8 +186,8 @@ function SegmentEditCard({
               }}
               className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
                 Math.abs(priority - p.value) < 15
-                  ? "border-white/20 bg-white/8 text-foreground"
-                  : "border-white/5 text-foreground-muted/50 hover:text-foreground-muted"
+                  ? "border-foreground/20 bg-foreground/8 text-foreground"
+                  : "border-foreground/5 text-foreground-muted/50 hover:text-foreground-muted"
               }`}
             >
               {p.label}
@@ -207,15 +207,15 @@ function SegmentEditCard({
           }}
           className={`flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
             earlyAdopter
-              ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
-              : "border-white/5 text-foreground-muted/50 hover:text-foreground-muted"
+              ? "border-state-healthy/30 bg-state-healthy/10 text-state-healthy"
+              : "border-foreground/5 text-foreground-muted/50 hover:text-foreground-muted"
           }`}
         >
           <span
             className={`w-2 h-2 rounded-sm border transition-colors ${
               earlyAdopter
-                ? "bg-emerald-400 border-emerald-400"
-                : "border-white/20"
+                ? "bg-state-healthy border-state-healthy"
+                : "border-foreground/20"
             }`}
           />
           Early Adopter
@@ -224,7 +224,7 @@ function SegmentEditCard({
         {onDelete && (
           <button
             onClick={() => onDelete(seg.$id)}
-            className="text-[10px] text-foreground-muted/30 hover:text-red-400 transition-colors"
+            className="text-[10px] text-foreground-muted/30 hover:text-state-critical transition-colors"
           >
             Delete segment
           </button>
@@ -350,7 +350,7 @@ function LinkedSegmentsSection({
             value={newSegmentName}
             onChange={(e) => onSetNewName(e.target.value)}
             placeholder="Segment name..."
-            className="flex-1 bg-white/3 rounded px-2 py-1.5 text-xs text-foreground outline-none border border-white/5 focus:border-white/15"
+            className="flex-1 bg-foreground/3 rounded px-2 py-1.5 text-xs text-foreground outline-none border border-foreground/5 focus:border-white/15"
             autoFocus
             onKeyDown={async (e) => {
               if (e.key === "Enter" && newSegmentName.trim()) {
@@ -377,7 +377,7 @@ function LinkedSegmentsSection({
               onSetNewName("");
               onSetCreating(false);
             }}
-            className="text-[10px] px-2.5 py-1 rounded bg-white/5 text-foreground-muted hover:text-foreground transition-colors"
+            className="text-[10px] px-2.5 py-1 rounded bg-foreground/5 text-foreground-muted hover:text-foreground transition-colors"
           >
             Add
           </button>
@@ -395,7 +395,7 @@ function LinkedSegmentsSection({
 
       {/* Multi-select link picker */}
       {showLinkPicker && !readOnly && onSegmentLink && (
-        <div className="mb-2 rounded-lg bg-white/3 border border-white/8 overflow-hidden">
+        <div className="mb-2 rounded-lg bg-foreground/3 border border-white/8 overflow-hidden">
           <div className="max-h-44 overflow-y-auto p-1 space-y-0.5">
             {unlinkable.length > 0 ? (
               unlinkable.map((seg) => {
@@ -406,15 +406,15 @@ function LinkedSegmentsSection({
                     onClick={() => togglePendingLink(seg.$id)}
                     className={`flex items-center gap-1.5 w-full text-left px-2 py-1.5 rounded transition-colors ${
                       isSelected
-                        ? "bg-white/8 border border-white/15"
-                        : "hover:bg-white/5 border border-transparent"
+                        ? "bg-foreground/8 border border-white/15"
+                        : "hover:bg-foreground/5 border border-transparent"
                     }`}
                   >
                     <span
                       className={`w-3 h-3 rounded border shrink-0 flex items-center justify-center transition-colors ${
                         isSelected
-                          ? "bg-[var(--chroma-indigo)] border-[var(--chroma-indigo)]"
-                          : "border-white/20"
+                          ? "bg-chroma-indigo border-chroma-indigo"
+                          : "border-foreground/20"
                       }`}
                     >
                       {isSelected && (
@@ -440,7 +440,7 @@ function LinkedSegmentsSection({
                       {seg.name}
                     </span>
                     {seg.earlyAdopterFlag && (
-                      <span className="text-[8px] font-mono px-1 py-px rounded bg-emerald-400/10 text-emerald-400/70 shrink-0">
+                      <span className="text-[8px] font-mono px-1 py-px rounded bg-state-healthy/10 text-state-healthy/70 shrink-0">
                         EA
                       </span>
                     )}
@@ -454,13 +454,13 @@ function LinkedSegmentsSection({
             )}
           </div>
           {pendingLinks.size > 0 && (
-            <div className="px-2 py-1.5 border-t border-white/5 flex items-center justify-between">
+            <div className="px-2 py-1.5 border-t border-foreground/5 flex items-center justify-between">
               <span className="text-[10px] text-foreground-muted/50">
                 {pendingLinks.size} selected
               </span>
               <button
                 onClick={handleConfirmLinks}
-                className="text-[10px] px-2.5 py-1 rounded bg-(--chroma-indigo)/20 text-(--chroma-indigo) hover:bg-(--chroma-indigo)/30 transition-colors font-medium"
+                className="text-[10px] px-2.5 py-1 rounded bg-chroma-indigo/20 text-chroma-indigo hover:bg-chroma-indigo/30 transition-colors font-medium"
               >
                 Link {pendingLinks.size} segment
                 {pendingLinks.size > 1 ? "s" : ""}
@@ -486,7 +486,7 @@ function LinkedSegmentsSection({
             ) : (
               <div
                 key={seg.$id}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/2 border border-white/5 group/lseg cursor-pointer hover:bg-white/4 transition-colors"
+                className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-foreground/2 border border-foreground/5 group/lseg cursor-pointer hover:bg-foreground/4 transition-colors"
                 onClick={
                   readOnly ? undefined : () => onSetEditingSegmentId(seg.$id)
                 }
@@ -506,7 +506,7 @@ function LinkedSegmentsSection({
                   )}
                 </div>
                 {seg.earlyAdopterFlag && (
-                  <span className="text-[8px] font-mono px-1 py-px rounded bg-emerald-400/10 text-emerald-400/70 shrink-0">
+                  <span className="text-[8px] font-mono px-1 py-px rounded bg-state-healthy/10 text-state-healthy/70 shrink-0">
                     EA
                   </span>
                 )}
@@ -519,7 +519,7 @@ function LinkedSegmentsSection({
                       e.stopPropagation();
                       onSegmentUnlink(seg.$id);
                     }}
-                    className="text-foreground-muted/30 hover:text-red-400 text-xs opacity-0 group-hover/lseg:opacity-100 transition-opacity shrink-0"
+                    className="text-foreground-muted/30 hover:text-state-critical text-xs opacity-0 group-hover/lseg:opacity-100 transition-opacity shrink-0"
                     title="Unlink segment"
                   >
                     ×
@@ -653,7 +653,7 @@ function BlockRiskSection({
           {relevant.map((a) => (
             <div
               key={a.$id}
-              className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-white/2 border border-white/5"
+              className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-foreground/2 border border-foreground/5"
             >
               <span
                 className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5"
@@ -741,15 +741,15 @@ function BlockEconomicsSection({
         <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
           {economics?.globalMetrics ? (
             <div className="grid grid-cols-3 gap-2 text-[11px]">
-              <div className="px-2.5 py-2 rounded-lg bg-white/2 border border-white/5">
+              <div className="px-2.5 py-2 rounded-lg bg-foreground/2 border border-foreground/5">
                 <div className="text-foreground-muted/50 text-[9px] uppercase tracking-wider">LTV/CAC</div>
                 <div className="text-foreground font-medium">{economics.globalMetrics.blendedLtvCacRatio.toFixed(1)}x</div>
               </div>
-              <div className="px-2.5 py-2 rounded-lg bg-white/2 border border-white/5">
+              <div className="px-2.5 py-2 rounded-lg bg-foreground/2 border border-foreground/5">
                 <div className="text-foreground-muted/50 text-[9px] uppercase tracking-wider">ARPU</div>
                 <div className="text-foreground font-medium">{formatCurrencyCompact(economics.globalMetrics.blendedArpu)}/mo</div>
               </div>
-              <div className="px-2.5 py-2 rounded-lg bg-white/2 border border-white/5">
+              <div className="px-2.5 py-2 rounded-lg bg-foreground/2 border border-foreground/5">
                 <div className="text-foreground-muted/50 text-[9px] uppercase tracking-wider">CAC</div>
                 <div className="text-foreground font-medium">{formatCurrencyCompact(economics.globalMetrics.blendedCac)}</div>
               </div>
@@ -862,7 +862,7 @@ export function BlockFocusPanel({
             onMouseDown={handleMouseDown}
             className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-10 group"
           >
-            <div className="absolute inset-y-0 left-0 w-px bg-white/8 group-hover:bg-white/20 group-active:bg-(--chroma-indigo)/50 transition-colors" />
+            <div className="absolute inset-y-0 left-0 w-px bg-foreground/8 group-hover:bg-foreground/20 group-active:bg-chroma-indigo/50 transition-colors" />
           </div>
         )}
 
@@ -997,7 +997,7 @@ export function BlockFocusPanel({
                   disabled={isAnalyzing}
                   className={`ui-btn ui-btn-sm ui-btn-block font-display-small text-[11px] uppercase tracking-wider ${
                     isAnalyzing
-                      ? "ui-btn ui-btn-sm ui-btn-secondary glow-ai text-(--state-ai)"
+                      ? "ui-btn ui-btn-sm ui-btn-secondary glow-ai text-state-ai"
                       : "ui-btn-secondary text-foreground-muted hover:text-foreground"
                   }`}
                 >
@@ -1027,7 +1027,7 @@ export function BlockFocusPanel({
               onDeepDive &&
               !allBlocksFilled && (
                 <div className="px-4 pb-3">
-                  <div className="px-3 py-2.5 font-body text-[11px] rounded-lg bg-white/2 border border-white/5 text-foreground-muted/50 leading-snug">
+                  <div className="px-3 py-2.5 font-body text-[11px] rounded-lg bg-foreground/2 border border-foreground/5 text-foreground-muted/50 leading-snug">
                     Fill all 9 blocks to unlock deep-dive research.
                     {filledCount !== undefined && (
                       <span className="ml-1 font-mono text-foreground-muted/40">
@@ -1049,7 +1049,7 @@ export function BlockFocusPanel({
 
         {/* Divider with collapse toggle */}
         <div className="shrink-0 relative flex items-center px-4 py-1.5">
-          <div className="flex-1 h-px bg-white/5" />
+          <div className="flex-1 h-px bg-foreground/5" />
           <button
             onClick={() => setContentCollapsed(!contentCollapsed)}
             className="ui-btn ui-btn-xs ui-btn-ghost font-display-small text-[10px] uppercase tracking-wider text-foreground-muted/70"
@@ -1069,7 +1069,7 @@ export function BlockFocusPanel({
             </svg>
             {contentCollapsed ? "Show content" : "Copilot Perspective"}
           </button>
-          <div className="flex-1 h-px bg-white/5" />
+          <div className="flex-1 h-px bg-foreground/5" />
         </div>
 
         {/* Chat — fills all remaining space */}

@@ -36,8 +36,9 @@ function toUIMessages(msgs: { id: string; role: string; content: string; created
                 toolName: p.toolName,
                 toolCallId: p.toolCallId,
                 state: 'output-available',
-                args: p.args ?? {},
-                output: p.result,
+                providerExecuted: true,
+                input: p.args ?? p.result ?? {},
+                output: p.result ?? p.args ?? {},
               };
             }
             return p;
@@ -111,8 +112,8 @@ function ChatBarLoader({
       <aside className="chat-dock glass-morphism">
         <div className="chat-dock-header">
           <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-wider text-foreground-muted/60">AI Copilot</div>
-            <div className="text-xs text-foreground-muted truncate">Loading conversation...</div>
+            <div className="text-[10px] font-mono uppercase tracking-wider text-foreground-muted/60">AI Copilot</div>
+            <div className="text-xs font-body text-foreground-muted truncate">Loading conversation...</div>
           </div>
           <button
             onClick={() => onMinimizedChange?.(true)}
@@ -292,8 +293,8 @@ function ChatBarInner({
     <aside className="chat-dock glass-morphism">
       <div className="chat-dock-header">
         <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-wider text-foreground-muted/55">AI Copilot</div>
-          <div className="text-xs text-foreground-muted truncate">{label}</div>
+          <div className="text-[10px] font-mono uppercase tracking-wider text-foreground-muted/55">AI Copilot</div>
+          <div className="text-xs font-body text-foreground-muted truncate">{label}</div>
         </div>
         <button
           onClick={() => setMinimized(true)}

@@ -143,7 +143,7 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
               onDelete(block.$id);
             }
           }}
-          className="absolute top-1 right-1 text-[9px] px-1 py-0.5 rounded text-red-400/60 hover:text-red-400 transition-all cursor-pointer z-10"
+          className="absolute top-1 right-1 text-[9px] px-1 py-0.5 rounded text-state-critical/60 hover:text-state-critical transition-all cursor-pointer z-10"
           title="Delete block"
         >
           ×
@@ -176,7 +176,7 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
               {content.tags!.map((tag, i) => (
                 <span
                   key={i}
-                  className="text-[8px] font-medium px-1.5 py-0.5 rounded-md bg-[var(--chroma-indigo)]/12 text-[var(--chroma-indigo)] border border-[var(--chroma-indigo)]/15"
+                  className="text-[8px] font-medium px-1.5 py-0.5 rounded-md bg-chroma-indigo/12 text-chroma-indigo border border-chroma-indigo/15"
                 >
                   {tag}
                 </span>
@@ -195,8 +195,8 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
                     key={seg.$id}
                     className={`inline-flex items-center gap-1 text-[8px] px-1.5 py-0.5 rounded-full border transition-all duration-150 cursor-default ${
                       isHighlighted
-                        ? 'border-white/30 text-foreground/90 bg-white/10'
-                        : 'border-white/10 text-foreground-muted/80 bg-white/[0.04]'
+                        ? 'border-foreground/30 text-foreground/90 bg-foreground/10'
+                        : 'border-white/10 text-foreground-muted/80 bg-white/4'
                     }`}
                     style={{
                       borderColor: isHighlighted ? `${segColor}60` : undefined,
@@ -224,8 +224,8 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
               onClick={() => setShowLinkPicker(!showLinkPicker)}
               className={`flex items-center gap-0.5 text-[9px] px-1 py-0.5 rounded transition-colors ${
                 showLinkPicker
-                  ? 'text-foreground-muted bg-white/8'
-                  : 'text-foreground-muted/40 hover:text-foreground-muted hover:bg-white/5'
+                  ? 'text-foreground-muted bg-foreground/8'
+                  : 'text-foreground-muted/40 hover:text-foreground-muted hover:bg-foreground/5'
               }`}
               title="Link to segments"
             >
@@ -253,10 +253,10 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
         {showLinkPicker && floatingPos && allSegments.length > 0 && createPortal(
           <div
             ref={floatingRef}
-            className="fixed z-[100] rounded-lg border border-white/12 bg-[#1a1a1f] shadow-xl shadow-black/40 p-1 space-y-0.5 max-h-[180px] w-[180px] overflow-y-auto"
+            className="fixed z-[100] rounded-lg border border-white/12 bg-canvas-surface shadow-xl shadow-black/40 p-1 space-y-0.5 max-h-[180px] w-[180px] overflow-y-auto"
             style={{ top: floatingPos.top, left: floatingPos.left }}
           >
-            <div className="text-[8px] text-foreground-muted/40 uppercase tracking-wider px-1.5 py-0.5">
+            <div className="text-[8px] text-foreground-muted/40 uppercase tracking-wider px-1.5 py-0.5 font-mono">
               Link segments
             </div>
             {allSegments.map(seg => {
@@ -266,7 +266,7 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
                   key={seg.$id}
                   onClick={() => onSegmentToggle(block.$id, seg.$id)}
                   className={`flex items-center gap-1.5 w-full text-left px-1.5 py-1 rounded transition-colors ${
-                    isLinked ? 'bg-white/8' : 'hover:bg-white/5'
+                    isLinked ? 'bg-foreground/8' : 'hover:bg-foreground/5'
                   }`}
                 >
                   <span
@@ -279,7 +279,7 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
                     {seg.name}
                   </span>
                   {isLinked && (
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400/80 shrink-0">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-state-healthy/80 shrink-0">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   )}

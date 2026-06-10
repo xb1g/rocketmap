@@ -331,7 +331,7 @@ export function SegmentEvalOverlay({
                   value={newSegmentName}
                   onChange={(e) => setNewSegmentName(e.target.value)}
                   placeholder="Segment name…"
-                  className="w-full bg-white/3 rounded px-2.5 py-1.5 text-xs text-foreground outline-none border border-white/8 focus:border-white/15"
+                  className="w-full input-soft px-2.5 py-1.5 text-xs text-foreground"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === "Escape") {

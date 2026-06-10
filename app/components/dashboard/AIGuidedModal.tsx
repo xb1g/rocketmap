@@ -72,7 +72,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
     [],
   );
 
-  // Use a stable ID — we manage session switching via setMessages, not by changing the chat ID
+  // Use a stable ID - we manage session switching via setMessages, not by changing the chat ID
   const { messages, sendMessage, setMessages, stop, status } = useChat({
     id: 'guided-create',
     transport,
@@ -335,14 +335,14 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
           <>
             <div style={{
               padding: '16px 20px 12px',
-              borderBottom: '1px solid var(--gray-a4)',
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
               flexShrink: 0,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'flex-start',
             }}>
               <div>
-                <Dialog.Title size="4" style={{ fontFamily: 'var(--font-display)', margin: 0 }}>
+                <Dialog.Title size="4" style={{ fontFamily: 'var(--font-body)', fontWeight: 600, margin: 0 }}>
                   AI-Guided Canvas
                 </Dialog.Title>
                 <Dialog.Description size="1" style={{ color: 'var(--foreground-muted)', marginTop: '4px' }}>
@@ -397,18 +397,18 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                     style={{
                       background: session.status === 'completed'
-                        ? 'rgba(52, 211, 153, 0.1)'
+                        ? 'rgba(34, 197, 94, 0.1)'
                         : 'rgba(255, 255, 255, 0.03)',
                       border: session.status === 'completed'
-                        ? '1px solid rgba(52, 211, 153, 0.2)'
-                        : '1px solid var(--gray-a4)',
+                        ? '1px solid rgba(34, 197, 94, 0.2)'
+                        : '1px solid rgba(255, 255, 255, 0.06)',
                     }}>
                     {session.status === 'completed' ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(52, 211, 153)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--state-healthy)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     ) : (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gray-a9)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--foreground-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                       </svg>
                     )}
@@ -428,7 +428,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
                       e.stopPropagation();
                       deleteSession(session.id);
                     }}
-                    className="opacity-0 group-hover:opacity-100 shrink-0 w-6 h-6 flex items-center justify-center rounded text-foreground-muted/40 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                    className="opacity-0 group-hover:opacity-100 shrink-0 w-6 h-6 flex items-center justify-center rounded text-foreground-muted/40 hover:text-state-critical hover:bg-state-critical/10 transition-all"
                     aria-label="Delete session"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -444,11 +444,11 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
           <>
             {/* ===== Chat View ===== */}
 
-            {/* Header — only show during chatting */}
+            {/* Header - only show during chatting */}
             {creationState === 'chatting' && (
               <div style={{
                 padding: '16px 20px 12px',
-                borderBottom: '1px solid var(--gray-a4)',
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
                 flexShrink: 0,
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -467,7 +467,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
                     </button>
                   )}
                   <div>
-                    <Dialog.Title size="4" style={{ fontFamily: 'var(--font-display)', margin: 0 }}>
+                    <Dialog.Title size="4" style={{ fontFamily: 'var(--font-body)', fontWeight: 600, margin: 0 }}>
                       AI-Guided Canvas
                     </Dialog.Title>
                     <Dialog.Description size="1" style={{ color: 'var(--foreground-muted)', marginTop: '4px' }}>
@@ -503,14 +503,14 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
                     className="w-16 h-16 rounded-2xl flex items-center justify-center"
                     style={{
                       background: creationState === 'done'
-                        ? 'linear-gradient(135deg, rgba(52, 211, 153, 0.15), rgba(52, 211, 153, 0.05))'
-                        : 'linear-gradient(135deg, var(--chroma-indigo), var(--chroma-violet))',
+                        ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05))'
+                        : 'linear-gradient(135deg, var(--chroma-indigo), var(--chroma-pink))',
                       opacity: creationState === 'done' ? 1 : 0.15,
                     }}
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
                     {creationState === 'done' ? (
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgb(52, 211, 153)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--state-healthy)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     ) : (
@@ -526,7 +526,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
 
                 {/* Title */}
                 <div className="text-center">
-                  <p className="text-base font-display-small" style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+                  <p className="text-base" style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}>
                     {creationState === 'done' ? 'Canvas ready!' : canvasTitle || 'Building your canvas'}
                   </p>
                   <p className="text-xs text-foreground-muted mt-1.5">
@@ -544,7 +544,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
                         key={i}
                         className="w-1.5 h-1.5 rounded-full transition-all duration-500"
                         style={{
-                          background: i <= creationStep ? 'var(--chroma-indigo)' : 'var(--gray-a5)',
+                          background: i <= creationStep ? 'var(--chroma-indigo)' : 'rgba(255,255,255,0.08)',
                           transform: i === creationStep ? 'scale(1.3)' : 'scale(1)',
                         }}
                       />
@@ -554,15 +554,15 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
               </div>
             ) : creationState === 'error' ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-4 px-8 text-center">
-                <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgb(248, 113, 113)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <div className="w-12 h-12 rounded-xl bg-state-critical/10 flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--state-critical)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" />
                     <line x1="15" y1="9" x2="9" y2="15" />
                     <line x1="9" y1="9" x2="15" y2="15" />
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm text-red-400 mb-1">Something went wrong</p>
+                  <p className="text-sm text-state-critical mb-1">Something went wrong</p>
                   <p className="text-xs text-foreground-muted">{errorMessage}</p>
                 </div>
                 <button
@@ -593,7 +593,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
                       </svg>
                     </div>
                     <span className="text-sm text-foreground-muted leading-relaxed">
-                      Tell me about your startup idea — what problem are you solving and for whom?
+                      Tell me about your startup idea - what problem are you solving and for whom?
                     </span>
                   </div>
                 ) : (
