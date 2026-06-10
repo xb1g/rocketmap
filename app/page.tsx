@@ -155,55 +155,39 @@ function TopNav() {
     >
       <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3 group cursor-pointer">
-          {/* Logo mark: compass rose + grid — the navigator's instrument */}
+          {/* Logo mark: wax seal stamp — irregular edge, hand-pressed */}
           <div className="relative w-8 h-8 shrink-0">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 32 32"
-              fill="none"
-              className="drop-shadow-[0_0_10px_rgba(52,182,74,0.35)] group-hover:drop-shadow-[0_0_16px_rgba(52,182,74,0.55)] transition-all duration-500"
-            >
-              {/* Outer ring */}
-              <circle
-                cx="16"
-                cy="16"
-                r="14"
-                stroke="rgba(52,182,74,0.6)"
-                strokeWidth="1.5"
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+              {/* Seal body — imperfect circle like hand-pressed wax */}
+              <path
+                d="M16 2.2c1.8-.1 3.6.4 5.1 1.2 1.4.7 2.6 1.8 3.6 3.1.9 1.2 1.5 2.6 1.8 4.1.3 1.5.2 3-.2 4.4-.4 1.5-1.1 2.8-2.1 3.9-1 1.2-2.3 2.1-3.7 2.7-1.6.7-3.3 1-5 1-1.7 0-3.4-.4-4.9-1.2-1.3-.7-2.5-1.7-3.4-2.9-.9-1.2-1.5-2.6-1.8-4.1-.3-1.5-.2-3 .2-4.4.4-1.4 1.1-2.7 2-3.8 1-1.2 2.2-2.1 3.6-2.8 1.3-.6 2.7-1 4.2-1.1.2 0 .4 0 .6-.1z"
+                fill="rgba(52,182,74,0.1)"
+                stroke="rgba(52,182,74,0.4)"
+                strokeWidth="1"
+              />
+              {/* Impression ring — stamped into wax */}
+              <path
+                d="M16 5.8c1.4-.1 2.8.3 4 1 1.1.6 2 1.5 2.7 2.6.6 1 .9 2.1.9 3.3 0 1.2-.3 2.3-.9 3.3-.7 1-1.6 1.8-2.7 2.4-1.2.6-2.6 1-4 1-1.4 0-2.8-.3-4-1-1.1-.6-2-1.4-2.6-2.4-.6-1-.9-2.1-.9-3.3 0-1.2.3-2.3.8-3.3.6-1.1 1.5-2 2.6-2.6 1.2-.7 2.6-1.1 4.1-1z"
+                stroke="rgba(52,182,74,0.2)"
+                strokeWidth="0.75"
                 fill="none"
               />
-              {/* Inner ring */}
-              <circle
-                cx="16"
-                cy="16"
-                r="10"
-                stroke="rgba(52,182,74,0.25)"
-                strokeWidth="1"
-                fill="none"
-              />
-              {/* Cross hairs */}
-              <path
-                d="M16 4v4M16 24v4M4 16h4M24 16h4"
-                stroke="rgba(52,182,74,0.35)"
-                strokeWidth="1"
-                strokeLinecap="round"
-              />
-              {/* North needle */}
-              <path
-                d="M16 7l-2.5 7h5z"
-                fill="rgba(52,182,74,0.9)"
-              />
-              {/* South needle */}
-              <path
-                d="M16 25l2.5-7h-5z"
-                fill="rgba(52,182,74,0.3)"
-              />
-              {/* Center dot */}
-              <circle cx="16" cy="16" r="2" fill="rgba(52,182,74,0.8)" />
+              {/* Serif R initial — like an illuminated manuscript */}
+              <text
+                x="16"
+                y="21.5"
+                textAnchor="middle"
+                fontFamily="Georgia, 'Crimson Text', serif"
+                fontSize="13.5"
+                fontWeight="700"
+                fill="rgba(52,182,74,0.7)"
+                style={{ letterSpacing: '-0.02em' }}
+              >
+                R
+              </text>
             </svg>
           </div>
-          <span className="font-display font-bold text-lg tracking-tight text-foreground group-hover:text-verdigris-action transition-colors duration-300">
+          <span className="font-display font-bold text-lg tracking-tight text-foreground">
             RocketMap
           </span>
         </div>
@@ -371,12 +355,30 @@ function Footer() {
       <div className="max-w-[1200px] mx-auto px-6 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-3">
           <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="14" stroke="rgba(52,182,74,0.5)" strokeWidth="1.5" fill="none" />
-            <circle cx="16" cy="16" r="10" stroke="rgba(52,182,74,0.2)" strokeWidth="1" fill="none" />
-            <path d="M16 4v4M16 24v4M4 16h4M24 16h4" stroke="rgba(52,182,74,0.3)" strokeWidth="1" strokeLinecap="round" />
-            <path d="M16 7l-2.5 7h5z" fill="rgba(52,182,74,0.8)" />
-            <path d="M16 25l2.5-7h-5z" fill="rgba(52,182,74,0.25)" />
-            <circle cx="16" cy="16" r="2" fill="rgba(52,182,74,0.7)" />
+            <path
+              d="M16 2.2c1.8-.1 3.6.4 5.1 1.2 1.4.7 2.6 1.8 3.6 3.1.9 1.2 1.5 2.6 1.8 4.1.3 1.5.2 3-.2 4.4-.4 1.5-1.1 2.8-2.1 3.9-1 1.2-2.3 2.1-3.7 2.7-1.6.7-3.3 1-5 1-1.7 0-3.4-.4-4.9-1.2-1.3-.7-2.5-1.7-3.4-2.9-.9-1.2-1.5-2.6-1.8-4.1-.3-1.5-.2-3 .2-4.4.4-1.4 1.1-2.7 2-3.8 1-1.2 2.2-2.1 3.6-2.8 1.3-.6 2.7-1 4.2-1.1.2 0 .4 0 .6-.1z"
+              fill="rgba(52,182,74,0.1)"
+              stroke="rgba(52,182,74,0.4)"
+              strokeWidth="1"
+            />
+            <path
+              d="M16 5.8c1.4-.1 2.8.3 4 1 1.1.6 2 1.5 2.7 2.6.6 1 .9 2.1.9 3.3 0 1.2-.3 2.3-.9 3.3-.7 1-1.6 1.8-2.7 2.4-1.2.6-2.6 1-4 1-1.4 0-2.8-.3-4-1-1.1-.6-2-1.4-2.6-2.4-.6-1-.9-2.1-.9-3.3 0-1.2.3-2.3.8-3.3.6-1.1 1.5-2 2.6-2.6 1.2-.7 2.6-1.1 4.1-1z"
+              stroke="rgba(52,182,74,0.2)"
+              strokeWidth="0.75"
+              fill="none"
+            />
+            <text
+              x="16"
+              y="21.5"
+              textAnchor="middle"
+              fontFamily="Georgia, 'Crimson Text', serif"
+              fontSize="13.5"
+              fontWeight="700"
+              fill="rgba(52,182,74,0.7)"
+              style={{ letterSpacing: '-0.02em' }}
+            >
+              R
+            </text>
           </svg>
           <span className="font-display font-semibold text-sm text-foreground/80">
             RocketMap
