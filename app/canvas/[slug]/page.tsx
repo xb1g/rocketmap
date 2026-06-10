@@ -21,6 +21,7 @@ import type {
 import { BLOCK_DEFINITIONS } from "@/app/components/canvas/constants";
 import { CanvasClient } from "./CanvasClient";
 import { getUserIdFromCanvasLike, listCanvasesByOwner } from "@/lib/utils";
+import { normalizeViabilityData } from "@/lib/utils/viability";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -388,7 +389,9 @@ export default async function CanvasPage({ params }: PageProps) {
   const viabilityDataJsonRaw = readString(canvas.viabilityDataJson);
   if (viabilityDataJsonRaw) {
     try {
-      viabilityData = JSON.parse(viabilityDataJsonRaw) as ViabilityData;
+      viabilityData = normalizeViabilityData(
+        JSON.parse(viabilityDataJsonRaw) as Partial<ViabilityData>,
+      );
     } catch {
       // ignore parse errors
     }

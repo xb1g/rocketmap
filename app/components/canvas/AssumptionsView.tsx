@@ -9,6 +9,8 @@ import { EvidenceCollectionModal } from "./EvidenceCollectionModal";
 
 interface AssumptionsViewProps {
   canvasId: string;
+  selectedAssumptionId?: string | null;
+  onAssumptionsChanged?: () => void;
 }
 
 type AnalysisStep = "idle" | "loading" | "analyzing" | "saving" | "done" | "error";
@@ -176,7 +178,11 @@ function ThinkingPanel({ text }: { text: string }) {
   );
 }
 
-export function AssumptionsView({ canvasId }: AssumptionsViewProps) {
+export function AssumptionsView({
+  canvasId,
+  selectedAssumptionId = null,
+  onAssumptionsChanged,
+}: AssumptionsViewProps) {
   const [assumptions, setAssumptions] = useState<Assumption[]>([]);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<AnalysisStep>("idle");
@@ -209,6 +215,26 @@ export function AssumptionsView({ canvasId }: AssumptionsViewProps) {
     const id = setTimeout(() => fetchAssumptions(), 0);
     return () => clearTimeout(id);
   }, [fetchAssumptions]);
+
+  const notifyChanged = useCallback(async () => {
+    await fetchAssumptions();
+    onAssumptionsChanged?.();
+  }, [fetchAssumptions, onAssumptionsChanged]);
+
+  const lastDeepLinkRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedAssumptionId || assumptions.length === 0) return;
+    if (lastDeepLinkRef.current === selectedAssumptionId) return;
+    const target = assumptions.find((a) => a.$id === selectedAssumptionId);
+    if (!target) return;
+    lastDeepLinkRef.current = selectedAssumptionId;
+    const id = setTimeout(() => {
+      setSelectedAssumption(target);
+      setShowEvidenceModal(true);
+    }, 0);
+    return () => clearTimeout(id);
+  }, [selectedAssumptionId, assumptions]);
 
   const handleAnalyze = useCallback(async () => {
     if (step !== "idle" && step !== "done" && step !== "error") return;
@@ -430,7 +456,7 @@ export function AssumptionsView({ canvasId }: AssumptionsViewProps) {
         canvasId={canvasId}
         isOpen={showManualModal}
         onClose={() => setShowManualModal(false)}
-        onCreated={fetchAssumptions}
+        onCreated={notifyChanged}
       />
 
       {selectedAssumption && (
@@ -443,7 +469,7 @@ export function AssumptionsView({ canvasId }: AssumptionsViewProps) {
               setShowExperimentModal(false);
               setSelectedAssumption(null);
             }}
-            onCreated={fetchAssumptions}
+            onCreated={notifyChanged}
           />
           <EvidenceCollectionModal
             assumption={selectedAssumption}
@@ -453,7 +479,7 @@ export function AssumptionsView({ canvasId }: AssumptionsViewProps) {
               setShowEvidenceModal(false);
               setSelectedAssumption(null);
             }}
-            onUpdated={fetchAssumptions}
+            onUpdated={notifyChanged}
           />
         </>
       )}

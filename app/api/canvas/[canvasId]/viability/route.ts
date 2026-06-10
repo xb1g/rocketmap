@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Query } from "node-appwrite";
 import { generateText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { requireAuth } from "@/lib/appwrite-server";
@@ -7,11 +8,24 @@ import {
   serverTablesDB,
   DATABASE_ID,
   CANVASES_TABLE_ID,
+  ASSUMPTIONS_TABLE_ID,
 } from "@/lib/appwrite";
 import { getCanvasBlocks } from "@/lib/ai/canvas-state";
 import { getViabilityPrompt } from "@/lib/ai/prompts";
 import { recordAnthropicUsageForUser } from "@/lib/ai/user-preferences";
-import type { BlockData, BlockType, CanvasData, ViabilityData } from "@/lib/types/canvas";
+import { parseAssumptionRow } from "@/lib/utils/assumptions";
+import {
+  computeWeightedScore,
+  mergeUnlockStepsWithAssumptions,
+} from "@/lib/utils/viability";
+import type {
+  Assumption,
+  BlockData,
+  BlockType,
+  CanvasData,
+  ViabilityData,
+  ViabilityUnlockStep,
+} from "@/lib/types/canvas";
 
 const deepseekFlash = createOpenAI({
   baseURL: "https://api.deepseek.com/v1",
@@ -39,7 +53,7 @@ function getSegmentsText(block: BlockData): string {
         segment.estimatedSize,
       ]
         .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
-        .join(" | ")
+        .join(" | "),
     )
     .filter((line) => line.length > 0)
     .join(" \n");
@@ -54,6 +68,32 @@ function getBlockViabilityText(block: BlockData): string {
   }
 
   return baseText;
+}
+
+function buildUnlockSteps(
+  rawSteps: Array<{
+    assumptionId: string;
+    upliftPoints: number;
+    suggestedTest: string;
+  }>,
+  assumptions: Assumption[],
+): ViabilityUnlockStep[] {
+  const byId = new Map(assumptions.map((a) => [a.$id, a]));
+
+  return rawSteps
+    .filter((step) => byId.has(step.assumptionId))
+    .map((step) => {
+      const assumption = byId.get(step.assumptionId)!;
+      return {
+        assumptionId: step.assumptionId,
+        assumption: assumption.statement,
+        blockTypes: assumption.blockTypes,
+        riskLevel: assumption.riskLevel,
+        status: assumption.status,
+        upliftPoints: Math.min(30, Math.max(1, Math.round(step.upliftPoints))),
+        suggestedTest: step.suggestedTest,
+      };
+    });
 }
 
 export async function POST(_request: Request, context: RouteContext) {
@@ -72,7 +112,18 @@ export async function POST(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const blocks = await getCanvasBlocks(canvasId, user.$id);
+    const [blocks, assumptionsResult] = await Promise.all([
+      getCanvasBlocks(canvasId, user.$id),
+      serverTablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: ASSUMPTIONS_TABLE_ID,
+        queries: [Query.equal("canvas", canvasId), Query.limit(200)],
+      }),
+    ]);
+
+    const assumptions = assumptionsResult.rows.map((row) =>
+      parseAssumptionRow(row as unknown as Record<string, unknown>),
+    );
 
     if (blocks.length < 9) {
       return NextResponse.json({ error: "All 9 blocks must exist" }, { status: 400 });
@@ -80,19 +131,19 @@ export async function POST(_request: Request, context: RouteContext) {
 
     const totalContent = blocks.reduce(
       (sum, b) => sum + getBlockViabilityText(b).trim().length,
-      0
+      0,
     );
     if (totalContent < 50) {
       return NextResponse.json(
         { error: "Canvas needs more content before calculating viability" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const result = await generateText({
       model: deepseekFlash,
       temperature: 0.3,
-      prompt: getViabilityPrompt(blocks),
+      prompt: getViabilityPrompt(blocks, assumptions),
     });
 
     void recordAnthropicUsageForUser(user.$id, {
@@ -101,7 +152,6 @@ export async function POST(_request: Request, context: RouteContext) {
       totalTokens: (result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0),
     });
 
-    // Extract JSON from the response text
     const text = result.text;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
@@ -109,25 +159,60 @@ export async function POST(_request: Request, context: RouteContext) {
     }
 
     const obj = JSON.parse(jsonMatch[0]) as {
-      score: number;
       breakdown: { assumptions: number; market: number; unmetNeed: number };
-      reasoning: string;
+      reasoning?: string;
+      verdict?: string;
+      factorsUp?: string[];
+      factorsDown?: string[];
+      ceiling?: string;
+      whatAbout?: string;
       validatedAssumptions?: Array<{
         blockType: string;
         assumption: string;
         status: "validated" | "invalidated" | "untested";
         evidence: string;
       }>;
+      unlockSteps?: Array<{
+        assumptionId: string;
+        upliftPoints: number;
+        suggestedTest: string;
+      }>;
     };
 
-    const { assumptions, market, unmetNeed } = obj.breakdown;
-    const calculatedScore = Math.round(assumptions * 0.4 + market * 0.3 + unmetNeed * 0.3);
+    const baseScore = computeWeightedScore(obj.breakdown);
+    const unlockSteps = buildUnlockSteps(obj.unlockSteps ?? [], assumptions);
+    const mergedSteps = mergeUnlockStepsWithAssumptions(unlockSteps, assumptions);
+
+    const validatedUplift = mergedSteps
+      .filter((s) => s.status === "validated")
+      .reduce((sum, s) => sum + s.upliftPoints, 0);
+    const totalUplift = mergedSteps.reduce((sum, s) => sum + s.upliftPoints, 0);
+
+    const currentScore = Math.min(100, baseScore + validatedUplift);
+    let potentialScore = Math.min(
+      100,
+      mergedSteps.length > 0 ? baseScore + totalUplift : currentScore,
+    );
+    potentialScore = Math.max(currentScore, potentialScore);
+
+    if (potentialScore - currentScore > 60) {
+      potentialScore = Math.min(100, currentScore + 60);
+    }
+
+    const reasoning = obj.reasoning ?? obj.verdict ?? "";
 
     const viabilityData: ViabilityData = {
-      score: calculatedScore,
+      score: currentScore,
+      potentialScore,
       breakdown: obj.breakdown,
-      reasoning: obj.reasoning,
-      validatedAssumptions: (obj.validatedAssumptions ?? []).map(item => ({
+      reasoning,
+      verdict: obj.verdict ?? reasoning,
+      factorsUp: obj.factorsUp ?? [],
+      factorsDown: obj.factorsDown ?? [],
+      ceiling: obj.ceiling ?? "",
+      whatAbout: obj.whatAbout ?? "",
+      unlockSteps: mergedSteps,
+      validatedAssumptions: (obj.validatedAssumptions ?? []).map((item) => ({
         ...item,
         blockType: item.blockType as BlockType,
       })),
@@ -139,7 +224,7 @@ export async function POST(_request: Request, context: RouteContext) {
       tableId: CANVASES_TABLE_ID,
       rowId: canvasId,
       data: {
-        viabilityScore: calculatedScore,
+        viabilityScore: currentScore,
         viabilityDataJson: JSON.stringify(viabilityData),
         viabilityCalculatedAt: viabilityData.calculatedAt,
       },

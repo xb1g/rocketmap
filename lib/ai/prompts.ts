@@ -622,69 +622,94 @@ Generate content as if an experienced strategist drafted it:
    - Example: value_prop: [{ text: "Cut churn by 30% for high-volume cafes", segmentRefs: ["SMB cafes in Bangkok"] }]`;
 
 /**
- * Generate viability analysis prompt for Opus 4.6
- * Analyzes business model across 3 factors: tested assumptions, market validation, unmet need
+ * Generate viability analysis prompt.
+ * Research-first verdict + evidence/unlock path from tracked assumptions.
  */
-export function getViabilityPrompt(blocks: BlockData[]): string {
-  return `You are analyzing a startup's Business Model Canvas for viability.
+export function getViabilityPrompt(
+  blocks: BlockData[],
+  assumptions: Array<{
+    $id: string;
+    statement: string;
+    status: string;
+    riskLevel: string;
+    blockTypes: string[];
+  }> = [],
+): string {
+  const canvasText = blocks
+    .map(
+      (b) =>
+        `[${b.blockType}]: ${b.content.bmc || b.content.lean || "(empty)"}`,
+    )
+    .join("\n");
 
-CANVAS CONTEXT:
-${blocks.map(b => `
-Block: ${b.blockType}
-Content: ${b.content.bmc || b.content.lean}
-AI Analysis: ${b.aiAnalysis ? JSON.stringify(b.aiAnalysis) : 'None'}
-Confidence: ${b.confidenceScore}, Risk: ${b.riskScore}
-`).join('\n')}
+  const assumptionsContext =
+    assumptions.length > 0
+      ? assumptions
+          .map(
+            (a) =>
+              `- [${a.$id}] (${a.riskLevel} risk, ${a.status}) ${a.statement} [blocks: ${a.blockTypes.join(", ") || "general"}]`,
+          )
+          .join("\n")
+      : "No assumptions extracted yet — infer critical untested assumptions from block content.";
 
-YOUR TASK:
-Grade viability (0-100%) across THREE factors:
+  return `You are a startup analyst giving an honest verdict on a business idea. Think like an experienced operator or investor — not a cheerleader.
 
-1. TESTED ASSUMPTIONS (0-100%):
-   - Review all assumptions from the 9 blocks
-   - Identify which are validated vs untested vs invalidated
-   - Score = (validated / total) * quality_weight
-   - Critical assumptions (customer need, pricing) weighted higher
-   - Look for evidence of testing (customer interviews, MVP results, etc.)
+STEP 1 — IDENTIFY THE BUSINESS:
+Read the canvas and state the core business in one sentence internally. What market? What model?
 
-2. MARKET VALIDATION (0-100%):
-   - TAM/SAM/SOM estimates quality (if available)
-   - Customer segment definition clarity and specificity
-   - Competitive landscape understanding
-   - Evidence of market research and data sources
-   - Market size supports revenue projections
+STEP 2 — APPLY WORLD KNOWLEDGE:
+Before scoring, consider what you know about this business type:
+- Comparable companies — succeeded or failed, and why
+- Typical unit economics, sales cycles, margins
+- Common failure modes in this space
+- Market maturity and entrenched players
 
-3. UNMET NEED (0-100%):
-   - Value proposition strength and clarity
-   - Problem-solution fit articulation
-   - Customer pain points depth
-   - Differentiation from competitors
-   - Willingness to pay indicators
+STEP 3 — CANVAS AS EXECUTION EVIDENCE:
+Does the canvas reflect realistic understanding? Where does it hold up vs contradict industry reality?
 
-SCORING RULES:
-- Be critical and evidence-based
-- Untested assumptions reduce score significantly
-- Vague statements reduce score
-- Contradictions between blocks reduce score
-- Evidence of validation increases score
+CANVAS:
+${canvasText}
 
-RETURN JSON (strictly follow this structure):
+TRACKED ASSUMPTIONS:
+${assumptionsContext}
+
+EVIDENCE FRAMING:
+Low scores are expected for untested ideas — frame as evidence gaps, not failure.
+Also identify UNLOCKABLE POTENTIAL via assumption tests (see unlockSteps below).
+
+SCORING (0-100 each, evidence TODAY only):
+- assumptions: validated assumptions vs untested/refuted (untested = gap, not penalty in verdict tone)
+- market: real addressable market, comparables, competitive landscape
+- unmetNeed: problem pain, differentiation, willingness to pay
+
+UNLOCK PATH:
+- Pick top 4-6 UNTESTED assumptions from tracked list (prioritize high risk)
+- Use exact assumptionId from list above
+- upliftPoints: 8-20 each; total uplift should bridge evidence gap to realistic potential
+- suggestedTest: cheapest/fastest validation
+
+TONE: Direct and honest. Not harsh, not encouraging.
+
+RETURN ONLY JSON — no markdown:
 {
-  "score": 73,
-  "breakdown": {
-    "assumptions": 80,
-    "market": 70,
-    "unmetNeed": 69
-  },
-  "reasoning": "Detailed explanation of the score...",
+  "breakdown": { "assumptions": 15, "market": 25, "unmetNeed": 22 },
+  "verdict": "2-3 sentences. Core strength, biggest structural risk, what determines outcome.",
+  "factorsUp": ["Strength grounded in world knowledge", "Another strength"],
+  "factorsDown": ["Risk grounded in market reality", "Another risk"],
+  "ceiling": "One sentence on upside potential if key tensions resolve.",
+  "whatAbout": "One open question surfacing the biggest unresolved tension — not a suggestion.",
+  "reasoning": "Supporting detail on evidence gaps and unlock logic.",
   "validatedAssumptions": [
-    {
-      "blockType": "customer_segments",
-      "assumption": "Early adopters are willing to pay",
-      "status": "validated",
-      "evidence": "Customer interviews confirm..."
-    }
+    { "blockType": "customer_segments", "assumption": "...", "status": "untested", "evidence": "..." }
+  ],
+  "unlockSteps": [
+    { "assumptionId": "exact_id_from_list", "upliftPoints": 18, "suggestedTest": "5 customer interviews" }
   ]
 }
 
-WEIGHTING: assumptions (40%), market (30%), unmetNeed (30%)`;
+Rules:
+- factorsUp/factorsDown: 2-4 items each, grounded in world knowledge
+- whatAbout: one question only, surfaces core tension
+- breakdown scores = evidence today; do NOT inflate for untested assumptions
+- WEIGHTING for score: assumptions 40%, market 30%, unmetNeed 30%`;
 }

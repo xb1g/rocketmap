@@ -27,6 +27,7 @@ interface DashboardClientProps {
     blocksCount: number;
     filledBlocks: BlockType[];
     viabilityScore: number | null;
+    viabilityPotentialScore: number | null;
   }[];
   stats: {
     totalCanvases: number;

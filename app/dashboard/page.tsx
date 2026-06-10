@@ -60,6 +60,7 @@ export default async function DashboardPage() {
     blocksCount: number;
     filledBlocks: BlockType[];
     viabilityScore: number | null;
+    viabilityPotentialScore: number | null;
   }[] = [];
   try {
     const canvasesResult = await listCanvasesByOwner(user.$id, [
@@ -73,6 +74,7 @@ export default async function DashboardPage() {
         "$createdAt",
         "isPublic",
         "viabilityScore",
+        "viabilityDataJson",
       ]),
       Query.limit(25),
     ]);
@@ -111,6 +113,24 @@ export default async function DashboardPage() {
           // Blocks collection might not exist
         }
         const d = doc as Record<string, unknown>;
+        let viabilityPotentialScore: number | null = null;
+        const viabilityDataJson = d.viabilityDataJson as string | undefined;
+        if (viabilityDataJson) {
+          try {
+            const parsed = JSON.parse(viabilityDataJson) as {
+              potentialScore?: number;
+              score?: number;
+            };
+            viabilityPotentialScore =
+              typeof parsed.potentialScore === "number"
+                ? parsed.potentialScore
+                : typeof parsed.score === "number"
+                  ? parsed.score
+                  : null;
+          } catch {
+            viabilityPotentialScore = null;
+          }
+        }
         return {
           $id: doc.$id,
           title: d.title as string,
@@ -122,6 +142,7 @@ export default async function DashboardPage() {
           blocksCount: filledBlocks.length,
           filledBlocks,
           viabilityScore: (d.viabilityScore as number) ?? null,
+          viabilityPotentialScore,
         };
       }),
     );

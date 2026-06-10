@@ -10,9 +10,11 @@ interface CanvasTabsProps {
   canvasId: string;
   allBlocksFilled: boolean;
   viabilityData: ViabilityData | null;
+  viabilityOutdated?: boolean;
   readOnly?: boolean;
   onExplainViability: () => void;
   onViabilityDataChange?: (data: ViabilityData) => void;
+  onNavigateToAssumption?: (assumptionId: string) => void;
   economicsGenerating?: boolean;
 }
 
@@ -37,9 +39,11 @@ export function CanvasTabs({
   canvasId,
   allBlocksFilled,
   viabilityData,
+  viabilityOutdated = false,
   readOnly = false,
   onExplainViability,
   onViabilityDataChange,
+  onNavigateToAssumption,
   economicsGenerating = false,
 }: CanvasTabsProps) {
   return (
@@ -93,9 +97,11 @@ export function CanvasTabs({
         canvasId={canvasId}
         allBlocksFilled={allBlocksFilled}
         initialData={viabilityData}
+        isOutdated={viabilityOutdated}
         readOnly={readOnly}
         onExplainClick={onExplainViability}
         onDataChange={onViabilityDataChange}
+        onNavigateToAssumption={onNavigateToAssumption}
       />
     </div>
   );

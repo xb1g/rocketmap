@@ -1348,6 +1348,117 @@ body {
   letter-spacing: 0.04em;
 }
 
+.canvas-card-viability-ring--dual {
+  background: conic-gradient(
+    var(--viability-color, rgba(99, 102, 241, 0.7)) 0% var(--viability-pct, 0%),
+    rgba(255, 255, 255, 0.06) var(--viability-pct, 0%) var(--viability-potential-pct, 0%),
+    rgba(99, 102, 241, 0.15) var(--viability-potential-pct, 0%) 100%
+  );
+}
+
+.canvas-card-viability-ring--dual::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 1px dashed rgba(99, 102, 241, 0.25);
+  pointer-events: none;
+}
+
+/* Canvas tab evidence badge: current → potential */
+.viability-potential-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  overflow: hidden;
+}
+
+.viability-potential-badge:hover {
+  transform: scale(1.02);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.viability-potential-badge--calm {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.viability-potential-badge--healthy {
+  border-color: rgba(16, 185, 129, 0.35);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+}
+
+.viability-potential-badge--warning {
+  border-color: rgba(245, 158, 11, 0.4);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.15);
+}
+
+.viability-potential-current {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #fff;
+  position: relative;
+  z-index: 1;
+}
+
+.viability-potential-arrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--foreground-muted);
+  position: relative;
+  z-index: 1;
+}
+
+.viability-potential-ceiling {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--chroma-cyan), var(--chroma-indigo));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  position: relative;
+  z-index: 1;
+}
+
+.viability-potential-track {
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 0.25rem;
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.viability-potential-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.viability-potential-ghost {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: 1px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(99, 102, 241, 0.5) 0 3px,
+    transparent 3px 6px
+  );
+}
+
 .canvas-blocks-mini {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

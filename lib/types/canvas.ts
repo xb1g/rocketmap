@@ -365,12 +365,29 @@ export interface ValidatedAssumption {
   evidence: string;
 }
 
+export interface ViabilityUnlockStep {
+  assumptionId: string;
+  assumption: string;
+  blockTypes: BlockType[];
+  riskLevel: AssumptionRiskLevel;
+  status: AssumptionStatus;
+  upliftPoints: number;
+  suggestedTest: string;
+}
+
 export interface ViabilityData {
-  score: number;            // 0-100 overall
+  score: number;              // current evidence (today)
+  potentialScore: number;     // score if remaining unlock steps validate
   breakdown: ViabilityBreakdown;
-  reasoning: string;        // Opus explanation
+  reasoning: string;          // legacy detail; prefer verdict when present
+  verdict: string;            // 2-3 sentence honest assessment
+  factorsUp: string[];        // strengths grounded in world knowledge
+  factorsDown: string[];      // risks or structural weaknesses
+  ceiling: string;            // one sentence on upside potential
+  whatAbout: string;          // open question surfacing core tension
+  unlockSteps: ViabilityUnlockStep[];
   validatedAssumptions: ValidatedAssumption[];
-  calculatedAt: string;     // ISO timestamp
+  calculatedAt: string;
 }
 
 // ─── Unit Economics Types ─────────────────────────────────────────────────────

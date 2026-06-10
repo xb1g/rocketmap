@@ -5,6 +5,7 @@ import {
   useCallback,
   useRef,
   useEffect,
+  useMemo,
   type CSSProperties,
 } from "react";
 import { useRouter } from "next/navigation";
@@ -24,7 +25,9 @@ import type {
   RiskMetrics,
   Segment,
   ViabilityData,
+  Assumption,
 } from "@/lib/types/canvas";
+import { computeLiveScore } from "@/lib/utils/viability";
 import type { HoveredItem } from "@/app/components/canvas/ConnectionOverlay";
 import type { ConsistencyData } from "@/app/components/canvas/ConsistencyReport";
 import {
@@ -127,7 +130,15 @@ export function CanvasClient({
   const [viabilityData, setViabilityData] = useState<ViabilityData | null>(
     initialViabilityData ?? null,
   );
-  const [, setViabilityOutdated] = useState(false);
+  const [viabilityOutdated, setViabilityOutdated] = useState(false);
+  const viabilityBlocksFingerprintRef = useRef<string | null>(null);
+  const viabilityAssumptionsFingerprintRef = useRef<string | null>(null);
+  const viabilityAssumptionsRecalcTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const [selectedAssumptionId, setSelectedAssumptionId] = useState<string | null>(
+    null,
+  );
   const [riskHeatmap, setRiskHeatmap] = useState<Record<
     BlockType,
     RiskMetrics
@@ -203,11 +214,32 @@ export function CanvasClient({
     }
   }, [canvasId, isZoomStorageReady, textZoom]);
 
-  // Viability recalculation on block changes
+  const blocksFingerprint = useMemo(
+    () =>
+      [...blocks.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(
+          ([type, block]) =>
+            `${type}:${block.content.bmc}|${block.content.lean}`,
+        )
+        .join(";"),
+    [blocks],
+  );
+
+  // Viability recalculation on block changes (debounced, skip initial load)
   useEffect(() => {
     if (!viabilityData || readOnly) return;
 
-    // Debounced auto-recalculation (5s)
+    if (viabilityBlocksFingerprintRef.current === null) {
+      viabilityBlocksFingerprintRef.current = blocksFingerprint;
+      return;
+    }
+
+    if (viabilityBlocksFingerprintRef.current === blocksFingerprint) return;
+
+    viabilityBlocksFingerprintRef.current = blocksFingerprint;
+    setViabilityOutdated(true);
+
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(`/api/canvas/${canvasId}/viability`, {
@@ -224,7 +256,75 @@ export function CanvasClient({
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [blocks, viabilityData, canvasId, readOnly]);
+  }, [blocksFingerprint, viabilityData, canvasId, readOnly]);
+
+  const refreshLiveViabilityScore = useCallback(
+    async (markOutdated = true) => {
+      if (readOnly) return;
+
+      try {
+        const res = await fetch(`/api/canvas/${canvasId}/assumptions`);
+        if (!res.ok) return;
+        const assumptions: Assumption[] = await res.json();
+        const fingerprint = assumptions
+          .map((a) => `${a.$id}:${a.status}`)
+          .sort()
+          .join(";");
+
+        if (viabilityAssumptionsFingerprintRef.current === fingerprint) return;
+        viabilityAssumptionsFingerprintRef.current = fingerprint;
+
+        setViabilityData((prev) => {
+          if (!prev) return prev;
+          return computeLiveScore(prev, assumptions);
+        });
+        if (markOutdated) setViabilityOutdated(true);
+      } catch (err) {
+        console.error("Live viability refresh failed:", err);
+      }
+    },
+    [canvasId, readOnly],
+  );
+
+  const handleAssumptionsChanged = useCallback(() => {
+    void refreshLiveViabilityScore(true);
+
+    if (viabilityAssumptionsRecalcTimerRef.current) {
+      clearTimeout(viabilityAssumptionsRecalcTimerRef.current);
+    }
+    viabilityAssumptionsRecalcTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/canvas/${canvasId}/viability`, {
+          method: "POST",
+        });
+        if (res.ok) {
+          const { viability } = await res.json();
+          setViabilityData(viability);
+          setViabilityOutdated(false);
+          viabilityAssumptionsFingerprintRef.current = null;
+        }
+      } catch (err) {
+        console.error("Assumption-triggered viability recalc failed:", err);
+      }
+    }, 5000);
+  }, [refreshLiveViabilityScore, canvasId]);
+
+  useEffect(() => {
+    if (!viabilityData || readOnly) return;
+
+    if (viabilityAssumptionsFingerprintRef.current !== null) return;
+
+    const timer = setTimeout(() => {
+      void refreshLiveViabilityScore(false);
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [viabilityData, readOnly, refreshLiveViabilityScore]);
+
+  const handleNavigateToAssumption = useCallback((assumptionId: string) => {
+    setSelectedAssumptionId(assumptionId);
+    setActiveTab("assumptions");
+  }, []);
 
   // Save block content
   const saveBlock = useCallback(
@@ -520,17 +620,11 @@ export function CanvasClient({
     setChatMinimized(false);
     setChatTargetBlock(null); // System-level chat
 
-    // Pre-fill message with viability context
-    const message = `Explain my canvas viability score of ${viabilityData.score}% and what I should improve to increase it.
+    const seed = viabilityData.whatAbout?.trim()
+      ? `Evidence score: ${viabilityData.score}/100${viabilityData.potentialScore > viabilityData.score ? ` (potential ${viabilityData.potentialScore})` : ""}\n\n${viabilityData.whatAbout}`
+      : `Explain my canvas evidence score of ${viabilityData.score}% and what I should test to improve it.`;
 
-Current breakdown:
-- Assumptions: ${viabilityData.breakdown.assumptions}%
-- Market: ${viabilityData.breakdown.market}%
-- Unmet Need: ${viabilityData.breakdown.unmetNeed}%
-
-${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
-
-    setPendingChatMessage(message);
+    setPendingChatMessage(seed);
   }, [viabilityData]);
 
   const handleDeepDiveDataChange = useCallback(
@@ -1177,9 +1271,16 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
         canvasId={canvasId}
         allBlocksFilled={allBlocksFilled}
         viabilityData={viabilityData}
+        viabilityOutdated={viabilityOutdated}
         readOnly={readOnly}
         onExplainViability={handleExplainViability}
-        onViabilityDataChange={setViabilityData}
+        onViabilityDataChange={(data) => {
+          setViabilityData(data);
+          setViabilityOutdated(false);
+          viabilityBlocksFingerprintRef.current = blocksFingerprint;
+          viabilityAssumptionsFingerprintRef.current = null;
+        }}
+        onNavigateToAssumption={handleNavigateToAssumption}
         economicsGenerating={economicsGenerating}
       />
 
@@ -1285,7 +1386,13 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
         />
       )}
 
-      {activeTab === "assumptions" && <AssumptionsView canvasId={canvasId} />}
+      {activeTab === "assumptions" && (
+        <AssumptionsView
+          canvasId={canvasId}
+          selectedAssumptionId={selectedAssumptionId}
+          onAssumptionsChanged={handleAssumptionsChanged}
+        />
+      )}
 
       {activeTab === "economics" && (
         <div className="flex-1 overflow-y-auto p-4 md:p-6">

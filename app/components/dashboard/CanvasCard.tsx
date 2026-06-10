@@ -16,6 +16,7 @@ interface CanvasCardProps {
     blocksCount: number;
     filledBlocks: BlockType[];
     viabilityScore: number | null;
+    viabilityPotentialScore: number | null;
   };
   onShare: (slug: string) => void;
   onTogglePublic: (canvasId: string, isPublic: boolean) => void;
@@ -37,7 +38,6 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(days / 30)}mo ago`;
 }
 
-// BMC grid positions for the mini grid — matches standard BMC layout
 const MINI_GRID_BLOCKS: {
   type: BlockType;
   col: string;
@@ -54,18 +54,6 @@ const MINI_GRID_BLOCKS: {
   { type: "revenue_streams", col: "6 / 11", row: "3 / 4" },
 ];
 
-function getViabilityColor(score: number): string {
-  if (score < 50) return "#f43f5e";
-  if (score < 75) return "#f59e0b";
-  return "#10b981";
-}
-
-function getViabilityLabel(score: number): string {
-  if (score < 50) return "Low";
-  if (score < 75) return "Medium";
-  return "High";
-}
-
 export function CanvasCard({
   canvas,
   onShare,
@@ -77,6 +65,8 @@ export function CanvasCard({
   const progressPct = Math.round((canvas.blocksCount / 9) * 100);
   const hasViability = canvas.viabilityScore != null;
   const viabilityScore = canvas.viabilityScore ?? 0;
+  const potentialScore = canvas.viabilityPotentialScore ?? viabilityScore;
+  const hasPotential = potentialScore > viabilityScore;
 
   const handleCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest(".canvas-card-menu")) return;
@@ -89,7 +79,6 @@ export function CanvasCard({
       style={{ position: "relative", cursor: "pointer" }}
       onClick={handleCardClick}
     >
-      {/* Header: title + menu */}
       <div
         style={{
           display: "flex",
@@ -107,7 +96,6 @@ export function CanvasCard({
         </div>
       </div>
 
-      {/* Middle: Mini BMC grid + viability score */}
       <div
         style={{
           display: "flex",
@@ -116,7 +104,6 @@ export function CanvasCard({
           marginBottom: "0.75rem",
         }}
       >
-        {/* Accurate mini BMC grid */}
         <div
           style={{
             display: "grid",
@@ -137,15 +124,17 @@ export function CanvasCard({
           ))}
         </div>
 
-        {/* Viability score */}
         {hasViability ? (
           <div className="canvas-card-viability">
             <div
-              className="canvas-card-viability-ring"
+              className={`canvas-card-viability-ring ${
+                hasPotential ? "canvas-card-viability-ring--dual" : ""
+              }`}
               style={
                 {
-                  "--viability-color": getViabilityColor(viabilityScore),
+                  "--viability-color": "rgba(255, 255, 255, 0.55)",
                   "--viability-pct": `${viabilityScore}%`,
+                  "--viability-potential-pct": `${potentialScore}%`,
                 } as React.CSSProperties
               }
             >
@@ -155,9 +144,11 @@ export function CanvasCard({
             </div>
             <span
               className="canvas-card-viability-label"
-              style={{ color: getViabilityColor(viabilityScore) }}
+              style={{ color: "var(--foreground-muted)" }}
             >
-              {getViabilityLabel(viabilityScore)}
+              {hasPotential
+                ? `${Math.round(viabilityScore)} → ${Math.round(potentialScore)}`
+                : "Evidence"}
             </span>
           </div>
         ) : (
@@ -176,10 +167,8 @@ export function CanvasCard({
           </div>
         )}
 
-        {/* Spacer */}
         <div style={{ flex: 1 }} />
 
-        {/* Block count + progress */}
         <div style={{ textAlign: "right", flexShrink: 0 }}>
           <div
             style={{
@@ -200,7 +189,6 @@ export function CanvasCard({
         </div>
       </div>
 
-      {/* Footer: badges + time */}
       <div
         style={{
           display: "flex",
@@ -217,7 +205,6 @@ export function CanvasCard({
         <span className="canvas-card-meta">{timeAgo(canvas.$updatedAt)}</span>
       </div>
 
-      {/* Dropdown menu */}
       <div
         className="canvas-card-menu"
         style={{
@@ -233,7 +220,7 @@ export function CanvasCard({
             <button
               style={{
                 background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
                 borderRadius: "6px",
                 padding: "0.25rem 0.5rem",
                 color: "var(--foreground-muted)",
