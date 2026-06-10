@@ -36,8 +36,9 @@ function toUIMessages(msgs: { id: string; role: string; content: string; created
                 toolName: p.toolName,
                 toolCallId: p.toolCallId,
                 state: 'output-available',
-                args: p.args ?? {},
-                output: p.result,
+                providerExecuted: true,
+                input: p.args ?? p.result ?? {},
+                output: p.result ?? p.args ?? {},
               };
             }
             return p;

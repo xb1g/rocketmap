@@ -39,18 +39,14 @@ export async function POST(request: Request) {
       `[AI] guided-create | rawUserCount=${rawUserCount}, modelUserCount=${modelUserCount}, forceTool=${shouldForceTool}`,
     );
 
-    // Build params — set toolChoice explicitly when forcing
-    const toolChoice = shouldForceTool
-      ? ({ type: 'tool', toolName: 'generateCanvas' } as const)
-      : undefined;
-
     const result = streamTextWithLogging('guided-create', {
       model: getAnthropicModelForUser(user, 'claude-sonnet-4-5-20250929'),
-      system: ONBOARDING_SYSTEM_PROMPT,
+      system: shouldForceTool
+        ? ONBOARDING_SYSTEM_PROMPT + '\n\nYou have enough information. You MUST call generateCanvas now.'
+        : ONBOARDING_SYSTEM_PROMPT,
       messages: modelMessages,
       tools,
       stopWhen: stepCountIs(1),
-      toolChoice,
     }, {
       onUsage: (usage) => recordAiUsage(user.$id, 'guided-create', usage),
     });
