@@ -1,11 +1,13 @@
 import Link from "next/link";
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { DropdownMenu } from "@radix-ui/themes";
 import type { BlockType, CanvasData } from "@/lib/types/canvas";
 
 interface CanvasCardProps {
   canvas: CanvasData & {
     blocksCount: number;
     filledBlocks: BlockType[];
+    viabilityScore: number | null;
+    viabilityPotentialScore: number | null;
   };
   onShare: (slug: string) => void;
   onTogglePublic: (canvasId: string, isPublic: boolean) => void;
@@ -191,7 +193,7 @@ export function CanvasCard({
           {canvas.isPublic ? "Public" : "Private"}
         </span>
         <span className="mode-badge mode-badge-bmc">BMC</span>
-        <span className="canvas-card-meta">{timeAgo(canvas.$updatedAt)}</span>
+        <span className="canvas-card-meta">{timeAgo(canvas.$updatedAt ?? "")}</span>
       </div>
 
       <div

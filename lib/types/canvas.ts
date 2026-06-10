@@ -107,6 +107,8 @@ export interface CanvasData {
   viabilityScore?: number | null;
   viabilityData?: ViabilityData | null;
   viabilityCalculatedAt?: string | null;
+  $createdAt?: string;
+  $updatedAt?: string;
 }
 
 export interface BlockDefinition {
