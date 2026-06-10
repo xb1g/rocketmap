@@ -37,7 +37,7 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(days / 30)}mo ago`;
 }
 
-// BMC grid positions for the mini grid — matches standard BMC layout
+// BMC grid positions for the mini grid - matches standard BMC layout
 const MINI_GRID_BLOCKS: {
   type: BlockType;
   col: string;
@@ -55,9 +55,9 @@ const MINI_GRID_BLOCKS: {
 ];
 
 function getViabilityColor(score: number): string {
-  if (score < 50) return "#f43f5e";
-  if (score < 75) return "#f59e0b";
-  return "#10b981";
+  if (score < 50) return "var(--state-critical)";
+  if (score < 75) return "var(--state-warning)";
+  return "var(--state-healthy)";
 }
 
 function getViabilityLabel(score: number): string {
@@ -164,7 +164,7 @@ export function CanvasCard({
           <div className="canvas-card-viability canvas-card-viability--empty">
             <div className="canvas-card-viability-ring canvas-card-viability-ring--empty">
               <span className="canvas-card-viability-value" style={{ opacity: 0.3 }}>
-                —
+                -
               </span>
             </div>
             <span

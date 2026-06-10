@@ -243,7 +243,7 @@ export function MobileFocusSheet({
               disabled={isAnalyzing}
               className={`ui-btn ui-btn-sm ui-btn-block font-display-small text-[11px] uppercase tracking-wider ${
                 isAnalyzing
-                  ? "ui-btn ui-btn-sm ui-btn-secondary glow-ai text-(--state-ai)"
+                  ? "ui-btn ui-btn-sm ui-btn-secondary glow-ai text-state-ai"
                   : "ui-btn-secondary text-foreground-muted hover:text-foreground"
               }`}
             >
@@ -271,7 +271,7 @@ export function MobileFocusSheet({
             onDeepDive &&
             !allBlocksFilled && (
               <div className="px-4 pb-3">
-                <div className="px-3 py-2.5 font-body text-[11px] rounded-lg bg-white/2 border border-white/5 text-foreground-muted/50 leading-snug">
+                <div className="px-3 py-2.5 font-body text-[11px] rounded-lg bg-foreground/2 border border-foreground/5 text-foreground-muted/50 leading-snug">
                   Fill all 9 blocks to unlock deep-dive research.
                   {filledCount !== undefined && (
                     <span className="ml-1 font-mono text-foreground-muted/40">
@@ -293,7 +293,7 @@ export function MobileFocusSheet({
                   sheetState === "expanded" ? "collapsed" : "expanded",
                 )
               }
-              className="w-full py-2 rounded-lg border border-white/8 bg-white/3 text-xs text-foreground-muted hover:text-foreground hover:bg-white/5 transition-colors"
+              className="w-full py-2 rounded-lg border border-white/8 bg-foreground/3 text-xs text-foreground-muted hover:text-foreground hover:bg-foreground/5 transition-colors"
             >
               {sheetState === "expanded" ? "Collapse" : "Expand to Full Screen"}
             </button>

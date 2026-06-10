@@ -14,8 +14,8 @@ interface SegmentationModuleProps {
 type PriorityLevel = "high" | "medium" | "low";
 
 const PRIORITY_COLORS: Record<PriorityLevel, string> = {
-  high: "text-emerald-400 bg-emerald-400/10",
-  medium: "text-amber-400 bg-amber-400/10",
+  high: "text-state-healthy bg-state-healthy/10",
+  medium: "text-state-warning bg-state-warning/10",
   low: "text-foreground-muted bg-white/5",
 };
 
@@ -130,7 +130,7 @@ function SegmentCard({
           </span>
           <button
             onClick={onRemove}
-            className="text-foreground-muted/40 hover:text-red-400 text-xs"
+            className="text-foreground-muted/40 hover:text-state-critical text-xs"
           >
             ×
           </button>
@@ -153,13 +153,13 @@ function SegmentCard({
           ] as const
         ).map((dim) => (
           <div key={dim} className="space-y-0.5">
-            <label className="text-[9px] text-foreground-muted/60 uppercase tracking-wider">
+            <label className="text-[9px] font-mono text-foreground-muted/60 uppercase tracking-wider">
               {dim}
             </label>
             <input
               value={segment[dim]}
               onChange={(e) => onChange({ ...segment, [dim]: e.target.value })}
-              className="w-full bg-white/3 rounded px-2 py-1 text-xs text-foreground-muted outline-none"
+              className="w-full input-soft px-2 py-1 text-xs text-foreground-muted"
               placeholder={dim}
             />
           </div>
@@ -229,7 +229,7 @@ export function SegmentationModule({
         disabled={isGenerating || !aiEnabled}
         className={`ui-btn ui-btn-sm ui-btn-block ${
           isGenerating
-            ? "ui-btn-secondary glow-ai text-[var(--state-ai)]"
+            ? "ui-btn-secondary glow-ai text-state-ai"
             : !aiEnabled
               ? "ui-btn-ghost text-foreground-muted/40 cursor-not-allowed"
               : "ui-btn-secondary text-foreground-muted hover:text-foreground"

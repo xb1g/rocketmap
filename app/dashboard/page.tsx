@@ -8,7 +8,7 @@ import {
 } from "@/lib/appwrite";
 import { Query } from "node-appwrite";
 import { DashboardClient } from "./DashboardClient";
-import { getAnthropicUsageStatsFromUser } from "@/lib/ai/user-preferences";
+import { getAiUsageStatsFromUser } from "@/lib/ai/user-preferences";
 import { listCanvasesByOwner } from "@/lib/utils";
 import type { BlockType } from "@/lib/types/canvas";
 
@@ -131,7 +131,7 @@ export default async function DashboardPage() {
 
   const totalCanvases = canvases.length;
   const lastUpdated = canvases.length > 0 ? canvases[0].$updatedAt : null;
-  const aiUsage = getAnthropicUsageStatsFromUser(user);
+  const aiUsage = getAiUsageStatsFromUser(user);
   const avgCompletion =
     totalCanvases > 0
       ? Math.round(

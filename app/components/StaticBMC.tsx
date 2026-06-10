@@ -179,27 +179,27 @@ export function StaticBMC() {
       <div className="flex flex-wrap items-center justify-center gap-4">
         <button 
           onClick={() => setMode("none")}
-          className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${mode === "none" ? "bg-white text-black shadow-lg" : "bg-white/5 text-white/60 hover:bg-white/10"}`}
+          className={`ui-btn ui-btn-xs ${mode === "none" ? "ui-btn-primary" : "ui-btn-ghost"}`}
         >
           Full Canvas
         </button>
         <button 
           onClick={() => setMode("segments")}
-          className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${mode === "segments" ? "bg-indigo-500 text-white shadow-lg" : "bg-white/5 text-white/60 hover:bg-white/10"}`}
+          className={`ui-btn ui-btn-xs ${mode === "segments" ? "ui-btn-primary" : "ui-btn-ghost"}`}
         >
           <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
           Segment Centric
         </button>
         <button 
           onClick={() => setMode("zoom")}
-          className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${mode === "zoom" ? "bg-emerald-500 text-white shadow-lg" : "bg-white/5 text-white/60 hover:bg-white/10"}`}
+          className={`ui-btn ui-btn-xs ${mode === "zoom" ? "ui-btn-primary" : "ui-btn-ghost"}`}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           Block Zoom
         </button>
         <button 
           onClick={() => setMode("tasks")}
-          className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${mode === "tasks" ? "bg-amber-500 text-white shadow-lg" : "bg-white/5 text-white/60 hover:bg-white/10"}`}
+          className={`ui-btn ui-btn-xs ${mode === "tasks" ? "ui-btn-primary" : "ui-btn-ghost"}`}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M2 12h20"/></svg>
           Task Engine
@@ -207,7 +207,7 @@ export function StaticBMC() {
       </div>
 
       {/* The Canvas Shell */}
-      <div className="relative p-8 bg-black/40 backdrop-blur-xl rounded-[24px] border border-white/10 shadow-[0_32px_64px_rgba(0,0,0,0.5)] overflow-visible min-h-[750px] flex flex-col">
+      <div className="relative p-8 bg-canvas-surface rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-visible min-h-[750px] flex flex-col">
         {/* Header Overlay */}
         <div className="flex items-center justify-between mb-8 px-1 relative z-10 shrink-0">
           <div className="flex items-center gap-4">
@@ -217,12 +217,12 @@ export function StaticBMC() {
                </svg>
             </div>
             <div>
-              <h3 className="font-bold text-2xl leading-tight text-white/95">Airbnb</h3>
+              <h3 className="font-bold text-2xl leading-tight text-foreground">Airbnb</h3>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[10px] text-white/40 font-mono uppercase tracking-[0.2em]">Live Simulation</span>
+                <span className="text-[10px] text-foreground-muted font-mono uppercase tracking-[0.08em]">Live Simulation</span>
                 {mode === "segments" && (
-                  <span className="text-[10px] font-bold text-indigo-400 font-mono uppercase tracking-[0.2em] flex items-center gap-1.5 ml-2">
-                    <span className="w-1 h-1 rounded-full bg-indigo-400 animate-ping" />
+                  <span className="text-[10px] font-bold text-chroma-indigo font-mono uppercase tracking-[0.08em] flex items-center gap-1.5 ml-2">
+                    <span className="w-1 h-1 rounded-full bg-chroma-indigo animate-ping" />
                     Target: {activeSegment === 0 ? "Travelers" : "Hosts"}
                   </span>
                 )}
@@ -231,8 +231,8 @@ export function StaticBMC() {
           </div>
           
           <div className="hidden md:flex flex-col items-end gap-1.5">
-            <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-white/30">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/40" />
+            <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.08em] text-foreground-muted/70">
+              <span className="w-1.5 h-1.5 rounded-full bg-state-healthy/40" />
               <span>Engine Status: Operational</span>
             </div>
           </div>
@@ -260,7 +260,7 @@ export function StaticBMC() {
                 {/* Block Header (Matched to BlockCell.tsx) */}
                 <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1 shrink-0">
                   <span className="inline-flex items-center gap-1 font-display-small uppercase tracking-wider text-foreground-muted">
-                    <span className="w-4 h-4 rounded-md border border-white/12 bg-white/5 text-foreground-muted/70 shrink-0 inline-flex items-center justify-center">
+                    <span className="w-4 h-4 rounded-md border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.05)] text-foreground-muted/70 shrink-0 inline-flex items-center justify-center">
                       <BlockTypeIcon type={def.type} />
                     </span>
                     <span className="text-[10px] tracking-[0.1em] font-bold">{def.bmcLabel}</span>
@@ -268,8 +268,8 @@ export function StaticBMC() {
                   <div className="flex-1" />
                   {highlighted && (
                      <div className="flex gap-1">
-                        <span className="w-1 h-1 rounded-full bg-white/10" />
-                        <span className="w-1 h-1 rounded-full bg-white/10" />
+                        <span className="w-1 h-1 rounded-full bg-[rgba(255,255,255,0.10)]" />
+                        <span className="w-1 h-1 rounded-full bg-[rgba(255,255,255,0.10)]" />
                      </div>
                   )}
                 </div>
@@ -278,7 +278,7 @@ export function StaticBMC() {
                 <div className="relative flex-1 px-2.5 pb-2.5 mt-0.5">
                    {/* Normal Mode Styled Text */}
                    <div className={`text-[12px] leading-[1.5] transition-all duration-500
-                      ${highlighted ? "text-white/80" : "text-white/20"}
+                      ${highlighted ? "text-foreground/80" : "text-foreground/20"}
                       ${isZoomed ? "opacity-0 scale-95 translate-y-4" : "opacity-100 scale-100 translate-y-0"}
                    `}>
                     {AIRBNB_DATA[def.type]}
@@ -288,29 +288,29 @@ export function StaticBMC() {
                   {def.type === "customer_segments" && mode === "zoom" && (
                     <div className="absolute inset-x-2.5 top-0 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-700">
                        <div className="space-y-1.5">
-                          <div className="flex justify-between text-[9px] font-mono text-white/40 uppercase tracking-wider">
+                          <div className="flex justify-between text-[9px] font-mono text-foreground-muted uppercase tracking-wider">
                             <span>TAM (Global Travel)</span>
-                            <span className="text-white/60 font-bold">$2.3T</span>
+                            <span className="text-foreground/60 font-bold">$2.3T</span>
                           </div>
-                          <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                             <div className="h-full w-full bg-emerald-500/30" />
+                          <div className="h-1 w-full bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden">
+                             <div className="h-full w-full bg-state-healthy/30" />
                           </div>
                        </div>
                        <div className="space-y-1.5">
-                          <div className="flex justify-between text-[9px] font-mono text-white/40 uppercase tracking-wider">
+                          <div className="flex justify-between text-[9px] font-mono text-foreground-muted uppercase tracking-wider">
                             <span>SAM (Alternative Stays)</span>
-                            <span className="text-white/60 font-bold">$140B</span>
+                            <span className="text-foreground/60 font-bold">$140B</span>
                           </div>
-                          <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                             <div className="h-full w-[45%] bg-emerald-500/50 animate-[width_1.5s_ease-out]" />
+                          <div className="h-1 w-full bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden">
+                             <div className="h-full w-[45%] bg-state-healthy/50 animate-[width_1.5s_ease-out]" />
                           </div>
                        </div>
-                       <div className="pt-2 border-t border-white/5 space-y-2">
-                          <div className="flex items-center gap-2 p-1.5 rounded bg-white/5 border border-white/5">
-                             <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-[8px] font-bold text-emerald-400">P1</div>
+                       <div className="pt-2 border-t border-[rgba(255,255,255,0.05)] space-y-2">
+                          <div className="flex items-center gap-2 p-1.5 rounded bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.05)]">
+                             <div className="w-5 h-5 rounded-full bg-state-healthy/20 border border-state-healthy/30 flex items-center justify-center text-[8px] font-bold text-state-healthy">P1</div>
                              <div className="flex-1">
-                                <div className="text-[10px] font-bold text-white/90">The Digital Nomad</div>
-                                <div className="text-[8px] text-white/30 uppercase tracking-tighter">Early Adopter Segment</div>
+                                <div className="text-[10px] font-bold text-foreground">The Digital Nomad</div>
+                                <div className="text-[8px] text-foreground-muted uppercase tracking-tighter">Early Adopter Segment</div>
                              </div>
                           </div>
                        </div>
@@ -321,22 +321,22 @@ export function StaticBMC() {
                   {def.type === "revenue_streams" && mode === "zoom" && (
                     <div className="absolute inset-x-2.5 top-0 flex flex-col gap-2.5 animate-in fade-in slide-in-from-bottom-4 duration-700">
                        <div className="grid grid-cols-2 gap-2">
-                          <div className="p-2 rounded bg-emerald-500/5 border border-emerald-500/10">
-                             <div className="text-[8px] text-emerald-500/50 uppercase font-mono tracking-wider font-bold">LTV</div>
-                             <div className="text-sm font-bold text-emerald-400">$842</div>
+                          <div className="p-2 rounded bg-state-healthy/5 border border-state-healthy/10">
+                             <div className="text-[8px] text-state-healthy/50 uppercase font-mono tracking-wider font-bold">LTV</div>
+                             <div className="text-sm font-bold text-state-healthy">$842</div>
                           </div>
-                          <div className="p-2 rounded bg-white/5 border border-white/5">
-                             <div className="text-[8px] text-white/30 uppercase font-mono tracking-wider">CAC</div>
-                             <div className="text-sm font-bold text-white/80">$124</div>
+                          <div className="p-2 rounded bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.05)]">
+                             <div className="text-[8px] text-foreground-muted uppercase font-mono tracking-wider">CAC</div>
+                             <div className="text-sm font-bold text-foreground/80">$124</div>
                           </div>
                        </div>
                        <div className="flex-1 flex flex-col justify-end gap-1 mt-1">
                           <div className="flex items-end gap-1 h-10">
                              {[35, 60, 45, 90, 75, 85].map((h, i) => (
-                               <div key={i} className="flex-1 bg-emerald-500/30 rounded-t-[1px] animate-in slide-in-from-bottom duration-1000" style={{ height: `${h}%`, animationDelay: `${i * 100}ms` }} />
+                               <div key={i} className="flex-1 bg-state-healthy/30 rounded-t-[1px] animate-in slide-in-from-bottom duration-1000" style={{ height: `${h}%`, animationDelay: `${i * 100}ms` }} />
                              ))}
                           </div>
-                          <div className="text-[8px] text-white/20 uppercase font-mono text-center tracking-widest mt-1">Growth Dynamics</div>
+                          <div className="text-[8px] text-foreground/20 uppercase font-mono text-center tracking-widest mt-1">Growth Dynamics</div>
                        </div>
                     </div>
                   )}
@@ -344,25 +344,25 @@ export function StaticBMC() {
 
                 {/* Task Engine Simulation Overlay */}
                 {mode === "tasks" && def.type === "key_activities" && (highlighted) && (
-                  <div className="absolute inset-0 bg-black/80 backdrop-blur-[2px] z-20 flex flex-col p-3 animate-in fade-in duration-500">
-                    <div className="text-[9px] font-bold text-amber-500 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
-                       <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping" />
+                  <div className="absolute inset-0 bg-background/90 z-20 flex flex-col p-3 animate-in fade-in duration-500">
+                    <div className="text-[9px] font-bold text-state-warning uppercase tracking-[0.08em] mb-3 flex items-center gap-2">
+                       <span className="w-1.5 h-1.5 bg-state-warning rounded-full animate-ping" />
                        Risk Engine
                     </div>
                     <div className="space-y-2.5">
-                       <div className="p-2 rounded border border-amber-500/20 bg-amber-500/[0.03] flex flex-col gap-1.5 translate-x-1 opacity-0 animate-[fade-in_0.6s_forwards,translate-x_0.6s_forwards]">
+                       <div className="p-2 rounded border border-state-warning/20 bg-state-warning/03 flex flex-col gap-1.5 translate-x-1 opacity-0 animate-[fade-in_0.6s_forwards,translate-x_0.6s_forwards]">
                           <div className="flex items-center justify-between">
-                             <span className="text-[8px] text-amber-500/80 font-mono font-bold uppercase">Assumption</span>
-                             <span className="text-[8px] text-white/40 font-mono">P: 0.85</span>
+                             <span className="text-[8px] text-state-warning/80 font-mono font-bold uppercase">Assumption</span>
+                             <span className="text-[8px] text-foreground-muted font-mono">P: 0.85</span>
                           </div>
-                          <div className="text-[10px] leading-tight text-white/90">&ldquo;Hosts accept strangers without professional insurance.&rdquo;</div>
+                          <div className="text-[10px] leading-tight text-foreground">&ldquo;Hosts accept strangers without professional insurance.&rdquo;</div>
                        </div>
-                       <div className="p-2 rounded border border-indigo-500/20 bg-indigo-500/[0.03] flex flex-col gap-1.5 translate-x-1 opacity-0 animate-[fade-in_0.6s_1s_forwards,translate-x_0.6s_1s_forwards]">
+                       <div className="p-2 rounded border border-state-ai/20 bg-state-ai/03 flex flex-col gap-1.5 translate-x-1 opacity-0 animate-[fade-in_0.6s_1s_forwards,translate-x_0.6s_1s_forwards]">
                           <div className="flex items-center justify-between">
-                             <span className="text-[8px] text-indigo-400 font-mono font-bold uppercase">Strategy</span>
-                             <span className="text-[8px] text-white/40 font-mono">MITIGATE</span>
+                             <span className="text-[8px] text-state-ai font-mono font-bold uppercase">Strategy</span>
+                             <span className="text-[8px] text-foreground-muted font-mono">MITIGATE</span>
                           </div>
-                          <div className="text-[10px] leading-tight text-white/90">Deploy &ldquo;Host Guarantee&rdquo; $1M default coverage program.</div>
+                          <div className="text-[10px] leading-tight text-foreground">Deploy &ldquo;Host Guarantee&rdquo; $1M default coverage program.</div>
                        </div>
                     </div>
                   </div>
@@ -374,17 +374,17 @@ export function StaticBMC() {
 
         {/* Floating AI Status (Task Engine) */}
         {mode === "tasks" && (
-           <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 px-6 py-3 rounded-2xl bg-black/90 border border-amber-500/30 shadow-[0_0_50px_rgba(245,158,11,0.25)] backdrop-blur-md animate-in zoom-in slide-in-from-bottom-8 duration-500">
+           <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 px-6 py-3 rounded-2xl bg-canvas-surface border border-state-warning/30 shadow-[0_0_40px_rgba(245,158,11,0.15)] animate-in zoom-in slide-in-from-bottom-8 duration-500">
               <div className="flex items-center gap-5">
                  <div className="flex -space-x-2.5">
                     {[1, 2, 3].map(i => (
-                       <div key={i} className="w-9 h-9 rounded-full border-2 border-black bg-white/10 flex items-center justify-center text-[10px] font-bold shadow-lg">AI</div>
+                       <div key={i} className="w-9 h-9 rounded-full border-2 border-background bg-[rgba(255,255,255,0.06)] flex items-center justify-center text-[10px] font-bold shadow-lg">AI</div>
                     ))}
                  </div>
-                 <div className="h-8 w-px bg-white/10" />
+                 <div className="h-8 w-px bg-[rgba(255,255,255,0.06)]" />
                  <div className="pr-2">
-                    <div className="text-[11px] font-bold text-amber-400 tracking-wide">Task Engine Scanning</div>
-                    <div className="text-[10px] text-white/40 font-mono">Synthesizing 12 structural risks...</div>
+                    <div className="text-[11px] font-bold text-state-warning tracking-wide">Task Engine Scanning</div>
+                    <div className="text-[10px] text-foreground-muted font-mono">Synthesizing 12 structural risks...</div>
                  </div>
               </div>
            </div>
@@ -395,21 +395,21 @@ export function StaticBMC() {
       <div className="max-w-3xl mx-auto text-center">
          <div className="h-16 flex items-center justify-center">
             {mode === "none" && (
-               <p className="text-white/40 text-sm animate-in fade-in duration-1000 font-medium">Standard 9-block framework, powered by structural intelligence.</p>
+               <p className="text-foreground-muted text-sm animate-in fade-in duration-1000 font-medium">Standard 9-block framework, powered by structural intelligence.</p>
             )}
             {mode === "segments" && (
-               <p className="text-indigo-300 font-medium text-lg animate-in slide-in-from-bottom-2 duration-500">
-                  <span className="text-white font-bold">Segment-First architecture.</span> Everything is tied to a specific persona.
+               <p className="text-chroma-indigo font-medium text-lg animate-in slide-in-from-bottom-2 duration-500">
+                  <span className="text-foreground font-bold">Segment-First architecture.</span> Everything is tied to a specific persona.
                </p>
             )}
             {mode === "zoom" && (
-               <p className="text-emerald-300 font-medium text-lg animate-in slide-in-from-bottom-2 duration-500">
-                  <span className="text-white font-bold">Double-click into reality.</span> Built-in TAM/SAM/SOM and Unit Economics.
+               <p className="text-state-healthy font-medium text-lg animate-in slide-in-from-bottom-2 duration-500">
+                  <span className="text-foreground font-bold">Double-click into reality.</span> Built-in TAM/SAM/SOM and Unit Economics.
                </p>
             )}
             {mode === "tasks" && (
-               <p className="text-amber-300 font-medium text-lg animate-in slide-in-from-bottom-2 duration-500">
-                  <span className="text-white font-bold">Roadmap extraction.</span> Convert assumptions into prioritized validation sprints.
+               <p className="text-state-warning font-medium text-lg animate-in slide-in-from-bottom-2 duration-500">
+                  <span className="text-foreground font-bold">Roadmap extraction.</span> Convert assumptions into prioritized validation sprints.
                </p>
             )}
          </div>

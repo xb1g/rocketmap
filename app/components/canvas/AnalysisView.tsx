@@ -34,7 +34,7 @@ function BlockSummary({ block, mode }: { block: BlockData; mode: CanvasMode }) {
   const hasAnalysis = !!block.aiAnalysis;
 
   return (
-    <div className="p-3 rounded-lg bg-white/5 flex flex-col gap-2">
+    <div className="p-3 rounded-[14px] bg-white/[2.5%] border border-white/6 flex flex-col gap-2">
       <div className="flex items-center justify-between">
         {def ? (
           <BlockTooltip definition={def} mode={mode}>
@@ -59,7 +59,7 @@ function BlockSummary({ block, mode }: { block: BlockData; mode: CanvasMode }) {
               }}
             />
           )}
-          <span className="text-[10px] text-foreground-muted">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-foreground-muted">
             {hasAnalysis
               ? `${Math.round(block.confidenceScore * 100)}`
               : "Not analyzed"}
@@ -67,9 +67,9 @@ function BlockSummary({ block, mode }: { block: BlockData; mode: CanvasMode }) {
         </div>
       </div>
       {hasAnalysis && block.aiAnalysis && (
-        <div className="flex gap-3 text-[10px] text-foreground-muted">
+        <div className="flex gap-3 text-[10px] font-mono uppercase tracking-wider text-foreground-muted">
           <span>{block.aiAnalysis.assumptions.length} assumptions</span>
-          <span className="text-[var(--state-critical)]">
+          <span style={{ color: "var(--state-critical)" }}>
             {block.aiAnalysis.risks.length} risks
           </span>
           <span>{block.aiAnalysis.questions.length} questions</span>
@@ -121,10 +121,10 @@ function RiskOverview({ canvasId }: { canvasId: string }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[10px] uppercase tracking-wider text-foreground-muted font-medium">
+      <span className="text-[10px] font-mono uppercase tracking-wider text-foreground-muted font-medium">
         Risk Overview
       </span>
-      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-4 space-y-3">
+      <div className="rounded-[14px] border border-white/6 bg-white/2 p-4 space-y-3">
         {/* Risk score bar */}
         <div className="flex items-center justify-between">
           <span className="text-xs text-foreground-muted">Risk Score</span>
@@ -146,32 +146,32 @@ function RiskOverview({ canvasId }: { canvasId: string }) {
         </div>
 
         {/* Risk level breakdown */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="text-center p-2 rounded bg-white/3">
-            <div className="text-lg font-mono font-medium" style={{ color: "var(--state-critical)" }}>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between p-2 rounded-[12px] bg-white/3 border-t-2" style={{ borderTopColor: "var(--state-critical)" }}>
+            <span className="text-xs text-foreground-muted">High</span>
+            <span className="text-sm font-mono font-medium" style={{ color: "var(--state-critical)" }}>
               {summary.high}
-            </div>
-            <div className="text-[10px] text-foreground-muted/60 uppercase tracking-wider">High</div>
+            </span>
           </div>
-          <div className="text-center p-2 rounded bg-white/3">
-            <div className="text-lg font-mono font-medium" style={{ color: "var(--state-warning)" }}>
+          <div className="flex items-center justify-between p-2 rounded-[12px] bg-white/3 border-t-2" style={{ borderTopColor: "var(--state-warning)" }}>
+            <span className="text-xs text-foreground-muted">Medium</span>
+            <span className="text-sm font-mono font-medium" style={{ color: "var(--state-warning)" }}>
               {summary.medium}
-            </div>
-            <div className="text-[10px] text-foreground-muted/60 uppercase tracking-wider">Medium</div>
+            </span>
           </div>
-          <div className="text-center p-2 rounded bg-white/3">
-            <div className="text-lg font-mono font-medium" style={{ color: "var(--state-healthy)" }}>
+          <div className="flex items-center justify-between p-2 rounded-[12px] bg-white/3 border-t-2" style={{ borderTopColor: "var(--state-healthy)" }}>
+            <span className="text-xs text-foreground-muted">Low</span>
+            <span className="text-sm font-mono font-medium" style={{ color: "var(--state-healthy)" }}>
               {summary.low}
-            </div>
-            <div className="text-[10px] text-foreground-muted/60 uppercase tracking-wider">Low</div>
+            </span>
           </div>
         </div>
 
         {/* Status breakdown */}
-        <div className="flex items-center gap-3 text-[10px] text-foreground-muted pt-1 border-t border-white/5">
+        <div className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-wider text-foreground-muted pt-1 border-t border-white/5">
           <span>{summary.untested} untested</span>
-          <span className="text-[var(--state-healthy)]">{summary.validated} validated</span>
-          <span className="text-[var(--state-critical)]">{summary.refuted} refuted</span>
+          <span style={{ color: "var(--state-healthy)" }}>{summary.validated} validated</span>
+          <span style={{ color: "var(--state-critical)" }}>{summary.refuted} refuted</span>
         </div>
       </div>
     </div>
@@ -205,7 +205,7 @@ export function AnalysisView({
           disabled={isCheckingConsistency || analyzedCount < 2}
           className={`ui-btn ui-btn-sm ${
             isCheckingConsistency
-              ? "ui-btn-secondary glow-ai text-[var(--state-ai)]"
+              ? "ui-btn-secondary glow-ai text-state-ai"
               : analyzedCount < 2
                 ? "ui-btn-ghost text-foreground-muted cursor-not-allowed"
                 : "ui-btn-secondary text-foreground-muted hover:text-foreground"
@@ -220,7 +220,7 @@ export function AnalysisView({
 
       {/* Block summaries */}
       <div className="flex flex-col gap-2">
-        <span className="text-[10px] uppercase tracking-wider text-foreground-muted font-medium">
+        <span className="text-[10px] font-mono uppercase tracking-wider text-foreground-muted font-medium">
           Block Summaries
         </span>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -237,7 +237,7 @@ export function AnalysisView({
 
       {/* Consistency Report */}
       <div>
-        <span className="text-[10px] uppercase tracking-wider text-foreground-muted font-medium mb-2 block">
+        <span className="text-[10px] font-mono uppercase tracking-wider text-foreground-muted font-medium mb-2 block">
           Cross-Block Analysis
         </span>
         <ConsistencyReport

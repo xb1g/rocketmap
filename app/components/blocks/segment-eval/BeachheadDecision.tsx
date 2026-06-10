@@ -42,7 +42,7 @@ export function BeachheadDecision({
   return (
     <div className="glass-morphism rounded-xl p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="font-display-small text-sm text-foreground">
+        <h4 className="font-body text-sm font-semibold text-foreground">
           Beachhead Decision
         </h4>
         <RecommendationBadge recommendation={scorecard.aiRecommendation} />
@@ -56,16 +56,16 @@ export function BeachheadDecision({
       {/* Key Risks */}
       {scorecard.keyRisks.length > 0 && (
         <div>
-          <h5 className="text-[10px] text-foreground-muted/50 uppercase tracking-wider mb-2">
+          <h5 className="text-[10px] font-mono text-foreground-muted/50 uppercase tracking-wider mb-2">
             Key Risks
           </h5>
           <ul className="space-y-1.5">
             {scorecard.keyRisks.map((risk, i) => (
               <li
                 key={i}
-                className="flex items-start gap-2 text-xs text-red-400/70 leading-relaxed"
+                className="flex items-start gap-2 text-xs text-state-critical/70 leading-relaxed"
               >
-                <span className="shrink-0 mt-1 w-1 h-1 rounded-full bg-red-400/50" />
+                <span className="shrink-0 mt-1 w-1 h-1 rounded-full bg-state-critical/50" />
                 {risk}
               </li>
             ))}
@@ -76,7 +76,7 @@ export function BeachheadDecision({
       {/* Required Experiments */}
       {scorecard.requiredExperiments.length > 0 && (
         <div>
-          <h5 className="text-[10px] text-foreground-muted/50 uppercase tracking-wider mb-2">
+          <h5 className="text-[10px] font-mono text-foreground-muted/50 uppercase tracking-wider mb-2">
             Required Experiments
           </h5>
           <ul className="space-y-1.5">
@@ -106,7 +106,7 @@ export function BeachheadDecision({
             </button>
 
             {showComparePicker && (
-              <div className="absolute top-full left-0 mt-1 w-48 py-1 rounded-lg bg-[#1a1a2e] border border-white/10 shadow-xl z-10">
+              <div className="absolute top-full left-0 mt-1 w-48 py-1 rounded-lg bg-canvas-surface border border-white/10 shadow-xl z-10">
                 {otherSegments.map((seg) => (
                   <button
                     key={seg.$id}
@@ -144,11 +144,11 @@ export function BeachheadDecision({
                 background:
                   comparisonResult.betterSegment === "tie"
                     ? "rgba(255,255,255,0.05)"
-                    : "rgba(16,185,129,0.1)",
+                    : "color-mix(in srgb, var(--state-healthy) 10%, transparent)",
                 color:
                   comparisonResult.betterSegment === "tie"
                     ? "rgba(255,255,255,0.5)"
-                    : "rgb(16,185,129)",
+                    : "var(--state-healthy)",
               }}
             >
               {comparisonResult.betterSegment === "tie"

@@ -33,7 +33,7 @@ const SEVERITY_COLORS: Record<string, string> = {
 export function ConsistencyReport({ data, isLoading }: ConsistencyReportProps) {
   if (isLoading) {
     return (
-      <div className="p-4 text-xs text-foreground-muted text-center glow-ai rounded-lg">
+      <div className="p-4 text-xs text-foreground-muted text-center glow-ai rounded-[14px]">
         Running consistency check across all blocks...
       </div>
     );
@@ -76,15 +76,17 @@ export function ConsistencyReport({ data, isLoading }: ConsistencyReportProps) {
           {data.contradictions.map((c, i) => (
             <div
               key={i}
-              className="p-3 rounded-lg bg-white/5 flex flex-col gap-1.5"
+              className="p-3 rounded-[14px] bg-white/3 border border-white/6 border-t-2 flex flex-col gap-1.5"
+              style={{ borderTopColor: SEVERITY_COLORS[c.severity] }}
             >
               <div className="flex items-center gap-2">
                 <span
-                  className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full"
-                  style={{
-                    background: `${SEVERITY_COLORS[c.severity]}20`,
-                    color: SEVERITY_COLORS[c.severity],
-                  }}
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: SEVERITY_COLORS[c.severity] }}
+                />
+                <span
+                  className="text-[9px] font-mono uppercase tracking-wider"
+                  style={{ color: SEVERITY_COLORS[c.severity] }}
                 >
                   {c.severity}
                 </span>
@@ -108,9 +110,9 @@ export function ConsistencyReport({ data, isLoading }: ConsistencyReportProps) {
           {data.missingLinks.map((ml, i) => (
             <div
               key={i}
-              className="p-3 rounded-lg bg-white/5 flex flex-col gap-1"
+              className="p-3 rounded-[14px] bg-white/3 border border-white/6 flex flex-col gap-1"
             >
-              <span className="text-[10px] text-foreground-muted">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-foreground-muted">
                 {ml.from} &rarr; {ml.to}
               </span>
               <p className="text-xs text-foreground/80">{ml.issue}</p>

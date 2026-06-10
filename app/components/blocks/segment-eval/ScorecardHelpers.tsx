@@ -4,8 +4,8 @@ import type { BeachheadStatus } from '@/lib/types/canvas';
 
 export function BeachheadBadge({ status }: { status: BeachheadStatus }) {
   const config = {
-    primary: { bg: 'bg-[var(--chroma-indigo)]/20', text: 'text-[var(--chroma-indigo)]', label: 'Primary' },
-    secondary: { bg: 'bg-amber-400/15', text: 'text-amber-400', label: 'Secondary' },
+    primary: { bg: 'bg-chroma-indigo/20', text: 'text-chroma-indigo', label: 'Primary' },
+    secondary: { bg: 'bg-state-warning/15', text: 'text-state-warning', label: 'Secondary' },
     later: { bg: 'bg-white/5', text: 'text-foreground-muted/50', label: 'Later' },
   }[status];
 
@@ -19,9 +19,9 @@ export function BeachheadBadge({ status }: { status: BeachheadStatus }) {
 export function ScoreTierBadge({ score }: { score: number }) {
   const tier = score >= 4.0 ? 'gold' : score >= 3.0 ? 'silver' : 'red';
   const config = {
-    gold: { bg: 'bg-emerald-400/15', text: 'text-emerald-400', border: 'border-emerald-400/20' },
-    silver: { bg: 'bg-amber-400/15', text: 'text-amber-400', border: 'border-amber-400/20' },
-    red: { bg: 'bg-red-400/15', text: 'text-red-400', border: 'border-red-400/20' },
+    gold: { bg: 'bg-state-healthy/15', text: 'text-state-healthy', border: 'border-state-healthy/20' },
+    silver: { bg: 'bg-state-warning/15', text: 'text-state-warning', border: 'border-state-warning/20' },
+    red: { bg: 'bg-state-critical/15', text: 'text-state-critical', border: 'border-state-critical/20' },
   }[tier];
 
   return (
@@ -33,9 +33,9 @@ export function ScoreTierBadge({ score }: { score: number }) {
 
 export function RecommendationBadge({ recommendation }: { recommendation: 'pursue' | 'test' | 'defer' }) {
   const config = {
-    pursue: { bg: 'bg-emerald-400/15', text: 'text-emerald-400', border: 'border-emerald-400/20', label: 'Pursue' },
-    test: { bg: 'bg-amber-400/15', text: 'text-amber-400', border: 'border-amber-400/20', label: 'Test First' },
-    defer: { bg: 'bg-red-400/15', text: 'text-red-400', border: 'border-red-400/20', label: 'Defer' },
+    pursue: { bg: 'bg-state-healthy/15', text: 'text-state-healthy', border: 'border-state-healthy/20', label: 'Pursue' },
+    test: { bg: 'bg-state-warning/15', text: 'text-state-warning', border: 'border-state-warning/20', label: 'Test First' },
+    defer: { bg: 'bg-state-critical/15', text: 'text-state-critical', border: 'border-state-critical/20', label: 'Defer' },
   }[recommendation];
 
   return (
@@ -85,7 +85,7 @@ export function ConfidenceBar({ value }: { value: number }) {
 }
 
 export function ConfidenceDot({ level }: { level: 'low' | 'medium' | 'high' }) {
-  const color = { low: 'bg-red-400/60', medium: 'bg-amber-400/60', high: 'bg-emerald-400/60' }[level];
+  const color = { low: 'bg-state-critical/60', medium: 'bg-state-warning/60', high: 'bg-state-healthy/60' }[level];
   return <span className={`w-1.5 h-1.5 rounded-full ${color} shrink-0`} title={level} />;
 }
 
@@ -100,7 +100,7 @@ export function MetricCard({
 }) {
   return (
     <div className="px-3 py-2.5 rounded-lg bg-white/3 border border-white/5">
-      <div className="text-[9px] text-foreground-muted/50 uppercase tracking-wider mb-1">{label}</div>
+      <div className="text-[9px] font-mono text-foreground-muted/50 uppercase tracking-wider mb-1">{label}</div>
       <div className="text-sm font-mono text-foreground">{value}</div>
       {sub && <div className="text-[10px] text-foreground-muted/40 mt-0.5">{sub}</div>}
     </div>

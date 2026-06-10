@@ -36,7 +36,7 @@ export function EconomicsFlowDiagram({ segment }: EconomicsFlowDiagramProps) {
 
   return (
     <div className="space-y-3 animate-in fade-in">
-      <h4 className="font-display-small text-xs text-foreground" style={{ fontWeight: 600 }}>
+      <h4 className="font-body text-xs text-foreground font-semibold">
         {segment.segmentName}
       </h4>
 

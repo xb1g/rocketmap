@@ -87,7 +87,7 @@ export function DecisionMatrix({
     <div className="glass-morphism rounded-xl p-5 space-y-5">
       {/* Header with overall score */}
       <div className="flex items-center justify-between">
-        <h4 className="font-display-small text-sm text-foreground">Decision Matrix</h4>
+        <h4 className="font-body text-sm font-semibold text-foreground">Decision Matrix</h4>
         <ScoreTierBadge score={scorecard.overallScore} />
       </div>
 
@@ -107,7 +107,7 @@ export function DecisionMatrix({
         return (
           <div key={key}>
             <div className="flex items-center gap-2 mb-2">
-              <span className="font-display-small text-[11px] uppercase tracking-wider text-foreground-muted/70">
+              <span className="font-mono text-[11px] uppercase tracking-wider text-foreground-muted/70">
                 {label}
               </span>
               <span className="text-[9px] font-mono text-foreground-muted/30">

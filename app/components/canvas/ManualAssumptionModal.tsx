@@ -76,7 +76,7 @@ export function ManualAssumptionModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-lg mx-4 rounded-xl border border-white/[0.08] bg-[#0a0a0f]/95 backdrop-blur-xl p-6 space-y-5">
+      <div className="w-full max-w-lg mx-4 rounded-[14px] border border-white/8 bg-background p-6 space-y-5">
         <div className="flex items-center justify-between">
           <h3 className="font-display-small text-base">New Assumption</h3>
           <button
@@ -89,28 +89,28 @@ export function ManualAssumptionModal({
 
         {/* Statement */}
         <div className="space-y-1.5">
-          <label className="text-xs text-foreground-muted">Statement</label>
+          <label className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">Statement</label>
           <textarea
             value={statement}
             onChange={(e) => setStatement(e.target.value)}
             placeholder="e.g. Customers are willing to pay $50/mo for this solution"
             rows={3}
-            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-white/20"
+            className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
           />
         </div>
 
         {/* Risk Level */}
         <div className="space-y-1.5">
-          <label className="text-xs text-foreground-muted">Risk Level</label>
+          <label className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">Risk Level</label>
           <div className="flex gap-2">
             {RISK_LEVELS.map((rl) => (
               <button
                 key={rl.value}
                 onClick={() => setRiskLevel(rl.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-[12px] text-xs font-medium transition-colors ${
                   riskLevel === rl.value
                     ? "border-2"
-                    : "border border-white/[0.08] text-foreground-muted hover:text-foreground"
+                    : "border border-white/8 text-foreground-muted hover:text-foreground"
                 }`}
                 style={
                   riskLevel === rl.value
@@ -130,11 +130,11 @@ export function ManualAssumptionModal({
 
         {/* Category */}
         <div className="space-y-1.5">
-          <label className="text-xs text-foreground-muted">Category</label>
+          <label className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">Category</label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as typeof category)}
-            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm focus:outline-none focus:border-white/20"
+            className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
           >
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
@@ -146,13 +146,13 @@ export function ManualAssumptionModal({
 
         {/* Related Blocks */}
         <div className="space-y-1.5">
-          <label className="text-xs text-foreground-muted">Related Blocks</label>
+          <label className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">Related Blocks</label>
           <div className="flex flex-wrap gap-1.5">
             {BLOCK_DEFINITIONS.map((def) => (
               <button
                 key={def.type}
                 onClick={() => toggleBlock(def.type)}
-                className={`px-2 py-1 rounded text-[11px] transition-colors ${
+                className={`px-2 py-1 rounded-[12px] text-[11px] transition-colors ${
                   blockTypes.includes(def.type)
                     ? "bg-white/15 text-foreground"
                     : "bg-white/5 text-foreground-muted hover:bg-white/10"

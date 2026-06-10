@@ -33,7 +33,7 @@ export function QuickStats({ stats }: QuickStatsProps) {
       <div className="stat-card">
         <div className="stat-card-label">Last Activity</div>
         <div className="stat-number" style={{ fontSize: '1.25rem' }}>
-          {stats.lastUpdated ? timeAgo(stats.lastUpdated) : '\u2014'}
+          {stats.lastUpdated ? timeAgo(stats.lastUpdated) : 'None'}
         </div>
       </div>
       <div className="stat-card">

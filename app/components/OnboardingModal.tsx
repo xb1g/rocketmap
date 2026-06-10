@@ -36,7 +36,7 @@ export function OnboardingModal({ isOpen, onComplete, onChatToCreate }: Onboardi
             <Text size="2" className="text-foreground-muted">
               Step {step} of 3
             </Text>
-            <Button variant="ghost" onClick={handleSkip}>
+            <Button variant="ghost" onClick={handleSkip} className="ui-btn ui-btn-ghost">
               Skip
             </Button>
           </Flex>
@@ -141,7 +141,7 @@ export function OnboardingModal({ isOpen, onComplete, onChatToCreate }: Onboardi
                 Chat to Create
               </button>
             )}
-            <Button size="3" onClick={handleNext}>
+            <Button size="3" onClick={handleNext} className="ui-btn ui-btn-primary">
               {step === 3 ? 'Start Blank' : 'Next'}
             </Button>
           </Flex>

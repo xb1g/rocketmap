@@ -8,6 +8,15 @@ const deepseek = createOpenAI({
 import { serverUsers } from "@/lib/appwrite";
 import type { AIUsageInfo } from "@/lib/ai/logger";
 
+// New neutral pref keys (provider-agnostic)
+const PREF_AI_API_KEY = "aiApiKey";
+const PREF_AI_USAGE_COUNT = "aiUsageCount";
+const PREF_AI_INPUT_TOKENS = "aiInputTokens";
+const PREF_AI_OUTPUT_TOKENS = "aiOutputTokens";
+const PREF_AI_TOTAL_TOKENS = "aiTotalTokens";
+const PREF_AI_LAST_USED_AT = "aiLastUsedAt";
+
+// Legacy Anthropic pref keys (for backward-compatible reads)
 const PREF_ANTHROPIC_API_KEY = "anthropicApiKey";
 const PREF_ANTHROPIC_USAGE_COUNT = "anthropicUsageCount";
 const PREF_ANTHROPIC_INPUT_TOKENS = "anthropicInputTokens";
@@ -42,8 +51,9 @@ function toNonNegativeInt(value: unknown): number {
   return 0;
 }
 
-function getRawAnthropicApiKey(prefs: PreferenceMap): string | null {
-  const candidate = prefs[PREF_ANTHROPIC_API_KEY];
+function getRawAiApiKey(prefs: PreferenceMap): string | null {
+  // Prefer new key, fallback to legacy
+  const candidate = prefs[PREF_AI_API_KEY] ?? prefs[PREF_ANTHROPIC_API_KEY];
   if (typeof candidate !== "string") {
     return null;
   }
@@ -52,17 +62,20 @@ function getRawAnthropicApiKey(prefs: PreferenceMap): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function sanitizeAnthropicApiKey(apiKey: string): string {
+function sanitizeAiApiKey(apiKey: string): string {
   return apiKey.trim();
 }
 
-export function isLikelyAnthropicApiKey(apiKey: string): boolean {
-  const trimmed = sanitizeAnthropicApiKey(apiKey);
+export function isLikelyAiApiKey(apiKey: string): boolean {
+  const trimmed = sanitizeAiApiKey(apiKey);
   return trimmed.startsWith("sk-ant-") && trimmed.length >= 20;
 }
 
-export function maskAnthropicApiKey(apiKey: string): string {
-  const trimmed = sanitizeAnthropicApiKey(apiKey);
+/** @deprecated Use {@link isLikelyAiApiKey} instead */
+export const isLikelyAnthropicApiKey = isLikelyAiApiKey;
+
+export function maskAiApiKey(apiKey: string): string {
+  const trimmed = sanitizeAiApiKey(apiKey);
   if (trimmed.length <= 8) {
     return "••••";
   }
@@ -70,13 +83,19 @@ export function maskAnthropicApiKey(apiKey: string): string {
   return `${trimmed.slice(0, 7)}••••${trimmed.slice(-4)}`;
 }
 
-export function getAnthropicApiKeyFromUser(
+/** @deprecated Use {@link maskAiApiKey} instead */
+export const maskAnthropicApiKey = maskAiApiKey;
+
+export function getAiApiKeyFromUser(
   user: Models.User<Models.Preferences>,
 ): string | null {
-  return getRawAnthropicApiKey(normalizePreferences(user.prefs));
+  return getRawAiApiKey(normalizePreferences(user.prefs));
 }
 
-export interface AnthropicUsageStats {
+/** @deprecated Use {@link getAiApiKeyFromUser} instead */
+export const getAnthropicApiKeyFromUser = getAiApiKeyFromUser;
+
+export interface AiUsageStats {
   calls: number;
   inputTokens: number;
   outputTokens: number;
@@ -84,22 +103,39 @@ export interface AnthropicUsageStats {
   lastUsedAt: string | null;
 }
 
-export function getAnthropicUsageStatsFromUser(
+/** @deprecated Use {@link AiUsageStats} instead */
+export type AnthropicUsageStats = AiUsageStats;
+
+export function getAiUsageStatsFromUser(
   user: Models.User<Models.Preferences>,
-): AnthropicUsageStats {
+): AiUsageStats {
   const prefs = normalizePreferences(user.prefs);
 
-  return {
-    calls: toNonNegativeInt(prefs[PREF_ANTHROPIC_USAGE_COUNT]),
-    inputTokens: toNonNegativeInt(prefs[PREF_ANTHROPIC_INPUT_TOKENS]),
-    outputTokens: toNonNegativeInt(prefs[PREF_ANTHROPIC_OUTPUT_TOKENS]),
-    totalTokens: toNonNegativeInt(prefs[PREF_ANTHROPIC_TOTAL_TOKENS]),
-    lastUsedAt:
-      typeof prefs[PREF_ANTHROPIC_LAST_USED_AT] === "string"
+  // Read new keys first, fallback to legacy keys for migration
+  const calls =
+    toNonNegativeInt(prefs[PREF_AI_USAGE_COUNT]) ||
+    toNonNegativeInt(prefs[PREF_ANTHROPIC_USAGE_COUNT]);
+  const inputTokens =
+    toNonNegativeInt(prefs[PREF_AI_INPUT_TOKENS]) ||
+    toNonNegativeInt(prefs[PREF_ANTHROPIC_INPUT_TOKENS]);
+  const outputTokens =
+    toNonNegativeInt(prefs[PREF_AI_OUTPUT_TOKENS]) ||
+    toNonNegativeInt(prefs[PREF_ANTHROPIC_OUTPUT_TOKENS]);
+  const totalTokens =
+    toNonNegativeInt(prefs[PREF_AI_TOTAL_TOKENS]) ||
+    toNonNegativeInt(prefs[PREF_ANTHROPIC_TOTAL_TOKENS]);
+  const lastUsedAt =
+    typeof prefs[PREF_AI_LAST_USED_AT] === "string"
+      ? (prefs[PREF_AI_LAST_USED_AT] as string)
+      : typeof prefs[PREF_ANTHROPIC_LAST_USED_AT] === "string"
         ? (prefs[PREF_ANTHROPIC_LAST_USED_AT] as string)
-        : null,
-  };
+        : null;
+
+  return { calls, inputTokens, outputTokens, totalTokens, lastUsedAt };
 }
+
+/** @deprecated Use {@link getAiUsageStatsFromUser} instead */
+export const getAnthropicUsageStatsFromUser = getAiUsageStatsFromUser;
 
 export function getLanguageModel(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -118,47 +154,57 @@ async function getUserPreferences(userId: string): Promise<PreferenceMap> {
   return normalizePreferences(prefs);
 }
 
-export async function getAnthropicKeyStatusForUser(userId: string): Promise<{
+export async function getAiKeyStatusForUser(userId: string): Promise<{
   hasKey: boolean;
   maskedKey: string | null;
 }> {
   const prefs = await getUserPreferences(userId);
-  const apiKey = getRawAnthropicApiKey(prefs);
+  const apiKey = getRawAiApiKey(prefs);
 
   return {
     hasKey: Boolean(apiKey),
-    maskedKey: apiKey ? maskAnthropicApiKey(apiKey) : null,
+    maskedKey: apiKey ? maskAiApiKey(apiKey) : null,
   };
 }
 
-export async function saveAnthropicApiKeyForUser(
+/** @deprecated Use {@link getAiKeyStatusForUser} instead */
+export const getAnthropicKeyStatusForUser = getAiKeyStatusForUser;
+
+export async function saveAiApiKeyForUser(
   userId: string,
   apiKey: string,
 ): Promise<{ maskedKey: string }> {
-  const cleanedKey = sanitizeAnthropicApiKey(apiKey);
-  if (!isLikelyAnthropicApiKey(cleanedKey)) {
-    throw new Error("Invalid Anthropic API key");
+  const cleanedKey = sanitizeAiApiKey(apiKey);
+  if (!isLikelyAiApiKey(cleanedKey)) {
+    throw new Error("Invalid AI API key");
   }
 
   const prefs = await getUserPreferences(userId);
   const nextPrefs: PreferenceMap = {
     ...prefs,
-    [PREF_ANTHROPIC_API_KEY]: cleanedKey,
+    [PREF_AI_API_KEY]: cleanedKey,
   };
 
   await serverUsers.updatePrefs({ userId, prefs: nextPrefs });
 
-  return { maskedKey: maskAnthropicApiKey(cleanedKey) };
+  return { maskedKey: maskAiApiKey(cleanedKey) };
 }
 
-export async function removeAnthropicApiKeyForUser(userId: string): Promise<void> {
+/** @deprecated Use {@link saveAiApiKeyForUser} instead */
+export const saveAnthropicApiKeyForUser = saveAiApiKeyForUser;
+
+export async function removeAiApiKeyForUser(userId: string): Promise<void> {
   const prefs = await getUserPreferences(userId);
   const nextPrefs: PreferenceMap = { ...prefs };
+  delete nextPrefs[PREF_AI_API_KEY];
   delete nextPrefs[PREF_ANTHROPIC_API_KEY];
   await serverUsers.updatePrefs({ userId, prefs: nextPrefs });
 }
 
-export async function recordAnthropicUsageForUser(
+/** @deprecated Use {@link removeAiApiKeyForUser} instead */
+export const removeAnthropicApiKeyForUser = removeAiApiKeyForUser;
+
+export async function recordAiUsageForUser(
   userId: string,
   usage: AIUsageInfo,
 ): Promise<void> {
@@ -166,22 +212,54 @@ export async function recordAnthropicUsageForUser(
     const prefs = await getUserPreferences(userId);
     const nextPrefs: PreferenceMap = {
       ...prefs,
-      [PREF_ANTHROPIC_USAGE_COUNT]:
-        toNonNegativeInt(prefs[PREF_ANTHROPIC_USAGE_COUNT]) + 1,
-      [PREF_ANTHROPIC_INPUT_TOKENS]:
-        toNonNegativeInt(prefs[PREF_ANTHROPIC_INPUT_TOKENS]) +
+      [PREF_AI_USAGE_COUNT]:
+        toNonNegativeInt(prefs[PREF_AI_USAGE_COUNT]) + 1,
+      [PREF_AI_INPUT_TOKENS]:
+        toNonNegativeInt(prefs[PREF_AI_INPUT_TOKENS]) +
         Math.max(0, usage.inputTokens ?? 0),
-      [PREF_ANTHROPIC_OUTPUT_TOKENS]:
-        toNonNegativeInt(prefs[PREF_ANTHROPIC_OUTPUT_TOKENS]) +
+      [PREF_AI_OUTPUT_TOKENS]:
+        toNonNegativeInt(prefs[PREF_AI_OUTPUT_TOKENS]) +
         Math.max(0, usage.outputTokens ?? 0),
-      [PREF_ANTHROPIC_TOTAL_TOKENS]:
-        toNonNegativeInt(prefs[PREF_ANTHROPIC_TOTAL_TOKENS]) +
+      [PREF_AI_TOTAL_TOKENS]:
+        toNonNegativeInt(prefs[PREF_AI_TOTAL_TOKENS]) +
         Math.max(0, usage.totalTokens ?? 0),
-      [PREF_ANTHROPIC_LAST_USED_AT]: new Date().toISOString(),
+      [PREF_AI_LAST_USED_AT]: new Date().toISOString(),
     };
 
     await serverUsers.updatePrefs({ userId, prefs: nextPrefs });
   } catch (error) {
-    console.error("[ai-usage] Failed to persist Anthropic usage:", error);
+    console.error("[ai-usage] Failed to persist AI usage:", error);
   }
+}
+
+/** @deprecated Use {@link recordAiUsageForUser} instead */
+export const recordAnthropicUsageForUser = recordAiUsageForUser;
+
+import { recordAiUsageEvent, type UsageEventData } from '@/lib/ai/usage-events';
+
+/**
+ * Combined helper: updates prefs lifetime counters AND writes usage event to table.
+ * Use this in onUsage callbacks from generateTextWithLogging / streamTextWithLogging.
+ */
+export async function recordAiUsage(
+  userId: string,
+  feature: string,
+  usage: AIUsageInfo,
+  options?: { canvasId?: string; model?: string },
+): Promise<void> {
+  // Update lifetime prefs (fast, for dashboard display)
+  await recordAiUsageForUser(userId, usage);
+
+  // Write detailed event (for quota enforcement, per-feature breakdown, cost tracking)
+  const eventData: UsageEventData = {
+    userId,
+    feature,
+    model: options?.model ?? usage.modelId ?? 'deepseek-v4-flash',
+    usage,
+    ...(options?.canvasId ? { canvasId: options.canvasId } : {}),
+    ...(usage.cacheHitTokens !== undefined ? { cacheHitTokens: usage.cacheHitTokens } : {}),
+    ...(usage.cacheMissTokens !== undefined ? { cacheMissTokens: usage.cacheMissTokens } : {}),
+  };
+
+  await recordAiUsageEvent(eventData);
 }

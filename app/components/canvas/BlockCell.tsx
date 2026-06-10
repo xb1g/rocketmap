@@ -329,7 +329,7 @@ export function BlockCell({
     <div
       ref={cellRef}
       className={`bmc-cell bmc-cell-panel group relative state-transition ${stateSurfaceClass} ${riskBorderClass} ${
-        isFocused ? "ring-1 ring-[var(--chroma-indigo)]/30" : ""
+        isFocused ? "ring-1 ring-chroma-indigo/30" : ""
       }`}
       style={{
         gridColumn: definition.gridCol,
@@ -433,13 +433,13 @@ export function BlockCell({
       <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1 flex-shrink-0">
           <span className="inline-flex items-center gap-1 font-display-small uppercase tracking-wider text-foreground-muted">
-            <span className="w-4 h-4 rounded-md border border-white/12 bg-white/5 text-foreground-muted/70 shrink-0 inline-flex items-center justify-center">
+            <span className="w-4 h-4 rounded-md border border-white/12 bg-foreground/5 text-foreground-muted/70 shrink-0 inline-flex items-center justify-center">
               <BlockTypeIcon type={definition.type} />
             </span>
             <span>{displayLabel}</span>
           </span>
         {showLeanChip && (
-          <span className="text-[8px] font-mono uppercase tracking-wider px-1.5 py-px rounded-full bg-[var(--chroma-indigo)]/10 text-[var(--chroma-indigo)] border border-[var(--chroma-indigo)]/20">
+          <span className="text-[8px] font-mono uppercase tracking-wider px-1.5 py-px rounded-full bg-chroma-indigo/10 text-chroma-indigo border border-chroma-indigo/20">
             Lean
           </span>
         )}
@@ -514,7 +514,7 @@ export function BlockCell({
           {onBlockCreate && (
             <button
               onClick={onBlockCreate}
-              className="w-full rounded-md border border-dashed border-white/8 hover:border-white/15 px-2 py-1 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/[0.03] transition-colors text-left"
+              className="w-full rounded-md border border-dashed border-white/8 hover:border-white/15 px-2 py-1 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/3 transition-colors text-left"
             >
               + Add block
             </button>
@@ -542,11 +542,11 @@ export function BlockCell({
 
           {/* New segment button */}
           {addingNew ? (
-            <div className="rounded-md border border-white/12 bg-white/[0.03] p-1.5 space-y-1">
+            <div className="rounded-md border border-white/12 bg-white/3 p-1.5 space-y-1">
               <input
                 value={newSegmentName}
                 onChange={(e) => setNewSegmentName(e.target.value)}
-                className="w-full bg-white/5 rounded px-1.5 py-0.5 text-[10px] font-medium text-foreground outline-none border border-white/12 focus:border-white/25"
+                className="w-full bg-foreground/5 rounded px-1.5 py-0.5 text-[10px] font-medium text-foreground outline-none border border-white/12 focus:border-foreground/25"
                 placeholder="Segment name"
                 autoFocus
                 onKeyDown={(e) => {
@@ -563,7 +563,7 @@ export function BlockCell({
               <textarea
                 value={newSegmentDesc}
                 onChange={(e) => setNewSegmentDesc(e.target.value)}
-                className="w-full bg-white/5 rounded px-1.5 py-0.5 text-[10px] text-foreground-muted outline-none border border-white/12 focus:border-white/25 resize-none"
+                className="w-full bg-foreground/5 rounded px-1.5 py-0.5 text-[10px] text-foreground-muted outline-none border border-white/12 focus:border-foreground/25 resize-none"
                 placeholder="Description..."
                 rows={2}
                 onKeyDown={(e) => {
@@ -579,7 +579,7 @@ export function BlockCell({
                 <button
                   onClick={() => handleCreateSegment()}
                   disabled={isSaving || !newSegmentName.trim()}
-                  className="text-[9px] px-1.5 py-0.5 rounded bg-white/8 text-foreground hover:bg-white/12 transition-colors disabled:opacity-40"
+                  className="text-[9px] px-1.5 py-0.5 rounded bg-foreground/8 text-foreground hover:bg-foreground/12 transition-colors disabled:opacity-40"
                 >
                   {isSaving ? "..." : "Create"}
                 </button>
@@ -599,7 +599,7 @@ export function BlockCell({
             !readOnly && (
               <button
                 onClick={() => setAddingNew(true)}
-                className="w-full rounded-md border border-dashed border-white/8 hover:border-white/15 px-2 py-1.5 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/[0.03] transition-colors text-left"
+                className="w-full rounded-md border border-dashed border-white/8 hover:border-white/15 px-2 py-1.5 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/3 transition-colors text-left"
               >
                 + New segment
               </button>
@@ -637,7 +637,7 @@ export function BlockCell({
         <BlockTooltip definition={definition} mode={mode}>
           <button
             type="button"
-            className="w-4 h-4 rounded-full flex items-center justify-center text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/5 transition-all"
+            className="w-4 h-4 rounded-full flex items-center justify-center text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-foreground/5 transition-all"
             aria-label={`Help for ${label}`}
           >
             <span className="font-mono text-[9px] font-bold">?</span>

@@ -16,8 +16,8 @@ interface SegmentSelectorProps {
 
 function beachheadDot(status: BeachheadStatus) {
   const colors = {
-    primary: "bg-[var(--chroma-indigo)]",
-    secondary: "bg-amber-400",
+    primary: "bg-chroma-indigo",
+    secondary: "bg-state-warning",
     later: "bg-white/20",
   };
   return colors[status];
@@ -43,7 +43,7 @@ export function SegmentSelector({
   return (
     <div className="flex flex-col h-full">
       <div className="px-3 py-2.5 border-b border-white/5">
-        <span className="font-display-small text-[10px] uppercase tracking-wider text-foreground-muted/60">
+        <span className="font-mono text-[10px] uppercase tracking-wider text-foreground-muted/60">
           Segments
         </span>
       </div>
@@ -59,7 +59,7 @@ export function SegmentSelector({
               onClick={() => onSelect(seg.$id)}
               className={`w-full text-left px-3 py-2 flex items-center gap-2 transition-colors ${
                 isSelected
-                  ? "bg-white/8 border-r-2 border-r-[var(--chroma-indigo)]"
+                  ? "bg-chroma-indigo/10"
                   : "hover:bg-white/4"
               }`}
             >

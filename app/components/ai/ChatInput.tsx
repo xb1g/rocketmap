@@ -36,10 +36,18 @@ export function ChatInput({ value, onChange, onSubmit, onStop, isLoading, placeh
 
   return (
     <div className="shrink-0 px-3 pb-3 pt-1.5">
-      <div className="flex items-end gap-2 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2 focus-within:border-[var(--chroma-indigo)]/20 transition-colors">
+      <div
+        className="flex items-end gap-2 px-3 py-2 transition-all"
+        style={{
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.03) 100%)',
+          border: '1px solid rgba(240,246,252,0.16)',
+          borderRadius: '12px',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 18px rgba(0,0,0,0.22)',
+        }}
+      >
         <textarea
           ref={textareaRef}
-          className="flex-1 bg-transparent text-xs outline-none resize-none leading-relaxed placeholder:text-foreground-muted/30"
+          className="flex-1 bg-transparent text-xs font-body outline-none resize-none leading-relaxed placeholder:text-foreground-muted/30"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -49,7 +57,7 @@ export function ChatInput({ value, onChange, onSubmit, onStop, isLoading, placeh
         {isLoading && onStop ? (
           <button
             onClick={onStop}
-            className="shrink-0 w-6 h-6 flex items-center justify-center rounded-lg text-foreground-muted/50 hover:text-red-400/80 hover:bg-red-500/10 transition-all"
+            className="shrink-0 w-6 h-6 flex items-center justify-center rounded-[10px] text-foreground-muted/50 hover:text-state-critical/80 hover:bg-state-critical/10 transition-all"
             aria-label="Stop generation"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
@@ -60,7 +68,7 @@ export function ChatInput({ value, onChange, onSubmit, onStop, isLoading, placeh
           <button
             onClick={() => { if (value.trim() && !isLoading) onSubmit(); }}
             disabled={!value.trim() || isLoading}
-            className="shrink-0 w-6 h-6 flex items-center justify-center rounded-lg text-foreground-muted/40 hover:text-foreground hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-transparent transition-all"
+            className="shrink-0 w-6 h-6 flex items-center justify-center rounded-[10px] text-foreground-muted/40 hover:text-foreground hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-transparent transition-all"
             aria-label="Send message"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

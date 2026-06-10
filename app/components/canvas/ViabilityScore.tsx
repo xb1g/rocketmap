@@ -23,21 +23,21 @@ type ViabilityStatus =
 function getScoreColor(score: number) {
   if (score < 50)
     return {
-      bg: "bg-[#f43f5e]",
-      text: "text-white",
+      bg: "bg-state-critical",
+      text: "text-foreground",
       glow: "glow-critical",
       label: "Not Viable",
     };
   if (score < 75)
     return {
-      bg: "bg-[#f59e0b]",
-      text: "text-white",
+      bg: "bg-state-warning",
+      text: "text-foreground",
       glow: "glow-warning",
       label: "Medium",
     };
   return {
-    bg: "bg-[#10b981]",
-    text: "text-white",
+    bg: "bg-state-healthy",
+    text: "text-foreground",
     glow: "glow-healthy",
     label: "High Viability",
   };
@@ -111,7 +111,7 @@ export function ViabilityScore({
           Calculate Viability
         </button>
         {error && (
-          <span className="text-xs text-[#f43f5e]" title={error}>
+          <span className="text-xs text-state-critical" title={error}>
             Error
           </span>
         )}
@@ -144,14 +144,15 @@ export function ViabilityScore({
       <div className="flex items-center gap-2">
         <Popover.Trigger asChild>
           <button
-            className={`${colors.bg} ${colors.text} ${colors.glow} px-3 py-1.5 rounded-lg font-mono text-sm font-bold transition-all hover:scale-105 cursor-pointer`}
+            className={`${colors.bg} ${colors.text} ${colors.glow} px-3 py-1.5 rounded-[12px] font-mono text-sm font-bold transition-all hover:scale-105 cursor-pointer`}
           >
             {data.score}
           </button>
         </Popover.Trigger>
 
         {status === "outdated" && (
-          <span className="px-2 py-0.5 bg-[#f59e0b]/20 text-[#f59e0b] text-[10px] font-mono uppercase tracking-wider rounded border border-[#f59e0b]/30">
+          <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-state-warning">
+            <span className="w-1.5 h-1.5 rounded-full bg-state-warning animate-pulse" />
             Outdated
           </span>
         )}
@@ -201,7 +202,7 @@ export function ViabilityScore({
 
       <Popover.Portal>
         <Popover.Content
-          className="glass-morphism border border-white/15 rounded-lg p-4 max-w-md shadow-2xl z-50"
+          className="bg-background border border-white/10 rounded-[14px] p-4 w-80 max-w-[90vw] shadow-[0_8px_32px_rgba(0,0,0,0.4)] z-50"
           sideOffset={8}
           align="end"
         >
@@ -223,18 +224,18 @@ export function ViabilityScore({
               <div className="text-xs font-semibold text-foreground mb-2">
                 Breakdown:
               </div>
-              <div className="space-y-1 text-xs text-foreground-muted">
-                <div className="flex justify-between">
-                  <span>Assumptions:</span>
-                  <span className="font-mono">{data.breakdown.assumptions}</span>
+              <div className="space-y-1.5 text-xs text-foreground-muted">
+                <div className="flex justify-between items-center">
+                  <span className="truncate pr-2">Assumptions:</span>
+                  <span className="font-mono shrink-0">{data.breakdown.assumptions}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Market:</span>
-                  <span className="font-mono">{data.breakdown.market}</span>
+                <div className="flex justify-between items-center">
+                  <span className="truncate pr-2">Market:</span>
+                  <span className="font-mono shrink-0">{data.breakdown.market}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Unmet Need:</span>
-                  <span className="font-mono">{data.breakdown.unmetNeed}</span>
+                <div className="flex justify-between items-center">
+                  <span className="truncate pr-2">Unmet Need:</span>
+                  <span className="font-mono shrink-0">{data.breakdown.unmetNeed}</span>
                 </div>
               </div>
             </div>
@@ -254,9 +255,9 @@ export function ViabilityScore({
                       <span
                         className={
                           item.status === "validated"
-                            ? "text-[#10b981]"
+                            ? "text-state-healthy"
                             : item.status === "invalidated"
-                              ? "text-[#f43f5e]"
+                              ? "text-state-critical"
                               : "text-foreground-muted"
                         }
                       >

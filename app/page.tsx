@@ -34,27 +34,27 @@ function LandingContent() {
   const error = searchParams.get("error");
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-[#07070a] text-white">
+    <div className="min-h-screen flex flex-col items-center bg-background text-foreground">
       <ErrorBanner error={error} />
-      
+
       {/* Hero Section */}
       <div className="max-w-md w-full text-center space-y-8 py-20 px-8">
         <div className="space-y-4">
-          <h1 className="text-5xl font-bold tracking-tight">RocketMap</h1>
-          <p className="text-xl text-gray-400">
+          <h1 className="landing-title landing-hero-title">RocketMap</h1>
+          <p className="text-xl text-foreground-muted font-body">
             AI-powered Business Model Canvas validation. Stress-test your startup idea in seconds.
           </p>
         </div>
 
         <button
           onClick={() => signInWithGoogle()}
-          className="w-full flex items-center justify-center gap-3 bg-white text-black hover:bg-gray-200 transition-colors py-4 px-6 rounded-xl font-semibold text-lg"
+          className="ui-btn ui-btn-primary ui-btn-block"
         >
           <GoogleIcon />
           <span>Continue with Google</span>
         </button>
 
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-foreground-muted font-mono uppercase tracking-[0.08em]">
           No credit card required. Free forever plan.
         </p>
       </div>
@@ -62,8 +62,8 @@ function LandingContent() {
       {/* Demo Section - Now Full Width */}
       <div className="w-full px-4 md:px-12 lg:px-20 space-y-12 pb-20">
         <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold text-white/90">Interactive Demo</h2>
-          <p className="text-white/40 font-mono text-xs uppercase tracking-[0.2em]">Explore the engine features</p>
+          <h2 className="text-2xl font-bold text-foreground font-body">Interactive Demo</h2>
+          <p className="text-foreground-muted font-mono text-xs uppercase tracking-[0.08em]">Explore the engine features</p>
         </div>
         <StaticBMC />
       </div>

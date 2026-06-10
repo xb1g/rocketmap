@@ -14,8 +14,9 @@ import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { BLOCK_DEFINITIONS, isSharedBlock } from '@/app/components/canvas/constants';
 import {
   getAnthropicModelForUser,
-  recordAnthropicUsageForUser,
+  recordAiUsage,
 } from '@/lib/ai/user-preferences';
+import { checkAiQuota, createQuotaExceededResponse } from '@/lib/ai/quota';
 
 const convertLeanToBmc = tool({
   description: 'Provide the converted BMC content for each of the 5 non-shared blocks, derived from the full Lean Canvas context.',
@@ -51,6 +52,10 @@ interface RouteContext {
 export async function POST(_request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
+    const quota = await checkAiQuota(user);
+    if (!quota.allowed) {
+      return createQuotaExceededResponse(quota);
+    }
     const { canvasId } = await context.params;
 
     const blocks = await getCanvasBlocks(canvasId, user.$id);
@@ -115,7 +120,7 @@ Use the convertLeanToBmc tool to generate BMC content for all 5 non-shared block
         stopWhen: stepCountIs(3),
       },
       {
-        onUsage: (usageData) => recordAnthropicUsageForUser(user.$id, usageData),
+        onUsage: (usageData) => recordAiUsage(user.$id, 'convert-lean-to-bmc', usageData, { canvasId }),
       },
     );
 

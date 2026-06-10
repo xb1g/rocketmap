@@ -46,8 +46,8 @@ export function RadarChart({ criteria, size = 280 }: RadarChartProps) {
 
   // Determine fill color based on average score
   const avg = criteria.reduce((sum, c) => sum + c.score, 0) / n;
-  const fillColor = avg >= 4 ? 'rgba(16,185,129,0.15)' : avg >= 3 ? 'rgba(245,158,11,0.15)' : 'rgba(244,63,94,0.15)';
-  const strokeColor = avg >= 4 ? 'rgba(16,185,129,0.7)' : avg >= 3 ? 'rgba(245,158,11,0.7)' : 'rgba(244,63,94,0.7)';
+  const fillColor = avg >= 4 ? 'color-mix(in srgb, var(--state-healthy) 15%, transparent)' : avg >= 3 ? 'color-mix(in srgb, var(--state-warning) 15%, transparent)' : 'color-mix(in srgb, var(--state-critical) 15%, transparent)';
+  const strokeColor = avg >= 4 ? 'color-mix(in srgb, var(--state-healthy) 70%, transparent)' : avg >= 3 ? 'color-mix(in srgb, var(--state-warning) 70%, transparent)' : 'color-mix(in srgb, var(--state-critical) 70%, transparent)';
 
   // Axis lines and labels
   const axes = criteria.map((c, i) => {

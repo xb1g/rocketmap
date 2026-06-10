@@ -1136,12 +1136,12 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
       {showPublicReadOnlyBanner && (
         <div
           style={{
-            border: "1px solid rgba(99,102,241,0.3)",
+            border: "1px solid color-mix(in srgb, var(--chroma-indigo) 30%, transparent)",
             borderRadius: "10px",
             padding: "0.5rem 0.75rem",
             background:
-              "linear-gradient(90deg, rgba(99,102,241,0.16), rgba(236,72,153,0.1))",
-            color: "#f8fafc",
+              "linear-gradient(90deg, color-mix(in srgb, var(--chroma-indigo) 16%, transparent), color-mix(in srgb, var(--chroma-pink) 10%, transparent))",
+            color: "var(--foreground)",
             fontSize: "0.8rem",
             display: "flex",
             justifyContent: "space-between",
@@ -1402,7 +1402,7 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
 
       {/* Expanded block detail — sits above backdrop (z-40) but below focus panel (z-50) */}
       {activeTab === "canvas" && !isMobile && expandedBlock && expandedBlockData && (
-          <div className="fixed top-0 bottom-0 left-0 z-40 overflow-y-auto bg-[var(--color-background)]" style={{ right: `${focusPanelWidth}px` }}>
+          <div className="fixed top-0 bottom-0 left-0 z-40 overflow-y-auto bg-background" style={{ right: `${focusPanelWidth}px` }}>
               <ExpandedCanvasOverview
                 blocks={blocks}
                 mode={mode}
@@ -1423,7 +1423,7 @@ ${viabilityData.validatedAssumptions.length} assumptions analyzed.`;
                       <span className="font-display-small text-xs uppercase tracking-wider text-foreground-muted/70">
                         Segment Evaluation
                       </span>
-                      <div className="flex-1 h-px bg-white/5" />
+                      <div className="flex-1 h-px bg-foreground/5" />
                     </div>
                     <InlineSegmentEval
                       canvasId={canvasId}

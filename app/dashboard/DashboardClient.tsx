@@ -167,7 +167,7 @@ export function DashboardClient({
             padding: "0.65rem 0.8rem",
             borderRadius: "10px",
             border: "1px solid rgba(255,255,255,0.15)",
-            background: "rgba(14, 20, 29, 0.95)",
+            background: "rgba(7, 7, 10, 0.95)",
             color: "var(--foreground)",
             fontSize: "0.85rem",
             boxShadow: "0 12px 30px rgba(0, 0, 0, 0.25)",
@@ -219,7 +219,7 @@ export function DashboardClient({
           marginBottom: "1.5rem",
         }}
       >
-        <Heading size="4" style={{ fontFamily: "var(--font-display)" }}>
+        <Heading size="4" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
           Your Canvases
         </Heading>
         <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -287,7 +287,8 @@ export function DashboardClient({
           <Heading
             size="5"
             style={{
-              fontFamily: "var(--font-display)",
+              fontFamily: "var(--font-body)",
+              fontWeight: 600,
               marginBottom: "0.5rem",
             }}
           >

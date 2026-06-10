@@ -58,16 +58,16 @@ export function LinkPicker({
   return (
     <div
       ref={popoverRef}
-      className="absolute z-50 w-52 rounded-lg border border-white/12 bg-[#1a1a1f] shadow-xl shadow-black/40"
+      className="absolute z-50 w-52 rounded-[12px] border border-white/8 bg-canvas-surface shadow-xl shadow-black/40"
       style={{ bottom: "100%", left: 0, marginBottom: 4 }}
     >
       {/* Tab bar */}
-      <div className="flex border-b border-white/8">
+      <div className="flex border-b border-white/6">
         <button
           onClick={() => setTab("segments")}
           className={`flex-1 text-[9px] py-1.5 transition-colors ${
             tab === "segments"
-              ? "text-foreground border-b border-indigo-400"
+              ? "text-foreground border-b border-(--chroma-indigo)"
               : "text-foreground-muted/50 hover:text-foreground-muted"
           }`}
         >
@@ -77,7 +77,7 @@ export function LinkPicker({
           onClick={() => setTab("blocks")}
           className={`flex-1 text-[9px] py-1.5 transition-colors ${
             tab === "blocks"
-              ? "text-foreground border-b border-indigo-400"
+              ? "text-foreground border-b border-(--chroma-indigo)"
               : "text-foreground-muted/50 hover:text-foreground-muted"
           }`}
         >
@@ -107,7 +107,7 @@ export function LinkPicker({
                 >
                   <span
                     className="w-2 h-2 rounded-full shrink-0"
-                    style={{ background: seg.colorHex ?? "#6366f1" }}
+                    style={{ background: seg.colorHex ?? "var(--chroma-indigo)" }}
                   />
                   <span className="text-[10px] truncate flex-1">
                     {seg.name}
@@ -120,7 +120,7 @@ export function LinkPicker({
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="3"
-                      className="shrink-0 text-indigo-400"
+                      className="shrink-0 text-(--chroma-indigo)"
                     >
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
@@ -165,7 +165,7 @@ export function LinkPicker({
                             fill="none"
                             stroke="currentColor"
                             strokeWidth="3"
-                            className="shrink-0 text-indigo-400"
+                            className="shrink-0 text-(--chroma-indigo)"
                           >
                             <polyline points="20 6 9 17 4 12" />
                           </svg>

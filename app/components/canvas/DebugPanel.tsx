@@ -39,14 +39,14 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
           return (
             <div
               key={def.type}
-              className="bg-white/[0.03] border border-white/8 rounded-lg p-4"
+              className="bg-white/3 border border-white/6 rounded-[14px] p-4"
             >
               <button
                 onClick={() => toggleBlockExpanded(def.type)}
                 className="w-full flex items-center justify-between text-left"
               >
                 <div className="flex items-center gap-3">
-                  <span className="font-display font-semibold text-white">
+                  <span className="font-display font-semibold text-foreground">
                     {def.bmcLabel}
                   </span>
                   <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-white/5 text-foreground-muted">
@@ -65,15 +65,15 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                     <div className="font-mono text-[10px] text-foreground-muted uppercase tracking-wider mb-1">
                       Content
                     </div>
-                    <div className="bg-black/20 rounded p-2 space-y-1">
+                    <div className="bg-white/3 rounded p-2 space-y-1">
                       <div>
-                        <span className="text-chroma-indigo">BMC:</span>{" "}
+                        <span className="text-(--chroma-indigo)">BMC:</span>{" "}
                         <span className="text-foreground-muted">
                           {block.content.bmc || "(empty)"}
                         </span>
                       </div>
                       <div>
-                        <span className="text-chroma-cyan">Lean:</span>{" "}
+                        <span className="text-(--chroma-cyan)">Lean:</span>{" "}
                         <span className="text-foreground-muted">
                           {block.content.lean || "(empty)"}
                         </span>
@@ -91,14 +91,14 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                         {block.content.items.map((item) => (
                           <div
                             key={item.id}
-                            className="bg-black/20 rounded p-2 space-y-1"
+                            className="bg-white/3 rounded p-2 space-y-1"
                           >
-                            <div className="font-semibold text-white">
+                            <div className="font-semibold text-foreground">
                               {item.name}
                             </div>
                             {item.linkedSegmentIds.length > 0 && (
                               <div className="flex gap-1 flex-wrap">
-                                <span className="text-[10px] text-foreground-muted">
+                                <span className="text-[10px] font-mono uppercase tracking-wider text-foreground-muted">
                                   Segments:
                                 </span>
                                 {item.linkedSegmentIds.map((segId) => {
@@ -113,7 +113,7 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                                         backgroundColor: seg?.colorHex
                                           ? `${seg.colorHex}20`
                                           : "rgba(99, 102, 241, 0.15)",
-                                        color: seg?.colorHex || "#6366f1",
+                                        color: seg?.colorHex || "var(--chroma-indigo)",
                                       }}
                                     >
                                       {seg?.name || segId.slice(0, 8)}
@@ -148,7 +148,7 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                               backgroundColor: seg.colorHex
                                 ? `${seg.colorHex}20`
                                 : "rgba(99, 102, 241, 0.15)",
-                              color: seg.colorHex || "#6366f1",
+                              color: seg.colorHex || "var(--chroma-indigo)",
                             }}
                           >
                             {seg.name}
@@ -160,21 +160,21 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
 
                   {/* Scores */}
                   <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div className="bg-black/20 rounded p-2">
+                    <div className="bg-white/3 rounded p-2">
                       <div className="text-foreground-muted">State</div>
-                      <div className="font-semibold text-white">
+                      <div className="font-semibold text-foreground">
                         {block.state}
                       </div>
                     </div>
-                    <div className="bg-black/20 rounded p-2">
+                    <div className="bg-white/3 rounded p-2">
                       <div className="text-foreground-muted">Confidence</div>
-                      <div className="font-semibold text-white">
+                      <div className="font-semibold text-foreground">
                         {(block.confidenceScore * 100).toFixed(0)}
                       </div>
                     </div>
-                    <div className="bg-black/20 rounded p-2">
+                    <div className="bg-white/3 rounded p-2">
                       <div className="text-foreground-muted">Risk</div>
-                      <div className="font-semibold text-white">
+                      <div className="font-semibold text-foreground">
                         {(block.riskScore * 100).toFixed(0)}
                       </div>
                     </div>
@@ -186,10 +186,10 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                       <div className="font-mono text-[10px] text-foreground-muted uppercase tracking-wider mb-1">
                         AI Analysis
                       </div>
-                      <div className="bg-black/20 rounded p-2 space-y-2 text-xs">
+                      <div className="bg-white/3 rounded p-2 space-y-2 text-xs">
                         {block.aiAnalysis.assumptions.length > 0 && (
                           <div>
-                            <span className="text-chroma-amber">
+                            <span className="text-(--chroma-amber)">
                               Assumptions:
                             </span>{" "}
                             {block.aiAnalysis.assumptions.length}
@@ -197,13 +197,13 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                         )}
                         {block.aiAnalysis.risks.length > 0 && (
                           <div>
-                            <span className="text-state-critical">Risks:</span>{" "}
+                            <span className="text-(--state-critical)">Risks:</span>{" "}
                             {block.aiAnalysis.risks.length}
                           </div>
                         )}
                         {block.aiAnalysis.questions.length > 0 && (
                           <div>
-                            <span className="text-chroma-cyan">
+                            <span className="text-(--chroma-cyan)">
                               Questions:
                             </span>{" "}
                             {block.aiAnalysis.questions.length}
@@ -223,9 +223,9 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                         {block.cards.map((card) => (
                           <div
                             key={card.$id}
-                            className="bg-black/20 rounded p-2 space-y-1"
+                            className="bg-white/3 rounded p-2 space-y-1"
                           >
-                            <div className="font-semibold text-white text-sm">
+                            <div className="font-semibold text-foreground text-sm">
                               {card.name}
                             </div>
                             <div className="text-[10px] text-foreground-muted">
@@ -243,7 +243,7 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                       <div className="font-mono text-[10px] text-foreground-muted uppercase tracking-wider mb-1">
                         Deep Dive Data
                       </div>
-                      <div className="bg-black/20 rounded p-2 text-xs text-foreground-muted">
+                      <div className="bg-white/3 rounded p-2 text-xs text-foreground-muted">
                         {Object.keys(block.deepDiveData).join(", ")}
                       </div>
                     </div>
@@ -268,21 +268,21 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
           segments.map((seg) => (
             <div
               key={seg.$id}
-              className="bg-white/[0.03] border border-white/8 rounded-lg p-4"
+              className="bg-white/3 border border-white/6 rounded-[14px] p-4"
             >
               <div className="flex items-center gap-3 mb-3">
                 <div
                   className="w-4 h-4 rounded-full"
-                  style={{ backgroundColor: seg.colorHex || "#6366f1" }}
+                  style={{ backgroundColor: seg.colorHex || "var(--chroma-indigo)" }}
                 />
-                <span className="font-display font-semibold text-white">
+                <span className="font-display font-semibold text-foreground">
                   {seg.name}
                 </span>
                 <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-white/5 text-foreground-muted">
                   {seg.$id.slice(0, 8)}
                 </span>
                 {seg.earlyAdopterFlag && (
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-state-healthy/20 text-state-healthy">
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-(--state-healthy)/[0.15] text-(--state-healthy)">
                     Early Adopter
                   </span>
                 )}
@@ -295,15 +295,15 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
               )}
 
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-black/20 rounded p-2">
+                <div className="bg-white/3 rounded p-2">
                   <div className="text-foreground-muted">Priority Score</div>
-                  <div className="font-semibold text-white">
+                  <div className="font-semibold text-foreground">
                     {seg.priorityScore}
                   </div>
                 </div>
-                <div className="bg-black/20 rounded p-2">
+                <div className="bg-white/3 rounded p-2">
                   <div className="text-foreground-muted">Estimated Size</div>
-                  <div className="font-semibold text-white">
+                  <div className="font-semibold text-foreground">
                     {seg.estimatedSize || "N/A"}
                   </div>
                 </div>
@@ -316,7 +316,7 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                 <div className="mt-3 space-y-2 text-xs">
                   {seg.demographics && (
                     <div>
-                      <span className="text-chroma-indigo">Demographics:</span>{" "}
+                      <span className="text-(--chroma-indigo)">Demographics:</span>{" "}
                       <span className="text-foreground-muted">
                         {seg.demographics}
                       </span>
@@ -324,7 +324,7 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                   )}
                   {seg.psychographics && (
                     <div>
-                      <span className="text-chroma-pink">Psychographics:</span>{" "}
+                      <span className="text-(--chroma-pink)">Psychographics:</span>{" "}
                       <span className="text-foreground-muted">
                         {seg.psychographics}
                       </span>
@@ -332,7 +332,7 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                   )}
                   {seg.behavioral && (
                     <div>
-                      <span className="text-chroma-cyan">Behavioral:</span>{" "}
+                      <span className="text-(--chroma-cyan)">Behavioral:</span>{" "}
                       <span className="text-foreground-muted">
                         {seg.behavioral}
                       </span>
@@ -340,7 +340,7 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                   )}
                   {seg.geographic && (
                     <div>
-                      <span className="text-chroma-amber">Geographic:</span>{" "}
+                      <span className="text-(--chroma-amber)">Geographic:</span>{" "}
                       <span className="text-foreground-muted">
                         {seg.geographic}
                       </span>
@@ -398,15 +398,15 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
           relations.map((rel) => (
             <div
               key={rel.blockType}
-              className="bg-white/[0.03] border border-white/8 rounded-lg p-4"
+              className="bg-white/3 border border-white/6 rounded-[14px] p-4"
             >
-              <div className="font-display font-semibold text-white mb-3">
+              <div className="font-display font-semibold text-foreground mb-3">
                 {rel.blockLabel}
               </div>
 
               {rel.segments.length > 0 && (
                 <div className="mb-3">
-                  <div className="text-[10px] text-foreground-muted uppercase tracking-wider mb-1">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-foreground-muted mb-1">
                     Block-Level Segments
                   </div>
                   <div className="flex gap-2 flex-wrap">
@@ -418,7 +418,7 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                           backgroundColor: seg.colorHex
                             ? `${seg.colorHex}20`
                             : "rgba(99, 102, 241, 0.15)",
-                          color: seg.colorHex || "#6366f1",
+                          color: seg.colorHex || "var(--chroma-indigo)",
                         }}
                       >
                         {seg.name}
@@ -430,13 +430,13 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
 
               {rel.items.length > 0 && (
                 <div>
-                  <div className="text-[10px] text-foreground-muted uppercase tracking-wider mb-1">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-foreground-muted mb-1">
                     Item-Level Segments
                   </div>
                   <div className="space-y-2">
                     {rel.items.map((item, idx) => (
-                      <div key={idx} className="bg-black/20 rounded p-2">
-                        <div className="text-sm text-white mb-1">
+                      <div key={idx} className="bg-white/3 rounded p-2">
+                        <div className="text-sm text-foreground mb-1">
                           {item.name}
                         </div>
                         <div className="flex gap-1 flex-wrap">
@@ -448,7 +448,7 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
                                 backgroundColor: seg.colorHex
                                   ? `${seg.colorHex}20`
                                   : "rgba(99, 102, 241, 0.15)",
-                                color: seg.colorHex || "#6366f1",
+                                color: seg.colorHex || "var(--chroma-indigo)",
                               }}
                             >
                               {seg.name}
@@ -477,7 +477,7 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
     };
 
     return (
-      <div className="bg-black/40 rounded-lg p-4">
+      <div className="bg-white/3 rounded-[14px] p-4">
         <pre className="text-xs text-foreground-muted overflow-x-auto font-mono whitespace-pre-wrap">
           {JSON.stringify(data, null, 2)}
         </pre>
@@ -492,7 +492,7 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-display text-xl font-semibold text-white">
+              <h2 className="font-display text-xl font-semibold text-foreground">
                 Debug Panel
               </h2>
               <p className="text-sm text-foreground-muted mt-1">
@@ -502,9 +502,9 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
             <div className="flex gap-2">
               <button
                 onClick={() => setViewMode("blocks")}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-[12px] text-xs font-medium transition-colors ${
                   viewMode === "blocks"
-                    ? "bg-chroma-indigo text-white"
+                    ? "bg-(--chroma-indigo) text-foreground"
                     : "bg-white/5 text-foreground-muted hover:bg-white/10"
                 }`}
               >
@@ -512,9 +512,9 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
               </button>
               <button
                 onClick={() => setViewMode("segments")}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-[12px] text-xs font-medium transition-colors ${
                   viewMode === "segments"
-                    ? "bg-chroma-indigo text-white"
+                    ? "bg-(--chroma-indigo) text-foreground"
                     : "bg-white/5 text-foreground-muted hover:bg-white/10"
                 }`}
               >
@@ -522,9 +522,9 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
               </button>
               <button
                 onClick={() => setViewMode("relations")}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-[12px] text-xs font-medium transition-colors ${
                   viewMode === "relations"
-                    ? "bg-chroma-indigo text-white"
+                    ? "bg-(--chroma-indigo) text-foreground"
                     : "bg-white/5 text-foreground-muted hover:bg-white/10"
                 }`}
               >
@@ -532,9 +532,9 @@ export function DebugPanel({ blocks, segments }: DebugPanelProps) {
               </button>
               <button
                 onClick={() => setViewMode("raw")}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-[12px] text-xs font-medium transition-colors ${
                   viewMode === "raw"
-                    ? "bg-chroma-indigo text-white"
+                    ? "bg-(--chroma-indigo) text-foreground"
                     : "bg-white/5 text-foreground-muted hover:bg-white/10"
                 }`}
               >

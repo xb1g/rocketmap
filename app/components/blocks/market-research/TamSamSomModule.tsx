@@ -31,9 +31,9 @@ function formatCurrency(value: number): string {
 
 function ConfidenceBadge({ level }: { level: string }) {
   const colors: Record<string, string> = {
-    high: "text-emerald-400 bg-emerald-400/10",
-    medium: "text-amber-400 bg-amber-400/10",
-    low: "text-red-400 bg-red-400/10",
+    high: "text-state-healthy bg-state-healthy/10",
+    medium: "text-state-warning bg-state-warning/10",
+    low: "text-state-critical bg-state-critical/10",
   };
   return (
     <span
@@ -138,7 +138,7 @@ export function TamSamSomModule({
           },
         ].map(({ label, value, setter, field }) => (
           <div key={field} className="space-y-1">
-            <label className="text-[10px] text-foreground-muted uppercase tracking-wider">
+            <label className="text-[10px] font-mono text-foreground-muted uppercase tracking-wider">
               {label}
             </label>
             <input
@@ -148,7 +148,7 @@ export function TamSamSomModule({
                 setter(e.target.value);
                 debouncedSave({ ...current, [field]: e.target.value });
               }}
-              className="w-full bg-white/5 border border-white/8 rounded-md px-3 py-1.5 text-sm text-foreground outline-none focus:border-white/20 transition-colors"
+              className="w-full input-soft px-3 py-1.5 text-sm text-foreground"
               placeholder={label}
             />
           </div>
@@ -161,7 +161,7 @@ export function TamSamSomModule({
         disabled={isGenerating || !aiEnabled}
         className={`ui-btn ui-btn-sm ui-btn-block ${
           isGenerating
-            ? "ui-btn-secondary glow-ai text-[var(--state-ai)]"
+            ? "ui-btn-secondary glow-ai text-state-ai"
             : !aiEnabled
               ? "ui-btn-ghost text-foreground-muted/40 cursor-not-allowed"
               : "ui-btn-secondary text-foreground-muted hover:text-foreground"

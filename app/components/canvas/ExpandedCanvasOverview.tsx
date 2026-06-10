@@ -145,13 +145,13 @@ export function ExpandedCanvasOverview({
     <div className="p-6 space-y-4 max-w-3xl mx-auto">
       {/* Header with block name */}
       <div className="flex items-center gap-3">
-        <span className="w-7 h-7 rounded-lg border border-[var(--chroma-indigo)]/30 bg-[var(--chroma-indigo)]/10 text-[var(--chroma-indigo)] inline-flex items-center justify-center shrink-0">
+        <span className="w-7 h-7 rounded-lg border border-chroma-indigo/30 bg-chroma-indigo/10 text-chroma-indigo inline-flex items-center justify-center shrink-0">
           <BlockIcon type={expandedBlock} size={16} />
         </span>
         <h2 className="font-display-small text-sm uppercase tracking-wider text-foreground">
           {label}
         </h2>
-        <div className="flex-1 h-px bg-white/5" />
+        <div className="flex-1 h-px bg-foreground/5" />
         <span className="text-[10px] font-mono text-foreground-muted/50">
           {items.length} item{items.length !== 1 ? "s" : ""}
         </span>
@@ -200,7 +200,7 @@ export function ExpandedCanvasOverview({
           <span className="font-display-small text-[10px] uppercase tracking-wider text-foreground-muted/40">
             Other blocks
           </span>
-          <div className="flex-1 h-px bg-white/5" />
+          <div className="flex-1 h-px bg-foreground/5" />
         </div>
         <div className="flex flex-wrap gap-1.5">
           {BLOCK_DEFINITIONS.filter((d) => d.type !== expandedBlock).map(
@@ -213,7 +213,7 @@ export function ExpandedCanvasOverview({
                 <button
                   key={d.type}
                   onClick={() => onBlockSelect(d.type)}
-                  className="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1.5 rounded-md border border-white/8 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/15 text-foreground-muted/60 hover:text-foreground-muted transition-all"
+                  className="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1.5 rounded-md border border-white/8 bg-white/2 hover:bg-white/5 hover:border-white/15 text-foreground-muted/60 hover:text-foreground-muted transition-all"
                 >
                   <BlockIcon type={d.type} size={11} />
                   <span>{bLabel}</span>
@@ -249,7 +249,7 @@ function ItemRow({
   const tags = item.tags ?? [];
 
   return (
-    <div className="rounded-lg border border-white/8 bg-white/[0.02] p-3.5 space-y-2 hover:border-white/12 transition-colors">
+    <div className="rounded-lg border border-white/8 bg-white/2 p-3.5 space-y-2 hover:border-white/12 transition-colors">
       {/* Item name */}
       <p className="text-[13px] text-foreground leading-snug">{item.name}</p>
 
@@ -259,7 +259,7 @@ function ItemRow({
           {tags.map((tag, i) => (
             <span
               key={`${tag}-${i}`}
-              className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/5 border border-white/8 text-foreground-muted/60"
+              className="text-[9px] px-1.5 py-0.5 rounded-full bg-foreground/5 border border-white/8 text-foreground-muted/60"
             >
               {tag}
             </span>

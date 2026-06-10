@@ -8,8 +8,9 @@ import { saveChatMessage } from '@/lib/ai/chat-persistence';
 import type { BlockType } from '@/lib/types/canvas';
 import {
   getAnthropicModelForUser,
-  recordAnthropicUsageForUser,
+  recordAiUsage,
 } from '@/lib/ai/user-preferences';
+import { checkAiQuota, createQuotaExceededResponse } from '@/lib/ai/quota';
 
 interface RouteContext {
   params: Promise<{ canvasId: string; blockType: string }>;
@@ -18,6 +19,10 @@ interface RouteContext {
 export async function POST(request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
+    const quota = await checkAiQuota(user);
+    if (!quota.allowed) {
+      return createQuotaExceededResponse(quota);
+    }
     const { canvasId, blockType } = await context.params;
     const { messages, chatKey } = await request.json();
 
@@ -34,7 +39,7 @@ export async function POST(request: Request, context: RouteContext) {
       tools,
       stopWhen: stepCountIs(3),
     }, {
-      onUsage: (usage) => recordAnthropicUsageForUser(user.$id, usage),
+      onUsage: (usage) => recordAiUsage(user.$id, `block-chat:${blockType}`, usage, { canvasId }),
     });
 
     // Save assistant response (text + tool results with args) after stream completes

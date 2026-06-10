@@ -407,7 +407,7 @@ export default async function CanvasPage({ params }: PageProps) {
   };
 
   return (
-    <div className="canvas-page-bg text-lg">
+    <div className="canvas-page-bg text-lg" style={{ backgroundColor: "var(--background)" }}>
       <CanvasClient
         canvasId={canvas.$id as string}
         initialCanvasData={canvasData}
