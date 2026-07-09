@@ -23,6 +23,7 @@ interface BlockCardProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   allBlockItems?: Map<BlockType, any[]>;
   highlightedSegmentId?: string | null;
+  focusSegmentId?: string | null;
   onUpdate: (blockId: string, updates: { contentJson: string }) => void;
   onDelete: (blockId: string) => void;
   onSegmentToggle: (blockId: string, segmentId: string) => void;
@@ -33,7 +34,7 @@ interface BlockCardProps {
 
 export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
   function BlockCard(
-    { block, allSegments, onUpdate, onDelete, onSegmentToggle, onSegmentHover, highlightedSegmentId, onMouseEnter, onMouseLeave },
+    { block, allSegments, onUpdate, onDelete, onSegmentToggle, onSegmentHover, highlightedSegmentId, focusSegmentId, onMouseEnter, onMouseLeave },
     ref
   ) {
     // Parse contentJson with fallback
@@ -128,11 +129,29 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
       block.confidenceScore >= 40 ? 'var(--state-warning)' :
       'var(--state-critical)';
 
+    // Segment focus lens emphasis for this item.
+    // 'match' → linked to focused segment (normal); 'other' → linked only to
+    // other segments (dimmed); 'unassigned' → no segments (intermediate + hint).
+    const focusEmphasis: 'none' | 'match' | 'other' | 'unassigned' =
+      !focusSegmentId
+        ? 'none'
+        : block.segments.length === 0
+          ? 'unassigned'
+          : linkedSegmentIds.has(focusSegmentId)
+            ? 'match'
+            : 'other';
+    const focusOpacityClass =
+      focusEmphasis === 'other'
+        ? 'opacity-40'
+        : focusEmphasis === 'unassigned'
+          ? 'opacity-80'
+          : '';
+
     return (
       <div
         ref={ref}
-        className={`block-item-card group relative${cardHasHighlightedSegment ? ' ring-1 ring-foreground/20' : ''}`}
-        style={cardHasHighlightedSegment ? { transition: 'box-shadow 150ms ease, ring 150ms ease' } : undefined}
+        className={`block-item-card group relative transition-opacity duration-300 motion-reduce:transition-none ${focusOpacityClass}${cardHasHighlightedSegment ? ' ring-1 ring-foreground/20' : ''}`}
+        style={cardHasHighlightedSegment ? { transition: 'box-shadow 150ms ease, ring 150ms ease, opacity 300ms ease' } : undefined}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       >
