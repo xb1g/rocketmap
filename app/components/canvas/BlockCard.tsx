@@ -255,6 +255,13 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
               <span>{block.segments.length || ''}</span>
             </button>
 
+            {/* Unassigned hint — surfaced only while a segment lens is active */}
+            {focusEmphasis === 'unassigned' && (
+              <span className="text-[8px] font-mono uppercase tracking-wider px-1 py-px rounded border border-dashed border-foreground/25 text-foreground-muted/50">
+                unassigned
+              </span>
+            )}
+
             {/* Confidence score — only when meaningful */}
             {block.confidenceScore > 0 && (
               <span
