@@ -23,8 +23,8 @@ export function SegmentFocusPicker({
   onFocusSegmentChange,
 }: SegmentFocusPickerProps) {
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(undefined);
-  const triggerRef = useRef<HTMLButtonElement>(undefined);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   // Option list: index 0 is the "All segments" reset, then each segment.
@@ -212,7 +212,6 @@ export function SegmentFocusPicker({
         <div
           role="listbox"
           aria-label="Focus canvas on a customer segment"
-          aria-activedescendant={undefined}
           className="absolute right-0 top-full mt-1 z-50 min-w-[200px] max-h-[280px] overflow-y-auto rounded-lg border border-border bg-canvas-surface p-1 space-y-0.5 shadow-[0_20px_25px_-5px_rgba(var(--ink-shadow),0.12),0_8px_10px_-6px_rgba(var(--ink-shadow),0.12)]"
         >
           <div className="text-[8px] text-foreground-muted/40 uppercase tracking-wider px-1.5 py-0.5 font-mono">
