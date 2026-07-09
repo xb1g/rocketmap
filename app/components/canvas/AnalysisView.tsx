@@ -189,6 +189,11 @@ export function AnalysisView({
   const analyzedCount = Array.from(blocks.values()).filter(
     (b) => b.aiAnalysis,
   ).length;
+  const contentfulCount = Array.from(blocks.values()).filter((b) => {
+    const text = `${b.content.bmc} ${b.content.lean}`.trim();
+    return text.length >= 10 || (b.content.items?.length ?? 0) > 0;
+  }).length;
+  const canRunConsistencyCheck = contentfulCount >= 2;
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-6">
@@ -197,21 +202,21 @@ export function AnalysisView({
         <div>
           <h3 className="text-sm font-medium">Canvas Analysis</h3>
           <p className="text-xs text-foreground-muted mt-0.5">
-            {analyzedCount}/9 blocks analyzed
+            {analyzedCount}/9 blocks analyzed · {contentfulCount}/9 blocks filled
           </p>
         </div>
         <button
           onClick={onRunConsistencyCheck}
-          disabled={isCheckingConsistency || analyzedCount < 2}
+          disabled={isCheckingConsistency || !canRunConsistencyCheck}
           className={`ui-btn ui-btn-sm ${
             isCheckingConsistency
               ? "ui-btn-secondary glow-ai text-state-ai"
-              : analyzedCount < 2
+              : !canRunConsistencyCheck
                 ? "ui-btn-ghost text-foreground-muted cursor-not-allowed"
                 : "ui-btn-secondary text-foreground-muted hover:text-foreground"
           }`}
           title={
-            analyzedCount < 2 ? "Analyze at least 2 blocks first" : undefined
+            !canRunConsistencyCheck ? "Fill at least 2 blocks first" : undefined
           }
         >
           {isCheckingConsistency ? "Checking..." : "Run Consistency Check"}

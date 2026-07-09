@@ -619,6 +619,7 @@ export function CanvasClient({
     };
 
     try {
+      let foundConsistencyResult = false;
       const res = await fetch(`/api/canvas/${canvasId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -640,7 +641,8 @@ export function CanvasClient({
       });
 
       if (!res.ok || !res.body) {
-        throw new Error("Consistency check failed");
+        const message = await res.text().catch(() => "");
+        throw new Error(message || "Consistency check failed");
       }
 
       // Parse streaming response for checkConsistency tool result
@@ -664,15 +666,38 @@ export function CanvasClient({
             const items: unknown[] = Array.isArray(event) ? event : [event];
             for (const item of items) {
               const result = extractConsistencyResult(item);
-              if (result) setConsistencyData(result);
+              if (result) {
+                foundConsistencyResult = true;
+                setConsistencyData(result);
+              }
             }
           } catch {
             // partial or non-JSON line
           }
         }
       }
+      if (!foundConsistencyResult) {
+        throw new Error("AI response did not include a consistency report");
+      }
     } catch (error) {
       console.error("Consistency check failed:", error);
+      setConsistencyData({
+        contradictions: [
+          {
+            blocks: ["Consistency Checker"],
+            issue:
+              error instanceof Error
+                ? error.message
+                : "The consistency check failed before returning a report.",
+            severity: "critical",
+            suggestion:
+              "Try again. If this repeats, check the browser console and server logs for the API error.",
+          },
+        ],
+        missingLinks: [],
+        chainFindings: [],
+        overallScore: 0,
+      });
     } finally {
       setIsCheckingConsistency(false);
     }
