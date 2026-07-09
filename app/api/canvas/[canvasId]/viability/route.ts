@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { Query } from "node-appwrite";
 import { generateTextWithLogging } from '@/lib/ai/logger';
-import { createOpenAI } from "@ai-sdk/openai";
 import { requireAuth } from "@/lib/appwrite-server";
 import { getUserIdFromCanvas } from "@/lib/utils";
 import {
@@ -13,6 +12,7 @@ import {
 import { getCanvasBlocks } from "@/lib/ai/canvas-state";
 import { getViabilityPrompt } from "@/lib/ai/prompts";
 import { recordAiUsage } from "@/lib/ai/user-preferences";
+import { getModelForPurpose, getModelIdForPurpose } from "@/lib/ai/models";
 import { checkAiQuota, createQuotaExceededResponse } from '@/lib/ai/quota';
 import { parseAssumptionRow } from "@/lib/utils/assumptions";
 import {
@@ -27,11 +27,6 @@ import type {
   ViabilityData,
   ViabilityUnlockStep,
 } from "@/lib/types/canvas";
-
-const deepseekFlash = createOpenAI({
-  baseURL: "https://api.deepseek.com/v1",
-  apiKey: process.env.DEEPSEEK_API_KEY ?? "",
-}).chat("deepseek-v4-flash");
 
 interface RouteContext {
   params: Promise<{ canvasId: string }>;
@@ -146,11 +141,14 @@ export async function POST(_request: Request, context: RouteContext) {
     }
 
     const { result, usage } = await generateTextWithLogging('viability', {
-      model: deepseekFlash,
+      model: getModelForPurpose('fast'),
       temperature: 0.3,
       prompt: getViabilityPrompt(blocks, assumptions),
     }, {
-      onUsage: (usageData) => recordAiUsage(user.$id, 'viability', usageData, { canvasId }),
+      onUsage: (usageData) => recordAiUsage(user.$id, 'viability', usageData, {
+        canvasId,
+        model: getModelIdForPurpose('fast'),
+      }),
     });
 
     const text = result.text;

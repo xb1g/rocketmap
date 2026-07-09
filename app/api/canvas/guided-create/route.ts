@@ -3,10 +3,8 @@ import { streamTextWithLogging } from '@/lib/ai/logger';
 import { requireAuth } from '@/lib/appwrite-server';
 import { getToolsForAgent, createGenerateCanvasTool } from '@/lib/ai/tools';
 import { ONBOARDING_SYSTEM_PROMPT } from '@/lib/ai/prompts';
-import {
-  getAnthropicModelForUser,
-  recordAiUsage,
-} from '@/lib/ai/user-preferences';
+import { recordAiUsage } from '@/lib/ai/user-preferences';
+import { getModelForPurpose, getModelIdForPurpose } from '@/lib/ai/models';
 import { checkAiQuota, createQuotaExceededResponse } from '@/lib/ai/quota';
 
 export async function POST(request: Request) {
@@ -38,9 +36,10 @@ export async function POST(request: Request) {
     console.log(
       `[AI] guided-create | rawUserCount=${rawUserCount}, modelUserCount=${modelUserCount}, forceTool=${shouldForceTool}`,
     );
+    const modelId = getModelIdForPurpose('fast');
 
     const result = streamTextWithLogging('guided-create', {
-      model: getAnthropicModelForUser(user, 'claude-sonnet-4-5-20250929'),
+      model: getModelForPurpose('fast'),
       system: shouldForceTool
         ? ONBOARDING_SYSTEM_PROMPT + '\n\nYou have enough information. You MUST call generateCanvas now.'
         : ONBOARDING_SYSTEM_PROMPT,
@@ -48,7 +47,7 @@ export async function POST(request: Request) {
       tools,
       stopWhen: stepCountIs(1),
     }, {
-      onUsage: (usage) => recordAiUsage(user.$id, 'guided-create', usage),
+      onUsage: (usage) => recordAiUsage(user.$id, 'guided-create', usage, { model: modelId }),
     });
 
     return result.toUIMessageStreamResponse();

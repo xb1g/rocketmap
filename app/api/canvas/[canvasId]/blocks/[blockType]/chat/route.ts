@@ -6,10 +6,8 @@ import { getAgentConfig } from '@/lib/ai/agents';
 import { getToolsForAgent } from '@/lib/ai/tools';
 import { saveChatMessage } from '@/lib/ai/chat-persistence';
 import type { BlockType } from '@/lib/types/canvas';
-import {
-  getAnthropicModelForUser,
-  recordAiUsage,
-} from '@/lib/ai/user-preferences';
+import { recordAiUsage } from '@/lib/ai/user-preferences';
+import { getModelForPurpose, getModelIdForPurpose } from '@/lib/ai/models';
 import { checkAiQuota, createQuotaExceededResponse } from '@/lib/ai/quota';
 
 interface RouteContext {
@@ -31,15 +29,16 @@ export async function POST(request: Request, context: RouteContext) {
     const tools = getToolsForAgent(config.toolNames);
 
     const modelMessages = await convertToModelMessages(messages);
+    const modelId = getModelIdForPurpose('fast');
 
     const result = streamTextWithLogging(`block-chat:${blockType}`, {
-      model: getAnthropicModelForUser(user, 'claude-sonnet-4-5-20250929'),
+      model: getModelForPurpose('fast'),
       system: config.systemPrompt,
       messages: modelMessages,
       tools,
       stopWhen: stepCountIs(3),
     }, {
-      onUsage: (usage) => recordAiUsage(user.$id, `block-chat:${blockType}`, usage, { canvasId }),
+      onUsage: (usage) => recordAiUsage(user.$id, `block-chat:${blockType}`, usage, { canvasId, model: modelId }),
     });
 
     // Save assistant response (text + tool results with args) after stream completes

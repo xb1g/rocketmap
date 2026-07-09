@@ -9,10 +9,8 @@ import {
 } from '@/lib/appwrite';
 import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { buildSystemPrompt } from '@/lib/ai/prompts';
-import {
-  getAnthropicModelForUser,
-  recordAiUsage,
-} from '@/lib/ai/user-preferences';
+import { recordAiUsage } from '@/lib/ai/user-preferences';
+import { getModelForPurpose, getModelIdForPurpose } from '@/lib/ai/models';
 import { checkAiQuota, createQuotaExceededResponse } from '@/lib/ai/quota';
 
 interface RouteContext {
@@ -52,7 +50,7 @@ export async function POST(_request: Request, context: RouteContext) {
         send({ type: 'step', step: 'analyzing' });
 
         const { result, usage } = await generateTextWithLogging('assumptions-analyze', {
-          model: getAnthropicModelForUser(user, 'claude-sonnet-4-5-20250929'),
+          model: getModelForPurpose('reasoning'),
           system: systemPrompt,
           prompt: `Analyze this entire business model canvas and extract ALL hidden assumptions the founder is making. Focus on:
 
@@ -79,7 +77,10 @@ Return ONLY valid JSON (no markdown, no explanation):
   ]
 }`,
         }, {
-          onUsage: (usageData) => recordAiUsage(user.$id, 'assumptions-analyze', usageData, { canvasId }),
+          onUsage: (usageData) => recordAiUsage(user.$id, 'assumptions-analyze', usageData, {
+            canvasId,
+            model: getModelIdForPurpose('reasoning'),
+          }),
         });
 
         const jsonMatch = result.text.match(/\{[\s\S]*\}/);

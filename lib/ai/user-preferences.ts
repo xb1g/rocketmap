@@ -68,7 +68,10 @@ function sanitizeAiApiKey(apiKey: string): string {
 
 export function isLikelyAiApiKey(apiKey: string): boolean {
   const trimmed = sanitizeAiApiKey(apiKey);
-  return trimmed.startsWith("sk-ant-") && trimmed.length >= 20;
+  return (
+    (trimmed.startsWith("sk-") || trimmed.startsWith("sk-ant-")) &&
+    trimmed.length >= 20
+  );
 }
 
 /** @deprecated Use {@link isLikelyAiApiKey} instead */

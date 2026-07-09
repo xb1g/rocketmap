@@ -1,7 +1,8 @@
 import { generateTextWithLogging } from '@/lib/ai/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/appwrite-server';
-import { getAnthropicModelForUser, recordAiUsage } from '@/lib/ai/user-preferences';
+import { recordAiUsage } from '@/lib/ai/user-preferences';
+import { getModelForPurpose, getModelIdForPurpose } from '@/lib/ai/models';
 import { buildSystemPrompt } from '@/lib/ai/prompts';
 import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { serverTablesDB, DATABASE_ID, ASSUMPTIONS_TABLE_ID } from '@/lib/appwrite';
@@ -35,7 +36,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
     const systemPrompt = buildSystemPrompt('general', blocks);
 
     const { result } = await generateTextWithLogging('suggest-experiment', {
-      model: getAnthropicModelForUser(user, 'claude-haiku-4-5-20251001'),
+      model: getModelForPurpose('fast'),
       system: systemPrompt,
       prompt: `Suggest the cheapest and fastest experiment to validate this assumption:
 
@@ -54,7 +55,10 @@ Return ONLY valid JSON (no markdown, no explanation):
   "reasoning": "why this is cheapest/fastest method"
 }`,
     }, {
-      onUsage: (usageData) => recordAiUsage(user.$id, 'suggest-experiment', usageData, { canvasId }),
+      onUsage: (usageData) => recordAiUsage(user.$id, 'suggest-experiment', usageData, {
+        canvasId,
+        model: getModelIdForPurpose('fast'),
+      }),
     });
 
     const jsonMatch = result.text.match(/\{[\s\S]*\}/);

@@ -13,10 +13,8 @@ import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { getToolsForAgent } from '@/lib/ai/tools';
 import { buildDeepDivePrompt, getDeepDiveToolName } from '@/lib/ai/prompts';
 import type { DeepDiveModule, MarketResearchData, UnitEconomicsData, CanvasData } from '@/lib/types/canvas';
-import {
-  getAnthropicModelForUser,
-  recordAiUsage,
-} from '@/lib/ai/user-preferences';
+import { recordAiUsage } from '@/lib/ai/user-preferences';
+import { getModelForPurpose, getModelIdForPurpose } from '@/lib/ai/models';
 import { checkAiQuota, createQuotaExceededResponse } from '@/lib/ai/quota';
 import { getUserIdFromCanvas } from '@/lib/utils';
 
@@ -132,7 +130,7 @@ export async function POST(request: Request, context: RouteContext) {
     const { result, usage } = await generateTextWithLogging(
       `deep-dive:${module}`,
       {
-        model: getAnthropicModelForUser(user, 'claude-sonnet-4-5-20250929'),
+        model: getModelForPurpose('reasoning'),
         system: systemPrompt,
         messages: [{ role: 'user', content: userMessage }],
         tools,
@@ -140,7 +138,10 @@ export async function POST(request: Request, context: RouteContext) {
         stopWhen: stepCountIs(3),
       },
       {
-        onUsage: (usageData) => recordAiUsage(user.$id, `deep-dive:${blockType}`, usageData, { canvasId }),
+        onUsage: (usageData) => recordAiUsage(user.$id, `deep-dive:${blockType}`, usageData, {
+          canvasId,
+          model: getModelIdForPurpose('reasoning'),
+        }),
       },
     );
 

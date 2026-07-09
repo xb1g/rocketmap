@@ -12,10 +12,8 @@ import {
 } from '@/lib/appwrite';
 import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { BLOCK_DEFINITIONS, isSharedBlock } from '@/app/components/canvas/constants';
-import {
-  getAnthropicModelForUser,
-  recordAiUsage,
-} from '@/lib/ai/user-preferences';
+import { recordAiUsage } from '@/lib/ai/user-preferences';
+import { getModelForPurpose, getModelIdForPurpose } from '@/lib/ai/models';
 import { checkAiQuota, createQuotaExceededResponse } from '@/lib/ai/quota';
 
 const convertLeanToBmc = tool({
@@ -86,7 +84,7 @@ export async function POST(_request: Request, context: RouteContext) {
     const { result, usage } = await generateTextWithLogging(
       'convert-lean-to-bmc',
       {
-        model: getAnthropicModelForUser(user, 'claude-sonnet-4-5-20250929'),
+        model: getModelForPurpose('reasoning'),
         system: `You are a business model expert helping convert a Lean Canvas into a Business Model Canvas (BMC).
 
 The Lean Canvas has these blocks: Problem, Solution, Key Metrics, Unique Value Proposition, Unfair Advantage, Channels, Customer Segments, Cost Structure, Revenue Streams.
@@ -120,7 +118,10 @@ Use the convertLeanToBmc tool to generate BMC content for all 5 non-shared block
         stopWhen: stepCountIs(3),
       },
       {
-        onUsage: (usageData) => recordAiUsage(user.$id, 'convert-lean-to-bmc', usageData, { canvasId }),
+        onUsage: (usageData) => recordAiUsage(user.$id, 'convert-lean-to-bmc', usageData, {
+          canvasId,
+          model: getModelIdForPurpose('reasoning'),
+        }),
       },
     );
 

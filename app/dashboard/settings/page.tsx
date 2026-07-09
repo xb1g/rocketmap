@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/appwrite-server';
 import { SettingsClient } from './SettingsClient';
-import { getAnthropicApiKeyFromUser, maskAnthropicApiKey } from '@/lib/ai/user-preferences';
+import { getAiApiKeyFromUser, maskAiApiKey } from '@/lib/ai/user-preferences';
 
 export default async function SettingsPage() {
   const user = await getSessionUser();
@@ -10,13 +10,13 @@ export default async function SettingsPage() {
     redirect('/?error=unauthorized');
   }
 
-  const anthropicApiKey = getAnthropicApiKeyFromUser(user);
+  const aiApiKey = getAiApiKeyFromUser(user);
 
   return (
     <SettingsClient
       initialAnthropicKeyStatus={{
-        hasKey: Boolean(anthropicApiKey),
-        maskedKey: anthropicApiKey ? maskAnthropicApiKey(anthropicApiKey) : null,
+        hasKey: Boolean(aiApiKey),
+        maskedKey: aiApiKey ? maskAiApiKey(aiApiKey) : null,
       }}
     />
   );

@@ -12,10 +12,8 @@ import { getCanvasBlocks } from '@/lib/ai/canvas-state';
 import { getAgentConfig } from '@/lib/ai/agents';
 import { getToolsForAgent } from '@/lib/ai/tools';
 import type { BlockType } from '@/lib/types/canvas';
-import {
-  getAnthropicModelForUser,
-  recordAiUsage,
-} from '@/lib/ai/user-preferences';
+import { recordAiUsage } from '@/lib/ai/user-preferences';
+import { getModelForPurpose, getModelIdForPurpose } from '@/lib/ai/models';
 import { checkAiQuota, createQuotaExceededResponse } from '@/lib/ai/quota';
 
 interface RouteContext {
@@ -48,7 +46,7 @@ export async function POST(_request: Request, context: RouteContext) {
     const result = streamTextWithLogging(
       `analyze:${blockType}`,
       {
-        model: getAnthropicModelForUser(user, 'claude-sonnet-4-5-20250929'),
+        model: getModelForPurpose('reasoning'),
         system: config.systemPrompt,
         messages: [
           {
@@ -61,7 +59,10 @@ export async function POST(_request: Request, context: RouteContext) {
         stopWhen: stepCountIs(3),
       },
       {
-        onUsage: (usageData) => recordAiUsage(user.$id, `block-analyze:${blockType}`, usageData, { canvasId }),
+        onUsage: (usageData) => recordAiUsage(user.$id, `block-analyze:${blockType}`, usageData, {
+          canvasId,
+          model: getModelIdForPurpose('reasoning'),
+        }),
       },
     );
 

@@ -111,7 +111,7 @@ export function SettingsClient({ initialAnthropicKeyStatus }: SettingsClientProp
 
   const handleSaveAnthropicKey = async () => {
     if (!anthropicApiKey.trim()) {
-      setAnthropicError('Enter your Anthropic API key.');
+      setAnthropicError('Enter your AI API key.');
       return;
     }
 
@@ -281,7 +281,7 @@ export function SettingsClient({ initialAnthropicKeyStatus }: SettingsClientProp
       <div className="settings-section">
         <div className="settings-section-title">AI Provider</div>
         <Text size="2" style={{ color: 'var(--foreground-muted)', marginBottom: '0.75rem', display: 'block' }}>
-          Add your own Anthropic API key to run AI with your account and track usage in the dashboard.
+          Add your own DeepSeek-compatible API key to run AI with your account and track usage in the dashboard.
         </Text>
         {anthropicKeyStatus.hasKey && (
           <Text size="2" style={{ color: 'var(--foreground-muted)', marginBottom: '1rem', display: 'block' }}>
@@ -294,7 +294,7 @@ export function SettingsClient({ initialAnthropicKeyStatus }: SettingsClientProp
             type="password"
             value={anthropicApiKey}
             onChange={(event) => setAnthropicApiKey(event.target.value)}
-            placeholder="sk-ant-..."
+            placeholder="sk-..."
             autoComplete="off"
             spellCheck={false}
             style={{ minWidth: '280px', flex: 1, padding: '0.65rem 0.8rem', fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}
