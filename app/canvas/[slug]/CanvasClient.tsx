@@ -622,6 +622,7 @@ export function CanvasClient({
       let foundConsistencyResult = false;
       const res = await fetch(`/api/canvas/${canvasId}/chat`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [
@@ -641,7 +642,14 @@ export function CanvasClient({
       });
 
       if (!res.ok || !res.body) {
-        const message = await res.text().catch(() => "");
+        const rawMessage = await res.text().catch(() => "");
+        let message = rawMessage;
+        try {
+          const parsed = JSON.parse(rawMessage) as { error?: unknown };
+          if (typeof parsed.error === "string") message = parsed.error;
+        } catch {
+          // keep raw text
+        }
         throw new Error(message || "Consistency check failed");
       }
 
