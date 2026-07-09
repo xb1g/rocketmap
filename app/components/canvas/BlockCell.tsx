@@ -145,6 +145,9 @@ interface BlockCellProps {
   allSegments?: Segment[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   allBlockItems?: Map<BlockType, any[]>;
+  focusSegmentId?: string | null;
+  focusColor?: string;
+  focusHasMatch?: boolean;
   readOnly?: boolean;
   onChange: (value: string) => void;
   onFocus: () => void;
@@ -185,6 +188,9 @@ export function BlockCell({
   blocks,
   allSegments,
   allBlockItems,
+  focusSegmentId,
+  focusColor,
+  focusHasMatch = false,
   readOnly = false,
   onFocus,
   onBlur,
@@ -342,6 +348,15 @@ export function BlockCell({
         }
       }}
     >
+      {/* Segment focus accent — thin top bar tinted with the focused segment color */}
+      {focusColor && focusHasMatch && (
+        <span
+          className="absolute top-0 left-2 right-2 h-[2px] rounded-full pointer-events-none z-10 transition-opacity duration-300 motion-reduce:transition-none"
+          style={{ background: `color-mix(in srgb, ${focusColor} 70%, transparent)` }}
+          aria-hidden="true"
+        />
+      )}
+
       <div className={`block-cell-actions ${showActions ? "is-visible" : ""} `}>
         <button
           onClick={(e) => {
@@ -508,6 +523,7 @@ export function BlockCell({
               onSegmentHover={onSegmentHover}
               onMouseEnter={() => onBlockHover?.(block.$id)}
               onMouseLeave={() => onBlockHover?.(null)}
+              focusSegmentId={focusSegmentId}
               ref={(el) => blockRefCallback?.(block.$id, el)}
             />
           ))}
@@ -529,15 +545,21 @@ export function BlockCell({
           onClick={(e) => e.stopPropagation()}
         >
           {resolvedLinkedSegments.map((seg) => (
-            <SegmentCard
+            <div
               key={seg.$id}
-              segment={seg}
-              mode="full"
-              onSave={(updates) => handleSaveSegmentEdit(seg.$id, updates)}
-              onFocus={() => onSegmentFocus?.(seg.$id)}
-              onLink={() => onSegmentClick?.(seg.$id)}
-              segmentRefCallback={(el) => segmentRefCallback?.(seg.$id, el)}
-            />
+              className={`transition-opacity duration-300 motion-reduce:transition-none ${
+                focusSegmentId && seg.$id !== focusSegmentId ? "opacity-40" : ""
+              }`}
+            >
+              <SegmentCard
+                segment={seg}
+                mode="full"
+                onSave={(updates) => handleSaveSegmentEdit(seg.$id, updates)}
+                onFocus={() => onSegmentFocus?.(seg.$id)}
+                onLink={() => onSegmentClick?.(seg.$id)}
+                segmentRefCallback={(el) => segmentRefCallback?.(seg.$id, el)}
+              />
+            </div>
           ))}
 
           {/* New segment button */}
@@ -614,13 +636,19 @@ export function BlockCell({
         resolvedLinkedSegments.length > 0 && (
           <div className="px-2 pb-0.5 space-y-0.5">
             {resolvedLinkedSegments.slice(0, 4).map((seg) => (
-              <SegmentCard
+              <div
                 key={seg.$id}
-                segment={seg}
-                mode="compact"
-                onLink={() => onSegmentClick?.(seg.$id)}
-                segmentRefCallback={(el) => segmentRefCallback?.(seg.$id, el)}
-              />
+                className={`transition-opacity duration-300 motion-reduce:transition-none ${
+                  focusSegmentId && seg.$id !== focusSegmentId ? "opacity-40" : ""
+                }`}
+              >
+                <SegmentCard
+                  segment={seg}
+                  mode="compact"
+                  onLink={() => onSegmentClick?.(seg.$id)}
+                  segmentRefCallback={(el) => segmentRefCallback?.(seg.$id, el)}
+                />
+              </div>
             ))}
             {resolvedLinkedSegments.length > 4 && (
               <span className="text-[9px] text-foreground-muted/40 px-1.5">
