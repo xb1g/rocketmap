@@ -51,7 +51,7 @@ function MouseGlow() {
       className="pointer-events-none fixed inset-0 z-[2]"
       style={{
         background:
-          "radial-gradient(600px circle at var(--mg-x) var(--mg-y), rgba(99,102,241,0.045), transparent 60%)",
+          "radial-gradient(600px circle at var(--mg-x) var(--mg-y), rgba(var(--primary-rgb),0.08), transparent 60%)",
       }}
     />
   );
@@ -149,26 +149,29 @@ function TopNav() {
     <header
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${
         scrolled
-          ? "bg-background/70 backdrop-blur-md border-b border-white/5"
+          ? "bg-background/70 backdrop-blur-md border-b border-border"
           : "bg-transparent"
       }`}
     >
       <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3 group cursor-pointer">
           {/* Logo mark: wax seal stamp — irregular edge, hand-pressed */}
-          <div className="relative w-8 h-8 shrink-0">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <div className="relative w-8 h-8 shrink-0 text-primary">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="text-primary">
               {/* Seal body — imperfect circle like hand-pressed wax */}
               <path
                 d="M16 2.2c1.8-.1 3.6.4 5.1 1.2 1.4.7 2.6 1.8 3.6 3.1.9 1.2 1.5 2.6 1.8 4.1.3 1.5.2 3-.2 4.4-.4 1.5-1.1 2.8-2.1 3.9-1 1.2-2.3 2.1-3.7 2.7-1.6.7-3.3 1-5 1-1.7 0-3.4-.4-4.9-1.2-1.3-.7-2.5-1.7-3.4-2.9-.9-1.2-1.5-2.6-1.8-4.1-.3-1.5-.2-3 .2-4.4.4-1.4 1.1-2.7 2-3.8 1-1.2 2.2-2.1 3.6-2.8 1.3-.6 2.7-1 4.2-1.1.2 0 .4 0 .6-.1z"
-                fill="rgba(52,182,74,0.1)"
-                stroke="rgba(52,182,74,0.4)"
+                fill="currentColor"
+                fillOpacity="0.1"
+                stroke="currentColor"
+                strokeOpacity="0.4"
                 strokeWidth="1"
               />
               {/* Impression ring — stamped into wax */}
               <path
                 d="M16 5.8c1.4-.1 2.8.3 4 1 1.1.6 2 1.5 2.7 2.6.6 1 .9 2.1.9 3.3 0 1.2-.3 2.3-.9 3.3-.7 1-1.6 1.8-2.7 2.4-1.2.6-2.6 1-4 1-1.4 0-2.8-.3-4-1-1.1-.6-2-1.4-2.6-2.4-.6-1-.9-2.1-.9-3.3 0-1.2.3-2.3.8-3.3.6-1.1 1.5-2 2.6-2.6 1.2-.7 2.6-1.1 4.1-1z"
-                stroke="rgba(52,182,74,0.2)"
+                stroke="currentColor"
+                strokeOpacity="0.25"
                 strokeWidth="0.75"
                 fill="none"
               />
@@ -177,17 +180,20 @@ function TopNav() {
                 x="16"
                 y="21.5"
                 textAnchor="middle"
-                fontFamily="Georgia, 'Crimson Text', serif"
                 fontSize="13.5"
-                fontWeight="700"
-                fill="rgba(52,182,74,0.7)"
-                style={{ letterSpacing: '-0.02em' }}
+                fontWeight="400"
+                fill="currentColor"
+                fillOpacity="0.85"
+                style={{
+                  fontFamily: "var(--font-display), Georgia, serif",
+                  letterSpacing: "-0.02em",
+                }}
               >
                 R
               </text>
             </svg>
           </div>
-          <span className="font-display font-bold text-lg tracking-tight text-foreground">
+          <span className="font-display text-lg tracking-tight text-foreground">
             RocketMap
           </span>
         </div>
@@ -214,7 +220,7 @@ function TopNav() {
           <div className="cta-glow">
             <button
               onClick={() => signInWithGoogle()}
-              className="ui-btn ui-btn-primary !h-9 !px-4 text-sm border border-white/10 hover:border-white/20 transition-all shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:shadow-[0_0_25px_rgba(99,102,241,0.5)] active:translate-y-[1px] active:shadow-none"
+              className="ui-btn ui-btn-primary !h-9 !px-4 text-sm border border-primary/30 hover:border-primary/50 transition-all active:translate-y-[1px] active:shadow-none"
             >
               Get Started
             </button>
@@ -254,7 +260,7 @@ function HowItWorks() {
           <span className="inline-block font-mono text-[11px] uppercase tracking-[0.12em] text-foreground-muted/60">
             The Process
           </span>
-          <h2 className="font-display text-3xl sm:text-4xl font-semibold text-foreground">
+          <h2 className="font-display text-3xl sm:text-4xl text-foreground">
             From idea to validated plan
           </h2>
           <p className="text-foreground-muted font-body text-lg max-w-2xl mx-auto leading-relaxed">
@@ -265,7 +271,7 @@ function HowItWorks() {
 
       <div className="relative max-w-3xl mx-auto">
         {/* Timeline connector line */}
-        <div className="absolute left-[19px] md:left-[27px] top-2 bottom-2 w-px bg-gradient-to-b from-white/10 via-white/5 to-transparent" />
+        <div className="absolute left-[19px] md:left-[27px] top-2 bottom-2 w-px bg-gradient-to-b from-foreground/10 via-foreground/5 to-transparent" />
 
         <div className="space-y-16">
           {WORKS_STEPS.map((step, i) => (
@@ -273,8 +279,8 @@ function HowItWorks() {
               <div className="flex gap-6 md:gap-8 group">
                 {/* Step number + dot */}
                 <div className="relative flex flex-col items-center shrink-0">
-                  <div className="w-10 h-10 md:w-14 md:h-14 rounded-full border border-white/10 bg-background flex items-center justify-center z-10 group-hover:border-indigo-500/40 group-hover:shadow-[0_0_20px_rgba(99,102,241,0.2)] transition-all duration-500">
-                    <span className="font-mono text-[10px] md:text-xs font-bold text-foreground-muted group-hover:text-indigo-300 transition-colors duration-500">
+                  <div className="w-10 h-10 md:w-14 md:h-14 rounded-full border border-border bg-canvas-surface flex items-center justify-center z-10 group-hover:border-primary/50 group-hover:shadow-[0_0_20px_rgba(var(--primary-rgb),0.18)] transition-all duration-500">
+                    <span className="font-mono text-[10px] md:text-xs font-bold text-foreground-muted group-hover:text-primary-deep transition-colors duration-500">
                       {step.num}
                     </span>
                   </div>
@@ -282,7 +288,7 @@ function HowItWorks() {
 
                 {/* Content */}
                 <div className="pt-1.5 md:pt-3 space-y-2">
-                  <h3 className="font-display text-xl md:text-2xl font-semibold text-foreground group-hover:text-indigo-200 transition-colors duration-500">
+                  <h3 className="font-display text-xl md:text-2xl text-foreground group-hover:text-primary-deep transition-colors duration-500">
                     {step.title}
                   </h3>
                   <p className="text-foreground-muted font-body leading-relaxed">
@@ -306,12 +312,12 @@ function FinalCTA() {
     <section className="w-full relative py-32 px-6 overflow-hidden">
       {/* Ambient background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(99,102,241,0.08),transparent_70%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_80%,rgba(52,182,74,0.05),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(var(--primary-rgb),0.12),transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_80%,rgba(var(--primary-rgb),0.08),transparent_60%)]" />
       </div>
 
       <ScrollReveal className="relative z-10 max-w-2xl mx-auto text-center space-y-8">
-        <h2 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold text-foreground leading-[1.1]">
+        <h2 className="font-display text-4xl sm:text-5xl md:text-6xl text-foreground leading-[1.1]">
           Stop guessing.
           <br />
           Start proving.
@@ -324,7 +330,7 @@ function FinalCTA() {
           <div className="cta-glow">
             <button
               onClick={() => signInWithGoogle()}
-              className="ui-btn ui-btn-primary !h-12 !px-8 text-base w-full sm:w-auto font-medium shadow-[0_0_20px_rgba(99,102,241,0.25)] hover:shadow-[0_0_35px_rgba(99,102,241,0.4)] transition-all border border-white/10 hover:border-white/20 active:translate-y-[1px] active:shadow-none"
+              className="ui-btn ui-btn-primary !h-12 !px-8 text-base w-full sm:w-auto font-medium shadow-[0_0_20px_rgba(var(--primary-rgb),0.25)] hover:shadow-[0_0_35px_rgba(var(--primary-rgb),0.4)] transition-all border border-primary/30 hover:border-primary/50 active:translate-y-[1px] active:shadow-none"
             >
               <GoogleIcon />
               <span className="ml-2">Continue with Google</span>
@@ -332,7 +338,7 @@ function FinalCTA() {
           </div>
           <a
             href="#demo"
-            className="ui-btn ui-btn-ghost !h-12 !px-8 text-base w-full sm:w-auto border border-white/10 hover:border-white/20 transition-all bg-white/5 hover:bg-white/10 active:translate-y-[1px]"
+            className="ui-btn ui-btn-secondary !h-12 !px-8 text-base w-full sm:w-auto active:translate-y-[1px]"
           >
             Explore Demo
           </a>
@@ -351,19 +357,22 @@ function FinalCTA() {
    ================================================================ */
 function Footer() {
   return (
-    <footer className="w-full border-t border-white/[0.06] bg-background/50 backdrop-blur-sm">
+    <footer className="w-full border-t border-border bg-background/50 backdrop-blur-sm">
       <div className="max-w-[1200px] mx-auto px-6 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-3">
-          <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+          <svg width="24" height="24" viewBox="0 0 32 32" fill="none" className="text-primary">
             <path
               d="M16 2.2c1.8-.1 3.6.4 5.1 1.2 1.4.7 2.6 1.8 3.6 3.1.9 1.2 1.5 2.6 1.8 4.1.3 1.5.2 3-.2 4.4-.4 1.5-1.1 2.8-2.1 3.9-1 1.2-2.3 2.1-3.7 2.7-1.6.7-3.3 1-5 1-1.7 0-3.4-.4-4.9-1.2-1.3-.7-2.5-1.7-3.4-2.9-.9-1.2-1.5-2.6-1.8-4.1-.3-1.5-.2-3 .2-4.4.4-1.4 1.1-2.7 2-3.8 1-1.2 2.2-2.1 3.6-2.8 1.3-.6 2.7-1 4.2-1.1.2 0 .4 0 .6-.1z"
-              fill="rgba(52,182,74,0.1)"
-              stroke="rgba(52,182,74,0.4)"
+              fill="currentColor"
+              fillOpacity="0.1"
+              stroke="currentColor"
+              strokeOpacity="0.4"
               strokeWidth="1"
             />
             <path
               d="M16 5.8c1.4-.1 2.8.3 4 1 1.1.6 2 1.5 2.7 2.6.6 1 .9 2.1.9 3.3 0 1.2-.3 2.3-.9 3.3-.7 1-1.6 1.8-2.7 2.4-1.2.6-2.6 1-4 1-1.4 0-2.8-.3-4-1-1.1-.6-2-1.4-2.6-2.4-.6-1-.9-2.1-.9-3.3 0-1.2.3-2.3.8-3.3.6-1.1 1.5-2 2.6-2.6 1.2-.7 2.6-1.1 4.1-1z"
-              stroke="rgba(52,182,74,0.2)"
+              stroke="currentColor"
+              strokeOpacity="0.25"
               strokeWidth="0.75"
               fill="none"
             />
@@ -371,16 +380,19 @@ function Footer() {
               x="16"
               y="21.5"
               textAnchor="middle"
-              fontFamily="Georgia, 'Crimson Text', serif"
               fontSize="13.5"
-              fontWeight="700"
-              fill="rgba(52,182,74,0.7)"
-              style={{ letterSpacing: '-0.02em' }}
+              fontWeight="400"
+              fill="currentColor"
+              fillOpacity="0.85"
+              style={{
+                fontFamily: "var(--font-display), Georgia, serif",
+                letterSpacing: "-0.02em",
+              }}
             >
               R
             </text>
           </svg>
-          <span className="font-display font-semibold text-sm text-foreground/80">
+          <span className="font-display text-sm text-foreground/80">
             RocketMap
           </span>
         </div>
@@ -424,30 +436,6 @@ function LandingContent() {
 
         {/* Hero Section — DELIGHT: staggered entrance */}
         <div className="max-w-4xl w-full text-center space-y-10 py-10 px-6 sm:px-12">
-          <div className="stagger-in stagger-1 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 pl-2.5 pr-4 py-1.5 text-xs font-medium text-foreground backdrop-blur-md hover:bg-white/10 transition-colors cursor-pointer group">
-            <span className="flex h-2 w-2 rounded-full bg-[var(--state-healthy)] shadow-[0_0_8px_var(--state-healthy)] animate-pulse" />
-            <span className="font-mono text-[10px] uppercase tracking-wider text-foreground-muted group-hover:text-foreground transition-colors">
-              New Feature
-            </span>
-            <span className="opacity-40 text-foreground-muted">|</span>
-            <span className="font-body text-sm tracking-tight text-foreground/90 group-hover:text-foreground transition-colors">
-              AI Consistency Checker
-            </span>
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="ml-1 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"
-            >
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </div>
-
           <div className="relative space-y-6">
             <div className="landing-title-glow" />
             <h1 className="landing-title stagger-in stagger-2 text-5xl sm:text-6xl md:text-7xl lg:text-[80px] leading-[1.1] tracking-tight mx-auto max-w-4xl">
@@ -465,7 +453,7 @@ function LandingContent() {
             <div className="cta-glow w-full sm:w-auto">
               <button
                 onClick={() => signInWithGoogle()}
-                className="ui-btn ui-btn-primary !h-12 !px-8 text-base w-full sm:w-auto font-medium shadow-[0_0_20px_rgba(99,102,241,0.25)] hover:shadow-[0_0_35px_rgba(99,102,241,0.4)] transition-all border border-white/10 hover:border-white/20 active:translate-y-[1px] active:shadow-none"
+                className="ui-btn ui-btn-primary !h-12 !px-8 text-base w-full sm:w-auto font-medium shadow-[0_0_20px_rgba(var(--primary-rgb),0.25)] hover:shadow-[0_0_35px_rgba(var(--primary-rgb),0.4)] transition-all border border-primary/30 hover:border-primary/50 active:translate-y-[1px] active:shadow-none"
               >
                 <GoogleIcon />
                 <span className="ml-2">Continue with Google</span>
@@ -473,7 +461,7 @@ function LandingContent() {
             </div>
             <a
               href="#demo"
-              className="ui-btn ui-btn-ghost !h-12 !px-8 text-base w-full sm:w-auto border border-white/10 hover:border-white/20 transition-all bg-white/5 hover:bg-white/10 active:translate-y-[1px]"
+              className="ui-btn ui-btn-secondary !h-12 !px-8 text-base w-full sm:w-auto active:translate-y-[1px]"
             >
               Explore Demo
             </a>
@@ -484,10 +472,10 @@ function LandingContent() {
           </p>
         </div>
 
-        {/* Demo Section — DELIGHT: scroll reveal + chromatic border */}
+        {/* Demo Section — scroll reveal */}
         <ScrollReveal className="w-full max-w-[1200px] px-4 md:px-8 space-y-16 pt-24 pb-20">
           <div className="text-center space-y-4">
-            <h2 className="font-display text-3xl sm:text-4xl font-semibold text-foreground">
+            <h2 className="font-display text-3xl sm:text-4xl text-foreground">
               Interactive Canvas Engine
             </h2>
             <p className="text-foreground-muted font-body text-lg max-w-2xl mx-auto">
@@ -495,23 +483,7 @@ function LandingContent() {
             </p>
           </div>
 
-          <div className="relative rounded-2xl p-[1px] overflow-hidden group">
-            {/* DELIGHT: Animated chromatic border shimmer */}
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/30 via-transparent to-pink-500/30 opacity-40 group-hover:opacity-100 transition-opacity duration-700" />
-            <div className="absolute inset-0 demo-chromatic-border opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-            <div className="relative bg-background/95 backdrop-blur-md rounded-2xl ring-1 ring-white/10 shadow-2xl shadow-indigo-500/10">
-              <div className="h-12 border-b border-white/10 flex items-center px-4 bg-white/[0.02]">
-                <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                  <div className="w-3 h-3 rounded-full bg-green-500/80" />
-                </div>
-              </div>
-              <div className="p-6 overflow-hidden">
-                <StaticBMC />
-              </div>
-            </div>
-          </div>
+          <StaticBMC />
         </ScrollReveal>
 
         {/* How It Works */}

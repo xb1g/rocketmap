@@ -302,7 +302,7 @@ export function InlineSegmentEval({
         <span className="font-mono text-[10px] uppercase tracking-wider text-foreground-muted/60">
           Evaluation
         </span>
-        <div className="flex-1 h-px bg-white/5" />
+        <div className="flex-1 h-px bg-border" />
       </div>
 
       {/* Segment tab pills */}
@@ -320,8 +320,8 @@ export function InlineSegmentEval({
                 }}
                 className={`flex items-center gap-1.5 text-[10px] px-2 py-1 rounded-full border transition-colors ${
                   isActive
-                    ? "border-white/20 bg-white/8 text-foreground"
-                    : "border-white/5 text-foreground-muted/50 hover:text-foreground-muted"
+                    ? "border-foreground/10 bg-foreground/5 text-foreground"
+                    : "border-border text-foreground-muted/50 hover:text-foreground-muted"
                 }`}
               >
                 {seg.name}

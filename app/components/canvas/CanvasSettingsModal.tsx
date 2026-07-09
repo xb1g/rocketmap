@@ -57,7 +57,7 @@ export function CanvasSettingsModal({
     >
       <Dialog.Content
         maxWidth="480px"
-        style={{ background: "var(--canvas-surface)", border: "1px solid rgba(255,255,255,0.1)" }}
+        style={{ background: "var(--canvas-surface)", border: "1px solid var(--border)" }}
       >
         <Dialog.Title size="4">Canvas Settings</Dialog.Title>
 
@@ -99,7 +99,7 @@ export function CanvasSettingsModal({
               Description
             </label>
             <textarea
-              className="w-full bg-white/5 border border-white/10 rounded-[12px] p-3 text-sm outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)] resize-none min-h-[80px]"
+              className="w-full bg-canvas-surface border border-border rounded-[12px] p-3 text-sm text-foreground outline-none focus:border-primary/55 focus:shadow-[0_0_0_3px_rgba(var(--primary-rgb),0.16)] resize-none min-h-[80px]"
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
               placeholder="Describe this canvas..."
@@ -115,7 +115,7 @@ export function CanvasSettingsModal({
                 readOnly
                 value={`${window.location.origin}/canvas/${canvasSlug}`}
                 onFocus={(e) => e.currentTarget.select()}
-                className="w-full bg-white/5 border border-white/10 rounded-[12px] p-3 text-xs text-foreground-muted outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
+                className="w-full bg-canvas-surface border border-border rounded-[12px] p-3 text-xs text-foreground-muted outline-none focus:border-primary/55 focus:shadow-[0_0_0_3px_rgba(var(--primary-rgb),0.16)]"
               />
               <button
                 type="button"
@@ -162,7 +162,7 @@ export function CanvasSettingsModal({
             </button>
           </div>
 
-          <hr className="border-white/5 my-2" />
+          <hr className="border-border my-2" />
 
           <div>
             <div className="text-xs font-mono uppercase tracking-wider text-foreground-muted mb-2">

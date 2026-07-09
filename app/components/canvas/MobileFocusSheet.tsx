@@ -293,7 +293,7 @@ export function MobileFocusSheet({
                   sheetState === "expanded" ? "collapsed" : "expanded",
                 )
               }
-              className="w-full py-2 rounded-lg border border-white/8 bg-foreground/3 text-xs text-foreground-muted hover:text-foreground hover:bg-foreground/5 transition-colors"
+              className="w-full py-2 rounded-lg border border-border bg-canvas-surface text-xs text-foreground-muted hover:text-foreground hover:bg-foreground/5 transition-colors"
             >
               {sheetState === "expanded" ? "Collapse" : "Expand to Full Screen"}
             </button>

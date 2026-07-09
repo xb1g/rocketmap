@@ -18,7 +18,7 @@ function beachheadDot(status: BeachheadStatus) {
   const colors = {
     primary: "bg-chroma-indigo",
     secondary: "bg-state-warning",
-    later: "bg-white/20",
+    later: "bg-foreground/20",
   };
   return colors[status];
 }
@@ -42,7 +42,7 @@ export function SegmentSelector({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-3 py-2.5 border-b border-white/5">
+      <div className="px-3 py-2.5 border-b border-border">
         <span className="font-mono text-[10px] uppercase tracking-wider text-foreground-muted/60">
           Segments
         </span>
@@ -60,7 +60,7 @@ export function SegmentSelector({
               className={`w-full text-left px-3 py-2 flex items-center gap-2 transition-colors ${
                 isSelected
                   ? "bg-chroma-indigo/10"
-                  : "hover:bg-white/4"
+                  : "hover:bg-foreground/5"
               }`}
             >
               {scorecard ? (
@@ -68,7 +68,7 @@ export function SegmentSelector({
                   className={`w-2 h-2 rounded-full shrink-0 ${beachheadDot(scorecard.beachheadStatus)}`}
                 />
               ) : (
-                <span className="w-2 h-2 rounded-full shrink-0 bg-white/10" />
+                <span className="w-2 h-2 rounded-full shrink-0 bg-foreground/10" />
               )}
               <span className="flex-1 text-xs text-foreground truncate">
                 {seg.name}
@@ -93,7 +93,7 @@ export function SegmentSelector({
         })}
       </div>
 
-      <div className="px-3 py-2 border-t border-white/5">
+      <div className="px-3 py-2 border-t border-border">
         <button
           onClick={onCreateNew}
           className="w-full text-[10px] text-foreground-muted/50 hover:text-foreground py-1.5 transition-colors"

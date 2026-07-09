@@ -60,12 +60,12 @@ export function DeepDiveOverlay({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/70 z-50" onClick={onClose} />
+      <div className="fixed inset-0 bg-foreground/40 z-50" onClick={onClose} />
 
       {/* Full-screen overlay */}
       <div className="fixed inset-4 z-50 glass-morphism rounded-xl flex flex-col overflow-hidden animate-in fade-in duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-foreground-muted">{label}</span>
             <span className="text-foreground-muted/40">›</span>
@@ -80,7 +80,7 @@ export function DeepDiveOverlay({
         </div>
 
         {/* Tab bar */}
-        <div className="flex gap-2 px-6 py-2 border-b border-white/5 overflow-x-auto">
+        <div className="flex gap-2 px-6 py-2 border-b border-border overflow-x-auto">
           {moduleTabs.map((tab) => (
             <button
               key={tab.key}

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import type { Assumption, Experiment, ExperimentResult } from "@/lib/types/canvas";
+import { useCallback, useState, useEffect } from "react";
+import type { Assumption, DecisionSignal, Experiment, ExperimentResult } from "@/lib/types/canvas";
 
 interface EvidenceCollectionModalProps {
   assumption: Assumption;
@@ -18,6 +18,19 @@ const RESULT_OPTIONS: { value: ExperimentResult; label: string; color: string }[
   { value: "inconclusive", label: "Inconclusive", color: "var(--state-ai)" },
 ];
 
+const DECISION_OPTIONS: { value: DecisionSignal; label: string; color: string }[] = [
+  { value: "double_down", label: "Double Down", color: "var(--state-healthy)" },
+  { value: "pivot", label: "Pivot", color: "var(--state-warning)" },
+  { value: "kill", label: "Kill", color: "var(--state-critical)" },
+  { value: "insufficient_evidence", label: "More Evidence", color: "var(--state-ai)" },
+];
+
+function defaultDecisionForResult(result: ExperimentResult): DecisionSignal {
+  if (result === "supports") return "double_down";
+  if (result === "contradicts") return "pivot";
+  return "insufficient_evidence";
+}
+
 export function EvidenceCollectionModal({
   assumption,
   canvasId,
@@ -30,8 +43,20 @@ export function EvidenceCollectionModal({
   const [selectedExperiment, setSelectedExperiment] = useState<Experiment | null>(null);
   const [evidence, setEvidence] = useState("");
   const [result, setResult] = useState<ExperimentResult>("supports");
+  const [decisionSignal, setDecisionSignal] = useState<DecisionSignal>("double_down");
   const [sourceUrl, setSourceUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const applyExperimentState = useCallback((experiment: Experiment) => {
+    const nextResult = experiment.result ?? "supports";
+    setSelectedExperiment(experiment);
+    setEvidence(experiment.evidence ?? "");
+    setResult(nextResult);
+    setSourceUrl(experiment.sourceUrl ?? "");
+    setDecisionSignal(
+      assumption.decisionSignal ?? defaultDecisionForResult(nextResult),
+    );
+  }, [assumption.decisionSignal]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -43,12 +68,12 @@ export function EvidenceCollectionModal({
       .then((data) => {
         const exps = Array.isArray(data) ? data : [];
         setExperiments(exps);
-        if (exps.length > 0) setSelectedExperiment(exps[0]);
+        if (exps.length > 0) applyExperimentState(exps[0]);
       })
       .catch(() => setExperiments([]))
       .finally(() => setLoading(false));
     return () => clearTimeout(id);
-  }, [isOpen, canvasId, assumption.$id]);
+  }, [isOpen, canvasId, assumption.$id, applyExperimentState]);
 
   if (!isOpen) return null;
 
@@ -64,6 +89,7 @@ export function EvidenceCollectionModal({
           body: JSON.stringify({
             status: "completed",
             result,
+            decisionSignal,
             evidence: evidence.trim(),
             sourceUrl: sourceUrl.trim() || undefined,
           }),
@@ -82,14 +108,14 @@ export function EvidenceCollectionModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/25"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-lg mx-4 rounded-[14px] border border-white/8 bg-background p-6 space-y-5">
+      <div className="w-full max-w-lg mx-4 rounded-[14px] border border-border bg-canvas-surface p-6 space-y-5">
         <div className="flex items-center justify-between">
-          <h3 className="font-display-small text-base">Collect Evidence</h3>
+          <h3 className="font-display-small text-base text-foreground">Collect Evidence</h3>
           <button
             onClick={onClose}
             className="text-foreground-muted hover:text-foreground text-sm"
@@ -99,9 +125,9 @@ export function EvidenceCollectionModal({
         </div>
 
         {/* Assumption context */}
-        <div className="rounded-[12px] border border-white/6 bg-white/2 p-3">
-          <p className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted/60 mb-1">Assumption:</p>
-          <p className="text-sm leading-relaxed">{assumption.statement}</p>
+        <div className="rounded-[12px] border border-border bg-canvas-surface p-3">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-foreground-subtle mb-1">Assumption:</p>
+          <p className="text-sm leading-relaxed text-foreground">{assumption.statement}</p>
         </div>
 
         {loading ? (
@@ -122,9 +148,9 @@ export function EvidenceCollectionModal({
                   value={selectedExperiment?.$id ?? ""}
                   onChange={(e) => {
                     const exp = experiments.find((x) => x.$id === e.target.value);
-                    if (exp) setSelectedExperiment(exp);
+                    if (exp) applyExperimentState(exp);
                   }}
-                  className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
+                  className="w-full rounded-[12px] border border-border bg-canvas-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/55 focus:shadow-[0_0_0_3px_rgba(var(--primary-rgb),0.16)]"
                 >
                   {experiments.map((exp) => (
                     <option key={exp.$id} value={exp.$id}>
@@ -137,14 +163,19 @@ export function EvidenceCollectionModal({
 
             {/* Selected experiment details */}
             {selectedExperiment && (
-              <div className="rounded-[12px] border border-white/6 bg-white/2 p-3 space-y-1">
-                <p className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted/60">
+              <div className="rounded-[12px] border border-border bg-canvas-surface p-3 space-y-1">
+                <p className="text-[11px] font-mono uppercase tracking-wider text-foreground-subtle">
                   {selectedExperiment.type.toUpperCase()}
                 </p>
-                <p className="text-sm">{selectedExperiment.description}</p>
+                <p className="text-sm text-foreground">{selectedExperiment.description}</p>
                 <p className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">
                   Success criteria: {selectedExperiment.successCriteria}
                 </p>
+                {selectedExperiment.successThreshold && (
+                  <p className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">
+                    Threshold: {selectedExperiment.successThreshold}
+                  </p>
+                )}
               </div>
             )}
 
@@ -156,7 +187,7 @@ export function EvidenceCollectionModal({
                 onChange={(e) => setEvidence(e.target.value)}
                 placeholder="What did you find? Describe the evidence..."
                 rows={3}
-                className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
+                className="w-full rounded-[12px] border border-border bg-canvas-surface px-3 py-2 text-sm text-foreground placeholder:text-foreground-subtle focus:outline-none focus:border-primary/55 focus:shadow-[0_0_0_3px_rgba(var(--primary-rgb),0.16)]"
               />
             </div>
 
@@ -167,18 +198,49 @@ export function EvidenceCollectionModal({
                 {RESULT_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
-                    onClick={() => setResult(opt.value)}
+                    onClick={() => {
+                      setResult(opt.value);
+                      setDecisionSignal(defaultDecisionForResult(opt.value));
+                    }}
                     className={`px-3 py-1.5 rounded-[12px] text-xs font-medium transition-colors ${
                       result === opt.value
                         ? "border-2"
-                        : "border border-white/8 text-foreground-muted hover:text-foreground"
+                        : "border border-border text-foreground-muted hover:text-foreground"
                     }`}
                     style={
                       result === opt.value
                         ? {
                             borderColor: opt.color,
                             color: opt.color,
-                            background: `color-mix(in srgb, ${opt.color} 10%, transparent)`,
+                            background: `color-mix(in srgb, ${opt.color} 8%, transparent)`,
+                          }
+                        : undefined
+                    }
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">Decision Signal</label>
+              <div className="flex flex-wrap gap-2">
+                {DECISION_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setDecisionSignal(opt.value)}
+                    className={`px-3 py-1.5 rounded-[12px] text-xs font-medium transition-colors ${
+                      decisionSignal === opt.value
+                        ? "border-2"
+                        : "border border-border text-foreground-muted hover:text-foreground"
+                    }`}
+                    style={
+                      decisionSignal === opt.value
+                        ? {
+                            borderColor: opt.color,
+                            color: opt.color,
+                            background: `color-mix(in srgb, ${opt.color} 8%, transparent)`,
                           }
                         : undefined
                     }
@@ -197,7 +259,7 @@ export function EvidenceCollectionModal({
                 value={sourceUrl}
                 onChange={(e) => setSourceUrl(e.target.value)}
                 placeholder="https://..."
-                className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
+                className="w-full rounded-[12px] border border-border bg-canvas-surface px-3 py-2 text-sm text-foreground placeholder:text-foreground-subtle focus:outline-none focus:border-primary/55 focus:shadow-[0_0_0_3px_rgba(var(--primary-rgb),0.16)]"
               />
             </div>
 

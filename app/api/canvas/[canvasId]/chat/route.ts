@@ -59,6 +59,7 @@ export async function POST(request: Request, context: RouteContext) {
           riskLevel: (row.riskLevel as string) ?? 'medium',
           confidenceScore: (row.confidenceScore as number) ?? 0,
           blockTypes,
+          decisionSignal: (row.decisionSignal as string) ?? undefined,
         };
       });
     } catch {

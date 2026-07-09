@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Heading, Text, Dialog, Button, Badge } from '@radix-ui/themes';
+import { ThemeToggle } from '@/app/components/ThemeToggle';
 
 interface UsageData {
   tier: string;
@@ -196,7 +197,7 @@ export function SettingsClient({ initialAnthropicKeyStatus }: SettingsClientProp
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
         <div>
-          <Heading size="8" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, marginBottom: '0.25rem' }}>
+          <Heading size="8" style={{ fontFamily: 'var(--font-display)', fontWeight: 400, marginBottom: '0.25rem' }}>
             Settings
           </Heading>
           <Text size="2" style={{ color: 'var(--foreground-muted)' }}>
@@ -221,8 +222,8 @@ export function SettingsClient({ initialAnthropicKeyStatus }: SettingsClientProp
             onClick={() => saveSettings({ ...settings, defaultMode: 'bmc' })}
             style={{
               flex: 1,
-              borderColor: settings.defaultMode === 'bmc' ? 'rgba(99,102,241,0.3)' : undefined,
-              boxShadow: settings.defaultMode === 'bmc' ? '0 0 20px rgba(99,102,241,0.08)' : undefined,
+              borderColor: settings.defaultMode === 'bmc' ? 'color-mix(in srgb, var(--chroma-indigo) 30%, transparent)' : undefined,
+              boxShadow: settings.defaultMode === 'bmc' ? '0 0 20px color-mix(in srgb, var(--chroma-indigo) 8%, transparent)' : undefined,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -238,8 +239,8 @@ export function SettingsClient({ initialAnthropicKeyStatus }: SettingsClientProp
             onClick={() => saveSettings({ ...settings, defaultMode: 'lean' })}
             style={{
               flex: 1,
-              borderColor: settings.defaultMode === 'lean' ? 'rgba(6,182,212,0.3)' : undefined,
-              boxShadow: settings.defaultMode === 'lean' ? '0 0 20px rgba(6,182,212,0.08)' : undefined,
+              borderColor: settings.defaultMode === 'lean' ? 'color-mix(in srgb, var(--chroma-cyan) 30%, transparent)' : undefined,
+              boxShadow: settings.defaultMode === 'lean' ? '0 0 20px color-mix(in srgb, var(--chroma-cyan) 8%, transparent)' : undefined,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -255,8 +256,14 @@ export function SettingsClient({ initialAnthropicKeyStatus }: SettingsClientProp
 
       <div className="settings-section">
         <div className="settings-section-title">Appearance</div>
+        <Text size="2" style={{ color: 'var(--foreground-muted)', marginBottom: '0.75rem', display: 'block' }}>
+          Color mode
+        </Text>
+        <div style={{ marginBottom: '1.25rem' }}>
+          <ThemeToggle variant="segmented" />
+        </div>
         <Text size="2" style={{ color: 'var(--foreground-muted)', marginBottom: '1rem', display: 'block' }}>
-          Choose your accent color.
+          Accent color
         </Text>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           {accentColors.map((ac) => (
@@ -343,7 +350,7 @@ export function SettingsClient({ initialAnthropicKeyStatus }: SettingsClientProp
                   ${usageData.daily.used.toFixed(2)} / ${usageData.daily.limit.toFixed(2)}
                 </Text>
               </div>
-              <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ width: '100%', height: '8px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
                 <div
                   style={{
                     width: `${Math.min(100, (usageData.daily.used / usageData.daily.limit) * 100)}%`,
@@ -361,19 +368,19 @@ export function SettingsClient({ initialAnthropicKeyStatus }: SettingsClientProp
 
             {/* Lifetime stats grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
-              <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '0.75rem' }}>
+              <div style={{ background: 'var(--canvas-surface)', borderRadius: '8px', padding: '0.75rem' }}>
                 <Text size="1" style={{ color: 'var(--foreground-muted)', display: 'block', marginBottom: '0.25rem' }}>Calls</Text>
                 <Text size="4" weight="bold" style={{ fontFamily: 'var(--font-mono)' }}>{usageData.lifetime.calls.toLocaleString()}</Text>
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '0.75rem' }}>
+              <div style={{ background: 'var(--canvas-surface)', borderRadius: '8px', padding: '0.75rem' }}>
                 <Text size="1" style={{ color: 'var(--foreground-muted)', display: 'block', marginBottom: '0.25rem' }}>Input Tokens</Text>
                 <Text size="4" weight="bold" style={{ fontFamily: 'var(--font-mono)' }}>{usageData.lifetime.inputTokens.toLocaleString()}</Text>
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '0.75rem' }}>
+              <div style={{ background: 'var(--canvas-surface)', borderRadius: '8px', padding: '0.75rem' }}>
                 <Text size="1" style={{ color: 'var(--foreground-muted)', display: 'block', marginBottom: '0.25rem' }}>Output Tokens</Text>
                 <Text size="4" weight="bold" style={{ fontFamily: 'var(--font-mono)' }}>{usageData.lifetime.outputTokens.toLocaleString()}</Text>
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '0.75rem' }}>
+              <div style={{ background: 'var(--canvas-surface)', borderRadius: '8px', padding: '0.75rem' }}>
                 <Text size="1" style={{ color: 'var(--foreground-muted)', display: 'block', marginBottom: '0.25rem' }}>Est. Cost</Text>
                 <Text size="4" weight="bold" style={{ fontFamily: 'var(--font-mono)' }}>
                   ${usageData.lifetime.estimatedCostUsd.toFixed(2)}
@@ -387,7 +394,7 @@ export function SettingsClient({ initialAnthropicKeyStatus }: SettingsClientProp
                 <Text size="2" weight="bold" style={{ marginBottom: '0.5rem', display: 'block' }}>Per-feature breakdown</Text>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                   {Object.entries(usageData.byFeature).map(([feature, stats]) => (
-                    <div key={feature} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: '6px' }}>
+                    <div key={feature} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'var(--canvas-surface)', borderRadius: '6px' }}>
                       <Text size="2" style={{ textTransform: 'capitalize' }}>{feature.replace(/-/g, ' ')}</Text>
                       <div style={{ display: 'flex', gap: '1rem', fontFamily: 'var(--font-mono)' }}>
                         <Text size="1" style={{ color: 'var(--foreground-muted)' }}>{stats.calls.toLocaleString()} calls</Text>
@@ -407,11 +414,11 @@ export function SettingsClient({ initialAnthropicKeyStatus }: SettingsClientProp
         <div className="settings-section-title">About</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
           <Text size="2" style={{ color: 'var(--foreground-muted)' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.4)' }}>Version</span>{' '}
+            <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--foreground-subtle)' }}>Version</span>{' '}
             0.1.0-beta
           </Text>
           <Text size="2" style={{ color: 'var(--foreground-muted)' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.4)' }}>Engine</span>{' '}
+            <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--foreground-subtle)' }}>Engine</span>{' '}
             RocketMap Playable Business Model
           </Text>
         </div>

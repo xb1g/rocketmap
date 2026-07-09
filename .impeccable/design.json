@@ -1,44 +1,85 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-06-09T22:29:47Z",
-  "title": "Design System: RocketMap",
+  "generatedAt": "2026-06-12T18:32:37Z",
+  "title": "Design System: RocketMap (Light & Dark)",
   "extensions": {
     "colorMeta": {
-      "workshop-midnight": {
+      "parchment-ground": {
         "role": "neutral",
-        "displayName": "Workshop Midnight",
-        "canonical": "#07070a",
-        "tonalRamp": ["#000000", "#030305", "#07070a", "#0f0f14", "#1a1a1a", "#2a2a2a", "#3a3a3a", "#4a4a4a"]
+        "displayName": "Parchment Ground",
+        "canonical": "#f5f0e3",
+        "darkCanonical": "#07070a",
+        "tonalRamp": ["#e6dfd0", "#ebe4d6", "#f5f0e3", "#faf7ef", "#ffffff", "#ffffff", "#ffffff", "#ffffff"]
       },
-      "parchment-ash": {
+      "parchment-surface": {
         "role": "neutral",
-        "displayName": "Parchment Ash",
-        "canonical": "#1a1a1a",
-        "tonalRamp": ["#0a0a0a", "#0f0f0f", "#1a1a1a", "#252525", "#333333", "#444444", "#555555", "#666666"]
+        "displayName": "Parchment Surface",
+        "canonical": "#faf7ef",
+        "darkCanonical": "#1a1a1a",
+        "tonalRamp": ["#e6dfd0", "#f0eadc", "#faf7ef", "#ffffff", "#ffffff", "#ffffff", "#ffffff", "#ffffff"]
       },
-      "chalk-white": {
+      "parchment-elevated": {
         "role": "neutral",
-        "displayName": "Chalk White",
+        "displayName": "Parchment Elevated",
         "canonical": "#ffffff",
-        "tonalRamp": ["#1a1a1a", "#444444", "#6b6b6b", "#8f8f8f", "#b0b0b0", "#cccccc", "#e6e6e6", "#ffffff"]
+        "darkCanonical": "#1a1a1a",
+        "tonalRamp": ["#e6dfd0", "#f0eadc", "#faf7ef", "#ffffff", "#ffffff", "#ffffff", "#ffffff", "#ffffff"]
       },
-      "soot-grey": {
+      "ink-primary": {
         "role": "neutral",
-        "displayName": "Soot Grey",
-        "canonical": "#a1a1a1",
-        "tonalRamp": ["#2a2a2a", "#444444", "#5e5e5e", "#787878", "#919191", "#a1a1a1", "#b8b8b8", "#d0d0d0"]
+        "displayName": "Ink Primary",
+        "canonical": "#2a2520",
+        "darkCanonical": "#ffffff",
+        "tonalRamp": ["#0f0d0b", "#1a1714", "#2a2520", "#3f3a33", "#554f47", "#6b645b", "#817970", "#9a9186"]
       },
-      "verdigris-action": {
-        "role": "primary",
-        "displayName": "Verdigris Action",
-        "canonical": "#34b64a",
-        "tonalRamp": ["#0a2a10", "#144a1e", "#1f6b2c", "#298c3a", "#34b64a", "#4dd164", "#78e08a", "#a8eeb4"]
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "#7a7268",
+        "darkCanonical": "#a1a1a1",
+        "tonalRamp": ["#3f3a33", "#4f4942", "#7a7268", "#92897e", "#a9a093", "#c0b6a8", "#d6ccbd", "#ede2d2"]
       },
-      "verdigris-deep": {
+      "ink-subtle": {
+        "role": "neutral",
+        "displayName": "Ink Subtle",
+        "canonical": "#a39a8d",
+        "darkCanonical": "#6b6b6b",
+        "tonalRamp": ["#554f47", "#6b645b", "#a39a8d", "#b5ada0", "#c7bfb2", "#d9d2c5", "#ebe4d8", "#fbf7ef"]
+      },
+      "sepia-line": {
+        "role": "neutral",
+        "displayName": "Sepia Line",
+        "canonical": "#e6dfd0",
+        "darkCanonical": "rgba(255, 255, 255, 0.1)",
+        "tonalRamp": ["#c7bcaa", "#d4cbb9", "#e6dfd0", "#ede7d8", "#f2ede1", "#f7f3ea", "#fbf8f2", "#ffffff"]
+      },
+      "amber-ink": {
         "role": "primary",
-        "displayName": "Verdigris Deep",
-        "canonical": "#238636",
-        "tonalRamp": ["#061f0c", "#0f3a17", "#175522", "#1c6e2c", "#238636", "#34a84a", "#5bc76e", "#8fe09c"]
+        "displayName": "Amber Ink",
+        "canonical": "#c4a35a",
+        "darkCanonical": "#e6b84a",
+        "tonalRamp": ["#5e4620", "#7f5f2b", "#a08040", "#c4a35a", "#d4b36a", "#e0c584", "#ead6a3", "#f5e8c8"]
+      },
+      "amber-ink-hover": {
+        "role": "primary",
+        "displayName": "Amber Ink Hover",
+        "canonical": "#d4b36a",
+        "darkCanonical": "#f0c85e",
+        "tonalRamp": ["#6b522a", "#8e6e39", "#b8924d", "#d4b36a", "#dec07d", "#e7cf98", "#f0deb6", "#f8eed5"]
+      },
+      "amber-ink-deep": {
+        "role": "primary",
+        "displayName": "Amber Ink Deep",
+        "canonical": "#a08040",
+        "darkCanonical": "#c49a3a",
+        "tonalRamp": ["#45331a", "#5e4620", "#7f5f2b", "#a08040", "#b08f4a", "#c4a35a", "#d4b36a", "#e5c986"]
+      },
+      "state-calm": {
+        "role": "neutral",
+        "displayName": "State Calm",
+        "canonical": "#e6dfd0",
+        "darkCanonical": "#3a3a3a",
+        "tonalRamp": ["#c7bcaa", "#d4cbb9", "#e6dfd0", "#ede7d8", "#f2ede1", "#f7f3ea", "#fbf8f2", "#ffffff"]
       },
       "ultramarine-intelligence": {
         "role": "secondary",
@@ -81,12 +122,6 @@
         "displayName": "Vermilion Alert",
         "canonical": "#ef4444",
         "tonalRamp": ["#330a0a", "#5e1414", "#8a1e1e", "#b82a2a", "#ef4444", "#f06d6d", "#f49a9a", "#f9c4c4"]
-      },
-      "candle-glow": {
-        "role": "neutral",
-        "displayName": "Candle Glow",
-        "canonical": "#f0f6fc",
-        "tonalRamp": ["#1a222e", "#353f4d", "#525e6e", "#707d8e", "#8e9aad", "#b0bac7", "#d0d7e0", "#f0f6fc"]
       }
     },
     "typographyMeta": {
@@ -114,27 +149,27 @@
     "shadows": [
       {
         "name": "surface-rest",
-        "value": "inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(255,255,255,0.03), 0 8px 18px rgba(0,0,0,0.2)",
+        "value": "0 1px 0 rgba(255,255,255,0.6) inset, 0 8px 18px rgba(42,37,32,0.06), 0 0 0 1px rgba(42,37,32,0.06)",
         "purpose": "Default state for BMC cells and panels."
       },
       {
         "name": "surface-hover",
-        "value": "inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(255,255,255,0.04), 0 10px 20px rgba(0,0,0,0.24)",
+        "value": "0 1px 0 rgba(255,255,255,0.7) inset, 0 10px 20px rgba(42,37,32,0.08), 0 0 0 1px rgba(42,37,32,0.08)",
         "purpose": "Hover state for elevated panels."
       },
       {
         "name": "card-hover",
-        "value": "0 8px 32px rgba(99,102,241,0.08), 0 0 0 1px rgba(99,102,241,0.1)",
+        "value": "0 8px 32px rgba(99,102,241,0.06), 0 0 0 1px rgba(99,102,241,0.08)",
         "purpose": "Canvas cards on hover — indigo aura."
       },
       {
         "name": "glow-ai",
-        "value": "0 0 14px rgba(99,102,241,0.35), 0 0 28px rgba(6,182,212,0.21)",
+        "value": "0 0 14px rgba(99,102,241,0.22), 0 0 28px rgba(6,182,212,0.12)",
         "purpose": "AI-active elements."
       },
       {
         "name": "glow-critical",
-        "value": "0 0 21px rgba(239,68,68,0.42), 0 0 42px rgba(236,72,153,0.28), 0 0 63px rgba(99,102,241,0.14)",
+        "value": "0 0 21px rgba(239,68,68,0.28), 0 0 42px rgba(236,72,153,0.18), 0 0 63px rgba(99,102,241,0.08)",
         "purpose": "Critical state — urgent but not alarming."
       }
     ],
@@ -177,17 +212,17 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The main action trigger — verdigris gradient with physical depth.",
+      "description": "The main action trigger — amber ink gradient with physical depth.",
       "html": "<button class=\"ds-btn-primary\">Validate Idea</button>",
-      "css": ".ds-btn-primary { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 10px 20px; border-radius: 12px; border: 1px solid rgba(46,160,67,0.45); font-family: Inter, system-ui, sans-serif; font-weight: 600; font-size: 0.875rem; line-height: 1; color: #fff; cursor: pointer; text-decoration: none; background: linear-gradient(180deg, #34b64a 0%, #238636 100%); box-shadow: 0 2px 6px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.18); transition: transform 180ms ease, box-shadow 220ms ease, border-color 220ms ease, background 220ms ease; } .ds-btn-primary:hover { transform: translateY(-2px); background: linear-gradient(180deg, #3bc553 0%, #28933d 100%); border-color: rgba(46,160,67,0.6); box-shadow: 0 3px 10px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.22); } .ds-btn-primary:active { transform: translateY(-1px); box-shadow: 0 1px 4px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.14); }"
+      "css": ".ds-btn-primary { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 10px 20px; border-radius: 12px; border: 1px solid rgba(160,128,64,0.45); font-family: Inter, system-ui, sans-serif; font-weight: 600; font-size: 0.875rem; line-height: 1; color: #2a2520; cursor: pointer; text-decoration: none; background: linear-gradient(180deg, #c4a35a 0%, #a08040 100%); box-shadow: 0 2px 6px rgba(42,37,32,0.08), inset 0 1px 0 rgba(255,255,255,0.25); transition: transform 180ms ease, box-shadow 220ms ease, border-color 220ms ease, background 220ms ease; } .ds-btn-primary:hover { transform: translateY(-2px); background: linear-gradient(180deg, #d4b36a 0%, #b08f4a 100%); border-color: rgba(160,128,64,0.6); box-shadow: 0 3px 10px rgba(42,37,32,0.12), inset 0 1px 0 rgba(255,255,255,0.3); } .ds-btn-primary:active { transform: translateY(-1px); box-shadow: 0 1px 4px rgba(42,37,32,0.08), inset 0 1px 0 rgba(255,255,255,0.22); }"
     },
     {
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "Secondary action with frosted glass presence.",
+      "description": "Secondary action with soft parchment presence.",
       "html": "<button class=\"ds-btn-secondary\">Save Draft</button>",
-      "css": ".ds-btn-secondary { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 10px 20px; border-radius: 12px; border: 1px solid rgba(240,246,252,0.22); font-family: Inter, system-ui, sans-serif; font-weight: 600; font-size: 0.875rem; line-height: 1; color: #f0f6fc; cursor: pointer; text-decoration: none; background: linear-gradient(180deg, rgba(240,246,252,0.14) 0%, rgba(197,206,219,0.08) 100%); box-shadow: 0 12px 24px rgba(0,0,0,0.24), 0 4px 10px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.22); transition: transform 180ms ease, box-shadow 220ms ease, border-color 220ms ease, background 220ms ease; } .ds-btn-secondary:hover { transform: translateY(-2px); background: linear-gradient(180deg, rgba(248,252,255,0.18) 0%, rgba(216,226,238,0.12) 100%); border-color: rgba(240,246,252,0.3); box-shadow: 0 16px 30px rgba(0,0,0,0.3), 0 0 22px rgba(240,246,252,0.14), inset 0 1px 0 rgba(255,255,255,0.28); }"
+      "css": ".ds-btn-secondary { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 10px 20px; border-radius: 12px; border: 1px solid rgba(42,37,32,0.1); font-family: Inter, system-ui, sans-serif; font-weight: 600; font-size: 0.875rem; line-height: 1; color: #2a2520; cursor: pointer; text-decoration: none; background: linear-gradient(180deg, rgba(42,37,32,0.06) 0%, rgba(42,37,32,0.03) 100%); box-shadow: 0 12px 24px rgba(42,37,32,0.05), 0 4px 10px rgba(42,37,32,0.04), inset 0 1px 0 rgba(255,255,255,0.5); transition: transform 180ms ease, box-shadow 220ms ease, border-color 220ms ease, background 220ms ease; } .ds-btn-secondary:hover { transform: translateY(-2px); background: linear-gradient(180deg, rgba(42,37,32,0.09) 0%, rgba(42,37,32,0.05) 100%); border-color: rgba(42,37,32,0.14); box-shadow: 0 16px 30px rgba(42,37,32,0.07), 0 0 22px rgba(99,102,241,0.06), inset 0 1px 0 rgba(255,255,255,0.6); }"
     },
     {
       "name": "Ghost Button",
@@ -195,15 +230,15 @@
       "refersTo": "button-ghost",
       "description": "Tertiary action — minimal presence, reveals on hover.",
       "html": "<button class=\"ds-btn-ghost\">Cancel</button>",
-      "css": ".ds-btn-ghost { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 10px 20px; border-radius: 12px; border: 1px solid rgba(240,246,252,0.12); font-family: Inter, system-ui, sans-serif; font-weight: 600; font-size: 0.875rem; line-height: 1; color: #a1a1a1; cursor: pointer; text-decoration: none; background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.03) 100%); box-shadow: 0 8px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.14); transition: transform 180ms ease, box-shadow 220ms ease, border-color 220ms ease, background 220ms ease, color 220ms ease; } .ds-btn-ghost:hover { transform: translateY(-2px); color: #f0f6fc; border-color: rgba(240,246,252,0.24); background: linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.06) 100%); box-shadow: 0 12px 24px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.2); }"
+      "css": ".ds-btn-ghost { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 10px 20px; border-radius: 12px; border: 1px solid rgba(42,37,32,0.06); font-family: Inter, system-ui, sans-serif; font-weight: 600; font-size: 0.875rem; line-height: 1; color: #7a7268; cursor: pointer; text-decoration: none; background: linear-gradient(180deg, rgba(42,37,32,0.03) 0%, rgba(42,37,32,0.01) 100%); box-shadow: 0 8px 16px rgba(42,37,32,0.03), inset 0 1px 0 rgba(255,255,255,0.4); transition: transform 180ms ease, box-shadow 220ms ease, border-color 220ms ease, background 220ms ease, color 220ms ease; } .ds-btn-ghost:hover { transform: translateY(-2px); color: #2a2520; border-color: rgba(42,37,32,0.12); background: linear-gradient(180deg, rgba(42,37,32,0.06) 0%, rgba(42,37,32,0.03) 100%); box-shadow: 0 12px 24px rgba(42,37,32,0.05), inset 0 1px 0 rgba(255,255,255,0.5); }"
     },
     {
       "name": "Soft Input",
       "kind": "input",
       "refersTo": "input-soft",
-      "description": "Primary text field with frosted glass surface and verdigris focus ignition.",
+      "description": "Primary text field with white paper surface and amber focus ignition.",
       "html": "<input class=\"ds-input-soft\" placeholder=\"Describe your value proposition...\" />",
-      "css": ".ds-input-soft { width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(240,246,252,0.16); font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; line-height: 1.5; color: #f0f6fc; background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.03) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 18px rgba(0,0,0,0.22); outline: none; transition: border-color 180ms ease, box-shadow 220ms ease, background 180ms ease; } .ds-input-soft::placeholder { color: rgba(240,246,252,0.45); } .ds-input-soft:focus { border-color: rgba(46,160,67,0.55); box-shadow: 0 0 0 3px rgba(46,160,67,0.16), inset 0 1px 0 rgba(255,255,255,0.14), 0 12px 24px rgba(0,0,0,0.26); }"
+      "css": ".ds-input-soft { width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(42,37,32,0.12); font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; line-height: 1.5; color: #2a2520; background: #ffffff; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 8px 18px rgba(42,37,32,0.04); outline: none; transition: border-color 180ms ease, box-shadow 220ms ease, background 180ms ease; } .ds-input-soft::placeholder { color: rgba(122,114,104,0.55); } .ds-input-soft:focus { border-color: rgba(196,163,90,0.65); box-shadow: 0 0 0 3px rgba(196,163,90,0.12), inset 0 1px 0 rgba(255,255,255,0.7), 0 12px 24px rgba(42,37,32,0.06); }"
     },
     {
       "name": "Canvas Card",
@@ -211,15 +246,15 @@
       "refersTo": "card-canvas",
       "description": "Project card on the dashboard — subtle, lifts with indigo aura on hover.",
       "html": "<div class=\"ds-canvas-card\"><h3 class=\"ds-canvas-card-title\">Airbnb for Dogs</h3><p class=\"ds-canvas-card-desc\">A platform connecting dog owners with trusted sitters.</p></div>",
-      "css": ".ds-canvas-card { position: relative; background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 20px; cursor: pointer; overflow: hidden; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); } .ds-canvas-card::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(135deg, rgba(99,102,241,0.04), rgba(236,72,153,0.04)); opacity: 0; transition: opacity 0.25s ease; } .ds-canvas-card:hover { transform: translateY(-4px); border-color: rgba(99,102,241,0.2); box-shadow: 0 8px 32px rgba(99,102,241,0.08), 0 0 0 1px rgba(99,102,241,0.1); } .ds-canvas-card:hover::before { opacity: 1; } .ds-canvas-card-title { font-family: 'Crimson Text', Georgia, serif; font-size: 1.15rem; font-weight: 600; color: #fff; margin: 0 0 0.25rem; position: relative; z-index: 1; } .ds-canvas-card-desc { font-family: Inter, system-ui, sans-serif; font-size: 0.78rem; color: #a1a1a1; line-height: 1.35; margin: 0; position: relative; z-index: 1; }"
+      "css": ".ds-canvas-card { position: relative; background: #ffffff; border: 1px solid rgba(42,37,32,0.06); border-radius: 14px; padding: 20px; cursor: pointer; overflow: hidden; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); } .ds-canvas-card::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(135deg, rgba(99,102,241,0.03), rgba(236,72,153,0.03)); opacity: 0; transition: opacity 0.25s ease; } .ds-canvas-card:hover { transform: translateY(-4px); border-color: rgba(99,102,241,0.16); box-shadow: 0 8px 32px rgba(99,102,241,0.06), 0 0 0 1px rgba(99,102,241,0.08); } .ds-canvas-card:hover::before { opacity: 1; } .ds-canvas-card-title { font-family: 'Crimson Text', Georgia, serif; font-size: 1.15rem; font-weight: 600; color: #2a2520; margin: 0 0 0.25rem; position: relative; z-index: 1; } .ds-canvas-card-desc { font-family: Inter, system-ui, sans-serif; font-size: 0.78rem; color: #7a7268; line-height: 1.35; margin: 0; position: relative; z-index: 1; }"
     },
     {
       "name": "Stat Card",
       "kind": "card",
       "refersTo": "card-stat",
-      "description": "Dashboard metric card with glassmorphism and gradient number.",
+      "description": "Dashboard metric card with paper surface and gradient number.",
       "html": "<div class=\"ds-stat-card\"><div class=\"ds-stat-label\">Total Canvases</div><div class=\"ds-stat-number\">12</div></div>",
-      "css": ".ds-stat-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 20px; flex: 1; min-width: 0; } .ds-stat-label { font-family: 'Geist Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #a1a1a1; margin-bottom: 0.5rem; } .ds-stat-number { font-family: 'Geist Mono', monospace; font-size: 1.75rem; font-weight: 700; background: linear-gradient(135deg, #fff 30%, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.1; }"
+      "css": ".ds-stat-card { background: rgba(255,255,255,0.7); border: 1px solid rgba(42,37,32,0.06); border-radius: 14px; padding: 20px; flex: 1; min-width: 0; } .ds-stat-label { font-family: 'Geist Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #7a7268; margin-bottom: 0.5rem; } .ds-stat-number { font-family: 'Geist Mono', monospace; font-size: 1.75rem; font-weight: 700; background: linear-gradient(135deg, #2a2520 30%, #c4a35a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.1; }"
     },
     {
       "name": "BMC Cell Panel",
@@ -227,7 +262,7 @@
       "refersTo": "bmc-cell-panel",
       "description": "Business Model Canvas block — state communicated via top border color.",
       "html": "<div class=\"ds-bmc-cell\"><div class=\"ds-bmc-cell-header\">Value Propositions</div><div class=\"ds-bmc-cell-content\">Hosts: Extra income. Guests: Unique experiences.</div></div>",
-      "css": ".ds-bmc-cell { display: flex; flex-direction: column; border-radius: 10px; overflow: visible; min-height: 120px; border: 1px solid rgba(240,246,252,0.12); border-top-width: 2px; border-top-color: rgba(240,246,252,0.16); background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%), linear-gradient(180deg, rgba(9,12,16,0.95) 0%, rgba(9,12,16,0.95) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(255,255,255,0.03), 0 8px 18px rgba(0,0,0,0.2); transition: border-color 220ms ease, border-top-color 220ms ease, background 220ms ease, box-shadow 220ms ease; } .ds-bmc-cell:hover { border-color: rgba(240,246,252,0.18); background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%), linear-gradient(180deg, rgba(11,14,19,0.96) 0%, rgba(11,14,19,0.96) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(255,255,255,0.04), 0 10px 20px rgba(0,0,0,0.24); } .ds-bmc-cell-header { font-family: 'Geist Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: #a1a1a1; padding: 10px 12px 4px; } .ds-bmc-cell-content { font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; line-height: 1.5; color: #f0f6fc; padding: 0 12px 12px; flex: 1; } .ds-bmc-cell.ds-state-healthy { border-top-color: rgba(34,197,94,0.6); } .ds-bmc-cell.ds-state-warning { border-top-color: rgba(245,158,11,0.62); } .ds-bmc-cell.ds-state-critical { border-top-color: rgba(239,68,68,0.66); } .ds-bmc-cell.ds-state-ai { border-top-color: rgba(99,102,241,0.68); }"
+      "css": ".ds-bmc-cell { display: flex; flex-direction: column; border-radius: 10px; overflow: visible; min-height: 120px; border: 1px solid rgba(42,37,32,0.06); border-top-width: 2px; border-top-color: rgba(42,37,32,0.1); background: linear-gradient(180deg, #ffffff 0%, #faf7ef 100%); box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 8px 18px rgba(42,37,32,0.04), 0 0 0 1px rgba(42,37,32,0.04); transition: border-color 220ms ease, border-top-color 220ms ease, background 220ms ease, box-shadow 220ms ease; } .ds-bmc-cell:hover { border-color: rgba(42,37,32,0.1); background: linear-gradient(180deg, #ffffff 0%, #f5f0e3 100%); box-shadow: 0 1px 0 rgba(255,255,255,0.7) inset, 0 10px 20px rgba(42,37,32,0.06), 0 0 0 1px rgba(42,37,32,0.06); } .ds-bmc-cell-header { font-family: 'Geist Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: #7a7268; padding: 10px 12px 4px; } .ds-bmc-cell-content { font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; line-height: 1.5; color: #2a2520; padding: 0 12px 12px; flex: 1; } .ds-bmc-cell.ds-state-healthy { border-top-color: rgba(34,197,94,0.55); } .ds-bmc-cell.ds-state-warning { border-top-color: rgba(245,158,11,0.58); } .ds-bmc-cell.ds-state-critical { border-top-color: rgba(239,68,68,0.62); } .ds-bmc-cell.ds-state-ai { border-top-color: rgba(99,102,241,0.62); }"
     },
     {
       "name": "Tag Pill",
@@ -235,7 +270,7 @@
       "refersTo": "tag-pill",
       "description": "AI-generated label with pulsing indigo dot.",
       "html": "<span class=\"ds-tag-pill\"><span class=\"ds-tag-dot\"></span>AI Generated</span>",
-      "css": ".ds-tag-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 100px; border: 1px solid rgba(99,102,241,0.15); background: rgba(99,102,241,0.05); font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(167,170,255,0.7); } .ds-tag-dot { width: 5px; height: 5px; border-radius: 50%; background: #6366f1; animation: ds-pulse-dot 3s ease-in-out infinite; } @keyframes ds-pulse-dot { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }"
+      "css": ".ds-tag-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 100px; border: 1px solid rgba(99,102,241,0.15); background: rgba(99,102,241,0.05); font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(99,102,241,0.8); } .ds-tag-dot { width: 5px; height: 5px; border-radius: 50%; background: #6366f1; animation: ds-pulse-dot 3s ease-in-out infinite; } @keyframes ds-pulse-dot { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }"
     },
     {
       "name": "User Avatar",
@@ -247,27 +282,29 @@
     }
   ],
   "narrative": {
-    "northStar": "Da Vinci's Workshop",
-    "overview": "RocketMap is the inventor's studio — candlelit, ink-stained, full of half-finished sketches and precision instruments. The interface should feel like sitting at a heavy wooden desk in Renaissance Florence, sketching the anatomy of a business idea. Every surface carries the warmth of parchment and the gravity of craft. The AI is not a flashy assistant; it is a patient apprentice handing you the right lens at the right moment. This system rejects the sterile minimalism of modern SaaS dashboards and the dopamine-driven gamification of consumer apps. It embraces depth, texture, and the quiet confidence of tools that have weight in the hand.",
+    "northStar": "The Sunlit Studio by day, Da Vinci's Workshop by night",
+    "overview": "RocketMap is the founder's drafting table — morning light across aged paper, ink still wet, sketches pinned to a warm wooden wall. The interface should feel like sitting down with a fresh sheet of parchment and a pen that knows what to ask. Every surface carries the warmth of handmade paper and the quiet confidence of tools that have been used for centuries. This system rejects the cold minimalism of modern SaaS dashboards and the dopamine-driven gamification of consumer apps. It embraces daylight, texture, and the deliberate slowness of serious thought. The light ground is not 'light mode' — it is the page itself, the medium onto which an idea is pressed. RocketMap now supports two complementary atmospheres: The Sunlit Studio (Warm Parchment) for focused daytime work, and Da Vinci's Workshop (dark) for late-night sessions. A user-controlled theme toggle, powered by next-themes, switches every surface, ink, and accent between the two palettes.",
     "keyCharacteristics": [
-      "Dark-dominant surfaces with tactile depth (inset highlights, layered shadows)",
+      "Warm parchment-dominant surfaces with subtle paper grain",
       "Renaissance serif display type for headings, humanist sans for body, drafting mono for data",
-      "State expressed through colored top borders and ambient glows, not badges or banners",
-      "Chromatic accents used sparingly for AI presence and holographic effects",
-      "Every interactive element responds with physical weight — lift on hover, press on active"
+      "State expressed through colored top borders and warm ink accents, not badges or banners",
+      "Chromatic accents used sparingly for AI presence and ink effects",
+      "Every interactive element responds with physical weight — lift on hover, press on active",
+      "Theme-aware surfaces and inks that invert through CSS custom properties while preserving pigment rarity and tactile motion"
     ],
     "rules": [
       { "name": "The Pigment Rarity Rule", "body": "The chromatic palette appears on ≤15% of any given screen. Its rarity is the point — these are precious pigments, not wall paint.", "section": "colors" },
       { "name": "The One Voice Rule", "body": "The display font (Crimson Text) is used for at most one headline per screen. Everything else is Inter or Geist Mono. The serif is a privilege, not a default.", "section": "typography" },
-      { "name": "The Candlelight Rule", "body": "All inset highlights are white at low opacity (8-14%), simulating a single warm light source from above. Never use colored inset highlights.", "section": "elevation" }
+      { "name": "The Daylight Rule", "body": "Shadows are warm-tinted (rgba(42,37,32,...)) and never pure black. Highlights come from above, simulating a tall window to the left of the desk.", "section": "elevation" }
     ],
     "dos": [
-      "Do use the Candlelight Rule — inset white highlights on all elevated surfaces.",
-      "Do let the dark ground dominate. The Workshop Midnight background should cover 80%+ of any screen.",
+      "Do use the Daylight Rule — warm-tinted shadows and soft top highlights on elevated surfaces.",
+      "Do let the parchment ground dominate. The Parchment Ground background should cover 80%+ of any screen.",
       "Do use state-colored top borders (2px) on BMC cells to indicate health.",
       "Do use Crimson Text display font for one headline per view. Let it breathe.",
       "Do use Geist Mono with uppercase + 0.08em tracking for all data labels and metadata.",
-      "Do respect prefers-reduced-motion — the shimmer and pulse animations are decorative, not functional."
+      "Do respect prefers-reduced-motion — the shimmer and pulse animations are decorative, not functional.",
+      "Do use CSS custom properties (var(--background), var(--foreground), var(--primary), etc.) so components respond automatically to the light/dark theme toggle."
     ],
     "donts": [
       "Don't use corporate blue dashboards (McKinsey, Salesforce aesthetics).",

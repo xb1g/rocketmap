@@ -218,11 +218,12 @@ export function ViabilityScore({
 
       <Popover.Portal>
         <Popover.Content
-          className="glass-morphism border border-white/15 rounded-xl p-0 w-[380px] shadow-2xl z-50 overflow-hidden"
+          className="glass-morphism border border-border rounded-xl p-0 w-[380px] z-50 overflow-hidden"
+          style={{ boxShadow: "0 24px 48px rgba(var(--ink-shadow), 0.12)" }}
           sideOffset={8}
           align="end"
         >
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-white/8">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
             <div className="shrink-0 font-mono text-lg font-bold text-foreground">
               {initialData.score}
               {hasPotential && (
@@ -243,7 +244,7 @@ export function ViabilityScore({
 
           <div className="max-h-[440px] overflow-y-auto">
             {(initialData.verdict || initialData.reasoning) && (
-              <div className="px-4 py-3 border-b border-white/5">
+              <div className="px-4 py-3 border-b border-border/60">
                 <p className="text-[11px] text-foreground/75 leading-relaxed">
                   {initialData.verdict || initialData.reasoning}
                 </p>
@@ -251,10 +252,10 @@ export function ViabilityScore({
             )}
 
             {(factorsUp.length > 0 || factorsDown.length > 0) && (
-              <div className="px-4 py-3 border-b border-white/5 space-y-1.5">
+              <div className="px-4 py-3 border-b border-border/60 space-y-1.5">
                 {factorsUp.map((f, i) => (
                   <div key={`up-${i}`} className="flex items-start gap-2">
-                    <span className="text-[#10b981] text-[11px] mt-px shrink-0">
+                    <span className="text-primary text-[11px] mt-px shrink-0">
                       ✦
                     </span>
                     <span className="text-[11px] text-foreground/70 leading-relaxed">
@@ -264,7 +265,7 @@ export function ViabilityScore({
                 ))}
                 {factorsDown.map((f, i) => (
                   <div key={`down-${i}`} className="flex items-start gap-2">
-                    <span className="text-[#f43f5e] text-[11px] mt-px shrink-0">
+                    <span className="text-state-critical text-[11px] mt-px shrink-0">
                       ✗
                     </span>
                     <span className="text-[11px] text-foreground/70 leading-relaxed">
@@ -276,7 +277,7 @@ export function ViabilityScore({
             )}
 
             {initialData.ceiling && (
-              <div className="px-4 py-2.5 border-b border-white/5">
+              <div className="px-4 py-2.5 border-b border-border/60">
                 <span className="text-[10px] uppercase tracking-wider text-foreground-muted/50 font-semibold mr-2">
                   Ceiling
                 </span>
@@ -286,7 +287,7 @@ export function ViabilityScore({
               </div>
             )}
 
-            <div className="px-4 py-3 border-b border-white/5">
+            <div className="px-4 py-3 border-b border-border/60">
               <div className="text-xs font-semibold text-foreground mb-2">
                 Unlock path
                 {pendingSteps.length > 0 && (
@@ -311,15 +312,15 @@ export function ViabilityScore({
                         key={step.assumptionId}
                         type="button"
                         onClick={() => onNavigateToAssumption?.(step.assumptionId)}
-                        className="w-full text-left rounded-md border border-white/8 bg-white/[0.02] px-2.5 py-2 hover:bg-white/[0.05] transition-colors"
+                        className="w-full text-left rounded-md border border-border bg-canvas-surface px-2.5 py-2 hover:bg-foreground/5 transition-colors"
                       >
                         <div className="flex items-start gap-2">
                           <span
                             className={
                               isDone
-                                ? "text-[#10b981]"
+                                ? "text-primary"
                                 : isFailed
-                                  ? "text-[#f43f5e]"
+                                  ? "text-state-critical"
                                   : "text-foreground-muted"
                             }
                           >
@@ -332,7 +333,7 @@ export function ViabilityScore({
                               </span>
                               <span
                                 className={`shrink-0 font-mono text-[10px] ${
-                                  isDone ? "text-[#10b981]" : "text-[var(--state-ai)]"
+                                  isDone ? "text-primary" : "text-state-ai"
                                 }`}
                               >
                                 {isDone ? "done" : `+${step.upliftPoints}%`}
@@ -354,7 +355,7 @@ export function ViabilityScore({
 
             {initialData.whatAbout && (
               <div className="px-4 py-3">
-                <div className="rounded-lg border border-white/8 bg-white/[0.03] p-3">
+                <div className="rounded-lg border border-border bg-canvas-surface p-3">
                   <div className="text-[10px] uppercase tracking-wider text-foreground-muted/50 font-semibold mb-1.5">
                     What about
                   </div>
@@ -383,7 +384,7 @@ export function ViabilityScore({
             )}
           </div>
 
-          <div className="px-4 py-2.5 border-t border-white/8 flex items-center justify-between">
+          <div className="px-4 py-2.5 border-t border-border flex items-center justify-between">
             <span className="text-[10px] text-foreground-muted/40">
               {timeAgo}
             </span>
@@ -392,7 +393,7 @@ export function ViabilityScore({
             </button>
           </div>
 
-          <Popover.Arrow className="fill-white/10" />
+          <Popover.Arrow className="fill-border" />
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

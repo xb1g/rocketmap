@@ -11,10 +11,17 @@ interface AssumptionCardProps {
 }
 
 const CATEGORY_STYLES: Record<string, { bg: string; text: string }> = {
-  market: { bg: "bg-(--chroma-indigo)/[0.15]", text: "text-(--chroma-indigo)" },
-  product: { bg: "bg-(--chroma-pink)/[0.15]", text: "text-(--chroma-pink)" },
-  ops: { bg: "bg-(--chroma-amber)/[0.15]", text: "text-(--chroma-amber)" },
-  legal: { bg: "bg-(--state-critical)/[0.15]", text: "text-(--state-critical)" },
+  market: { bg: "bg-(--chroma-indigo)/[0.10]", text: "text-(--chroma-indigo)" },
+  product: { bg: "bg-(--chroma-pink)/[0.10]", text: "text-(--chroma-pink)" },
+  ops: { bg: "bg-(--chroma-amber)/[0.10]", text: "text-(--chroma-amber)" },
+  legal: { bg: "bg-(--state-critical)/[0.10]", text: "text-(--state-critical)" },
+};
+
+const DECISION_LABELS: Record<string, string> = {
+  kill: "Kill",
+  pivot: "Pivot",
+  double_down: "Double Down",
+  insufficient_evidence: "More Evidence",
 };
 
 function getRiskColor(level: string): string {
@@ -35,13 +42,13 @@ export function AssumptionCard({
   onViewEvidence,
 }: AssumptionCardProps) {
   const catStyle = CATEGORY_STYLES[assumption.category] ?? {
-    bg: "bg-white/10",
+    bg: "bg-foreground/5",
     text: "text-foreground-muted",
   };
   const riskColor = getRiskColor(assumption.riskLevel);
 
   return (
-    <div className="rounded-[14px] border border-white/6 bg-white/[2.5%] p-3 space-y-2">
+    <div className="rounded-[14px] border border-border bg-canvas-surface p-3 space-y-2">
       {/* Risk indicator + statement */}
       <div className="flex items-start gap-2.5">
         <div
@@ -57,7 +64,7 @@ export function AssumptionCard({
           {assumption.blockTypes.map((bt) => (
             <span
               key={bt}
-              className="px-2 py-0.5 rounded bg-white/5 text-[10px] font-mono uppercase tracking-wider text-foreground-muted"
+              className="px-2 py-0.5 rounded bg-foreground/5 text-[10px] font-mono uppercase tracking-wider text-foreground-muted"
             >
               {getBlockLabel(bt)}
             </span>
@@ -67,6 +74,11 @@ export function AssumptionCard({
           >
             {assumption.category}
           </span>
+          {assumption.decisionSignal && (
+            <span className="px-2 py-0.5 rounded bg-foreground/5 text-[10px] font-mono uppercase tracking-wider text-foreground-muted">
+              {DECISION_LABELS[assumption.decisionSignal] ?? assumption.decisionSignal}
+            </span>
+          )}
         </div>
       )}
 
@@ -74,7 +86,7 @@ export function AssumptionCard({
       {assumption.confidenceScore > 0 && (
         <div className="pl-4.5">
           <div className="flex items-center gap-2">
-            <div className="flex-1 h-1 rounded-full bg-white/10 overflow-hidden">
+            <div className="flex-1 h-1 rounded-full bg-foreground/10 overflow-hidden">
               <div
                 className="h-full rounded-full transition-all"
                 style={{

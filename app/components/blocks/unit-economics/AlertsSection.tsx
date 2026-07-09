@@ -32,7 +32,7 @@ export function AlertsSection({ alerts }: AlertsSectionProps) {
           return (
             <div
               key={i}
-              className="flex items-start gap-2 px-3 py-2 rounded-lg border border-white/8"
+              className="flex items-start gap-2 px-3 py-2 rounded-lg border border-border"
               style={{ background: style.bg }}
             >
               <span

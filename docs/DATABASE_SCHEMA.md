@@ -90,6 +90,7 @@ Risks and assumptions identified for blocks or the canvas.
 - **linkedValidationItemIds**: String(1000) (JSON array)
 - **suggestedExperiment**: String (Legacy, now handled by Relationship)
 - **suggestedExperimentDuration**: VarChar(100)
+- **decisionSignal**: Enum (kill, pivot, double_down, insufficient_evidence) (Optional)
 - **createdAt**: DateTime
 - **updatedAt**: DateTime
 - **lastTestedAt**: DateTime
@@ -118,6 +119,7 @@ Validation experiments conducted for specific assumptions.
 - **type**: Enum (survey, interview, mvp, ab_test, research, other) (Required)
 - **description**: LongText (Required)
 - **successCriteria**: String(500) (Required)
+- **successThreshold**: String(500) (Optional)
 - **status**: Enum (planned, running, completed) (Default: planned)
 - **result**: Enum (supports, contradicts, mixed, inconclusive)
 - **evidence**: LongText (Default: '')

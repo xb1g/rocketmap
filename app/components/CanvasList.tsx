@@ -21,7 +21,7 @@ export function CanvasList({ canvases, onNewCanvas }: CanvasListProps) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <Flex direction="column" gap="4" align="center" className="max-w-md text-center">
-          <Heading size="6" className="font-display">
+          <Heading size="6" className="font-display font-normal">
             Start Your First Canvas
           </Heading>
           <Text size="3" className="text-foreground-muted">
@@ -38,7 +38,7 @@ export function CanvasList({ canvases, onNewCanvas }: CanvasListProps) {
   return (
     <div className="space-y-6">
       <Flex justify="between" align="center">
-        <Heading size="7" className="font-display">
+        <Heading size="7" className="font-display font-normal">
           Your Canvases
         </Heading>
         <Button onClick={onNewCanvas} className="ui-btn ui-btn-primary">
@@ -49,7 +49,7 @@ export function CanvasList({ canvases, onNewCanvas }: CanvasListProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {canvases.map((canvas) => (
           <Link key={canvas.$id} href={`/canvas/${canvas.slug}`}>
-            <Card className="glow-calm state-transition hover:glow-healthy cursor-pointer p-4 h-full bg-[rgba(255,255,255,0.025)] border border-[rgba(255,255,255,0.06)] rounded-[14px]">
+            <Card className="glow-calm state-transition hover:glow-healthy cursor-pointer p-4 h-full bg-canvas-surface border border-border rounded-[14px]">
               <Flex direction="column" gap="2">
                 <Heading size="4" className="font-body">
                   {canvas.title}

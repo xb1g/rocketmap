@@ -71,14 +71,14 @@ export function ManualAssumptionModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/25"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-lg mx-4 rounded-[14px] border border-white/8 bg-background p-6 space-y-5">
+      <div className="w-full max-w-lg mx-4 rounded-[14px] border border-border bg-canvas-surface p-6 space-y-5">
         <div className="flex items-center justify-between">
-          <h3 className="font-display-small text-base">New Assumption</h3>
+          <h3 className="font-display-small text-base text-foreground">New Assumption</h3>
           <button
             onClick={onClose}
             className="text-foreground-muted hover:text-foreground text-sm"
@@ -95,7 +95,7 @@ export function ManualAssumptionModal({
             onChange={(e) => setStatement(e.target.value)}
             placeholder="e.g. Customers are willing to pay $50/mo for this solution"
             rows={3}
-            className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
+            className="w-full rounded-[12px] border border-border bg-canvas-surface px-3 py-2 text-sm text-foreground placeholder:text-foreground-subtle focus:outline-none focus:border-primary/55 focus:shadow-[0_0_0_3px_rgba(var(--primary-rgb),0.16)]"
           />
         </div>
 
@@ -110,14 +110,14 @@ export function ManualAssumptionModal({
                 className={`px-3 py-1.5 rounded-[12px] text-xs font-medium transition-colors ${
                   riskLevel === rl.value
                     ? "border-2"
-                    : "border border-white/8 text-foreground-muted hover:text-foreground"
+                    : "border border-border text-foreground-muted hover:text-foreground"
                 }`}
                 style={
                   riskLevel === rl.value
                     ? {
                         borderColor: rl.color,
                         color: rl.color,
-                        background: `color-mix(in srgb, ${rl.color} 10%, transparent)`,
+                        background: `color-mix(in srgb, ${rl.color} 8%, transparent)`,
                       }
                     : undefined
                 }
@@ -134,7 +134,7 @@ export function ManualAssumptionModal({
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as typeof category)}
-            className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
+            className="w-full rounded-[12px] border border-border bg-canvas-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/55 focus:shadow-[0_0_0_3px_rgba(var(--primary-rgb),0.16)]"
           >
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
@@ -154,8 +154,8 @@ export function ManualAssumptionModal({
                 onClick={() => toggleBlock(def.type)}
                 className={`px-2 py-1 rounded-[12px] text-[11px] transition-colors ${
                   blockTypes.includes(def.type)
-                    ? "bg-white/15 text-foreground"
-                    : "bg-white/5 text-foreground-muted hover:bg-white/10"
+                    ? "bg-primary/15 text-foreground"
+                    : "bg-foreground/5 text-foreground-muted hover:bg-foreground/10"
                 }`}
               >
                 {def.bmcLabel}

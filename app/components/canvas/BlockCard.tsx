@@ -131,7 +131,7 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
     return (
       <div
         ref={ref}
-        className={`block-item-card group relative${cardHasHighlightedSegment ? ' ring-1 ring-white/25' : ''}`}
+        className={`block-item-card group relative${cardHasHighlightedSegment ? ' ring-1 ring-foreground/20' : ''}`}
         style={cardHasHighlightedSegment ? { transition: 'box-shadow 150ms ease, ring 150ms ease' } : undefined}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
@@ -196,7 +196,7 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
                     className={`inline-flex items-center gap-1 text-[8px] px-1.5 py-0.5 rounded-full border transition-all duration-150 cursor-default ${
                       isHighlighted
                         ? 'border-foreground/30 text-foreground/90 bg-foreground/10'
-                        : 'border-white/10 text-foreground-muted/80 bg-white/4'
+                        : 'border-border text-foreground-muted/80 bg-canvas-surface'
                     }`}
                     style={{
                       borderColor: isHighlighted ? `${segColor}60` : undefined,
@@ -253,7 +253,7 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
         {showLinkPicker && floatingPos && allSegments.length > 0 && createPortal(
           <div
             ref={floatingRef}
-            className="fixed z-[100] rounded-lg border border-white/12 bg-canvas-surface shadow-xl shadow-black/40 p-1 space-y-0.5 max-h-[180px] w-[180px] overflow-y-auto"
+            className="fixed z-[100] rounded-lg border border-border bg-canvas-surface shadow-[0_20px_25px_-5px_rgba(var(--ink-shadow),0.1),0_8px_10px_-6px_rgba(var(--ink-shadow),0.1)] p-1 space-y-0.5 max-h-[180px] w-[180px] overflow-y-auto"
             style={{ top: floatingPos.top, left: floatingPos.left }}
           >
             <div className="text-[8px] text-foreground-muted/40 uppercase tracking-wider px-1.5 py-0.5 font-mono">

@@ -37,7 +37,7 @@ export function AccountClient({ user, stats }: AccountClientProps) {
   return (
     <>
       <div style={{ marginBottom: '2rem' }}>
-        <Heading size="8" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, marginBottom: '0.25rem' }}>
+        <Heading size="8" style={{ fontFamily: 'var(--font-display)', fontWeight: 400, marginBottom: '0.25rem' }}>
           Account
         </Heading>
         <Text size="2" style={{ color: 'var(--foreground-muted)' }}>

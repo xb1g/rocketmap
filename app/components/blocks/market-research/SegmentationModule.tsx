@@ -16,7 +16,7 @@ type PriorityLevel = "high" | "medium" | "low";
 const PRIORITY_COLORS: Record<PriorityLevel, string> = {
   high: "text-state-healthy bg-state-healthy/10",
   medium: "text-state-warning bg-state-warning/10",
-  low: "text-foreground-muted bg-white/5",
+  low: "text-foreground-muted bg-foreground/5",
 };
 
 const PRIORITY_LABELS: Record<PriorityLevel, string> = {
@@ -114,7 +114,7 @@ function SegmentCard({
 }) {
   const priorityLabel = PRIORITY_LABELS[segment.priority];
   return (
-    <div className="p-4 rounded-lg bg-white/3 border border-white/5 space-y-3">
+    <div className="p-4 rounded-lg bg-canvas-surface border border-border space-y-3">
       <div className="flex items-start justify-between">
         <input
           value={segment.name}

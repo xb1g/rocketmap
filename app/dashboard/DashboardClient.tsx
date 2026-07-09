@@ -3,10 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OnboardingModal } from "../components/OnboardingModal";
-import { QuickStats } from "../components/dashboard/QuickStats";
 import { CanvasCard } from "../components/dashboard/CanvasCard";
 import { AIGuidedModal } from "../components/dashboard/AIGuidedModal";
-import { Heading, Text } from "@radix-ui/themes";
 import type { BlockType } from "@/lib/types/canvas";
 
 interface DashboardClientProps {
@@ -29,19 +27,12 @@ interface DashboardClientProps {
     viabilityScore: number | null;
     viabilityPotentialScore: number | null;
   }[];
-  stats: {
-    totalCanvases: number;
-    lastUpdated: string | null;
-    avgCompletion: number;
-    aiApiCalls: number;
-  };
 }
 
 export function DashboardClient({
   user,
   onboardingCompleted,
   canvases,
-  stats,
 }: DashboardClientProps) {
   const [showOnboarding, setShowOnboarding] = useState(!onboardingCompleted);
   const [showGuidedModal, setShowGuidedModal] = useState(false);
@@ -56,7 +47,7 @@ export function DashboardClient({
     }
   };
 
-  const showShareFeedback = (message: string) => {
+  const showShareFeedbackMessage = (message: string) => {
     clearShareFeedback();
     setShareFeedback(message);
     shareFeedbackTimer.current = setTimeout(() => {
@@ -110,10 +101,10 @@ export function DashboardClient({
     try {
       const url = `${window.location.origin}/canvas/${slug}`;
       await navigator.clipboard.writeText(url);
-      showShareFeedback("Canvas link copied to clipboard.");
+      showShareFeedbackMessage("Canvas link copied to clipboard.");
     } catch (error) {
       console.error("Failed to copy link:", error);
-      showShareFeedback("Failed to copy link. Please try again.");
+      showShareFeedbackMessage("Failed to copy link. Please try again.");
     }
   };
 
@@ -125,11 +116,11 @@ export function DashboardClient({
         body: JSON.stringify({ isPublic }),
       });
       if (!res.ok) throw new Error("Failed to update canvas visibility");
-      showShareFeedback("Canvas visibility updated.");
+      showShareFeedbackMessage("Canvas visibility updated.");
       router.refresh();
     } catch (error) {
       console.error("Failed to update visibility:", error);
-      showShareFeedback("Failed to update visibility. Please try again.");
+      showShareFeedbackMessage("Failed to update visibility. Please try again.");
     }
   };
 
@@ -149,34 +140,11 @@ export function DashboardClient({
   }, []);
 
   const firstName = user.name ? user.name.split(" ")[0] : "there";
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
 
   return (
     <>
       {shareFeedback && (
-        <div
-          style={{
-            position: "fixed",
-            top: "1rem",
-            right: "1rem",
-            zIndex: 60,
-            maxWidth: "280px",
-            padding: "0.65rem 0.8rem",
-            borderRadius: "10px",
-            border: "1px solid rgba(255,255,255,0.15)",
-            background: "rgba(7, 7, 10, 0.95)",
-            color: "var(--foreground)",
-            fontSize: "0.85rem",
-            boxShadow: "0 12px 30px rgba(0, 0, 0, 0.25)",
-            backdropFilter: "blur(6px)",
-          }}
-        >
-          {shareFeedback}
-        </div>
+        <div className="dashboard-toast">{shareFeedback}</div>
       )}
       <OnboardingModal
         isOpen={showOnboarding}
@@ -188,89 +156,29 @@ export function DashboardClient({
         onOpenChange={setShowGuidedModal}
       />
 
-      <div style={{ marginBottom: "2rem" }}>
-        <Heading
-          size="8"
-          style={{
-            fontFamily: "var(--font-display)",
-            fontWeight: 600,
-            marginBottom: "0.25rem",
-          }}
-        >
-          Welcome back, {firstName}
-        </Heading>
-        <Text
-          size="2"
-          style={{
-            color: "var(--foreground-muted)",
-            fontFamily: "var(--font-mono)",
-          }}
-        >
-          {today}
-        </Text>
-      </div>
-
-      <QuickStats stats={stats} />
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "1.5rem",
-        }}
-      >
-        <Heading size="4" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-          Your Canvases
-        </Heading>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+      <header className="dashboard-header">
+        <div>
+          <h1 className="dashboard-title">Welcome back, {firstName}</h1>
+          <p className="dashboard-subtitle">{canvases.length} canvas{canvases.length === 1 ? "" : "es"}</p>
+        </div>
+        <div className="dashboard-actions">
           <button
-            className="quick-launch"
+            className="ui-btn ui-btn-secondary"
             onClick={() => setShowGuidedModal(true)}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
             Chat to Create
           </button>
           <button
-            className="quick-launch ui-btn-secondary"
+            className="ui-btn ui-btn-primary"
             onClick={handleNewCanvas}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            >
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
             Start Blank
           </button>
         </div>
-      </div>
+      </header>
 
       {canvases.length > 0 ? (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-            gap: "1rem",
-          }}
-        >
+        <section className="canvas-list">
           {canvases.map((canvas) => (
             <CanvasCard
               key={canvas.$id}
@@ -281,66 +189,26 @@ export function DashboardClient({
               onDelete={handleDelete}
             />
           ))}
-        </div>
+        </section>
       ) : (
         <div className="empty-state">
           <div className="empty-state-icon">&#x1F680;</div>
-          <Heading
-            size="5"
-            style={{
-              fontFamily: "var(--font-body)",
-              fontWeight: 600,
-              marginBottom: "0.5rem",
-            }}
-          >
-            Launch your first canvas
-          </Heading>
-          <Text
-            size="2"
-            style={{
-              color: "var(--foreground-muted)",
-              marginBottom: "1.5rem",
-              maxWidth: "400px",
-            }}
-          >
+          <h2 className="empty-state-title">Launch your first canvas</h2>
+          <p className="empty-state-text">
             Start building your business model. Map out your assumptions,
             validate your ideas, and stress-test your startup.
-          </Text>
-          <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
+          </p>
+          <div className="dashboard-actions" style={{ justifyContent: "center" }}>
             <button
-              className="quick-launch"
+              className="ui-btn ui-btn-secondary"
               onClick={() => setShowGuidedModal(true)}
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
               Chat to Create
             </button>
             <button
-              className="quick-launch ui-btn-secondary"
+              className="ui-btn ui-btn-primary"
               onClick={handleNewCanvas}
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
               Start Blank
             </button>
           </div>

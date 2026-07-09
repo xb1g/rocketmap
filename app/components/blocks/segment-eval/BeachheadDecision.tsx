@@ -85,7 +85,7 @@ export function BeachheadDecision({
                 key={i}
                 className="flex items-start gap-2 text-xs text-foreground-muted/60 leading-relaxed"
               >
-                <span className="shrink-0 mt-0.5 w-3 h-3 rounded border border-white/10" />
+                <span className="shrink-0 mt-0.5 w-3 h-3 rounded border border-foreground/10" />
                 {exp}
               </li>
             ))}
@@ -100,13 +100,13 @@ export function BeachheadDecision({
             <button
               onClick={() => setShowComparePicker(!showComparePicker)}
               disabled={isComparing}
-              className="text-[11px] px-3 py-1.5 rounded-lg bg-white/5 border border-white/8 text-foreground-muted hover:text-foreground transition-colors"
+              className="text-[11px] px-3 py-1.5 rounded-lg bg-canvas-surface border border-border text-foreground-muted hover:text-foreground transition-colors"
             >
               {isComparing ? "Comparing…" : "Compare with…"}
             </button>
 
             {showComparePicker && (
-              <div className="absolute top-full left-0 mt-1 w-48 py-1 rounded-lg bg-canvas-surface border border-white/10 shadow-xl z-10">
+              <div className="absolute top-full left-0 mt-1 w-48 py-1 rounded-lg bg-canvas-surface border border-border shadow-[0_10px_24px_rgba(var(--ink-shadow),0.12)] z-10">
                 {otherSegments.map((seg) => (
                   <button
                     key={seg.$id}
@@ -114,7 +114,7 @@ export function BeachheadDecision({
                       setShowComparePicker(false);
                       onCompare(seg.$id);
                     }}
-                    className="w-full text-left px-3 py-1.5 text-xs text-foreground-muted hover:bg-white/5 hover:text-foreground transition-colors"
+                    className="w-full text-left px-3 py-1.5 text-xs text-foreground-muted hover:bg-foreground/5 hover:text-foreground transition-colors"
                   >
                     {seg.name}
                   </button>
@@ -125,7 +125,7 @@ export function BeachheadDecision({
         )}
         <button
           onClick={onRescore}
-          className="text-[11px] px-3 py-1.5 rounded-lg bg-white/5 border border-white/8 text-foreground-muted hover:text-foreground transition-colors"
+          className="text-[11px] px-3 py-1.5 rounded-lg bg-foreground/5 border border-border text-foreground-muted hover:text-foreground transition-colors"
         >
           Re-score
         </button>
@@ -133,23 +133,17 @@ export function BeachheadDecision({
 
       {/* Comparison Result */}
       {comparisonResult && (
-        <div className="mt-3 rounded-lg bg-white/3 border border-white/8 p-4 space-y-3 animate-in fade-in duration-200">
+        <div className="mt-3 rounded-lg bg-canvas-surface border border-border p-4 space-y-3 animate-in fade-in duration-200">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-foreground">
               {comparisonResult.segmentAName} vs {comparisonResult.segmentBName}
             </span>
             <span
-              className="text-[10px] font-mono px-2 py-0.5 rounded-full"
-              style={{
-                background:
-                  comparisonResult.betterSegment === "tie"
-                    ? "rgba(255,255,255,0.05)"
-                    : "color-mix(in srgb, var(--state-healthy) 10%, transparent)",
-                color:
-                  comparisonResult.betterSegment === "tie"
-                    ? "rgba(255,255,255,0.5)"
-                    : "var(--state-healthy)",
-              }}
+              className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                comparisonResult.betterSegment === "tie"
+                  ? "bg-foreground/5 text-foreground-muted"
+                  : "bg-state-healthy/10 text-state-healthy"
+              }`}
             >
               {comparisonResult.betterSegment === "tie"
                 ? "Tie"

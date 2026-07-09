@@ -40,6 +40,7 @@ export function parseAssumptionRow(row: Record<string, unknown>): Assumption {
     suggestedExperiment: (row.suggestedExperiment as string) ?? undefined,
     suggestedExperimentDuration:
       (row.suggestedExperimentDuration as string) ?? undefined,
+    decisionSignal: (row.decisionSignal as Assumption["decisionSignal"]) ?? undefined,
     createdAt: (row.createdAt as string) ?? (row.$createdAt as string) ?? "",
     updatedAt: (row.updatedAt as string) ?? (row.$updatedAt as string) ?? "",
     lastTestedAt: (row.lastTestedAt as string) ?? undefined,

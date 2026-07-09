@@ -8,7 +8,6 @@ import {
 } from "@/lib/appwrite";
 import { Query } from "node-appwrite";
 import { DashboardClient } from "./DashboardClient";
-import { getAiUsageStatsFromUser } from "@/lib/ai/user-preferences";
 import { listCanvasesByOwner } from "@/lib/utils";
 import type { BlockType } from "@/lib/types/canvas";
 
@@ -150,17 +149,6 @@ export default async function DashboardPage() {
     console.error("Error fetching canvases:", error);
   }
 
-  const totalCanvases = canvases.length;
-  const lastUpdated = canvases.length > 0 ? canvases[0].$updatedAt : null;
-  const aiUsage = getAiUsageStatsFromUser(user);
-  const avgCompletion =
-    totalCanvases > 0
-      ? Math.round(
-          canvases.reduce((sum, c) => sum + (c.blocksCount / 9) * 100, 0) /
-            totalCanvases,
-        )
-      : 0;
-
   return (
     <DashboardClient
       user={{
@@ -170,12 +158,6 @@ export default async function DashboardPage() {
       }}
       onboardingCompleted={userDoc.onboardingCompleted || false}
       canvases={canvases}
-      stats={{
-        totalCanvases,
-        lastUpdated,
-        avgCompletion,
-        aiApiCalls: aiUsage.calls,
-      }}
     />
   );
 }

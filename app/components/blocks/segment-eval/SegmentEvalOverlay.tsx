@@ -303,12 +303,12 @@ export function SegmentEvalOverlay({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/70 z-50" onClick={onClose} />
+      <div className="fixed inset-0 bg-foreground/40 z-50" onClick={onClose} />
 
       {/* Full-screen overlay */}
       <div className="fixed inset-4 z-50 glass-morphism rounded-xl flex flex-col overflow-hidden animate-in fade-in duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/8 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-foreground-muted">Customer Segments</span>
             <span className="text-foreground-muted/40">›</span>
@@ -324,7 +324,7 @@ export function SegmentEvalOverlay({
         {/* Body: 3-column layout */}
         <div className="flex-1 flex min-h-0 overflow-hidden">
           {/* Left: Segment Selector */}
-          <div className="w-48 border-r border-white/5 shrink-0">
+          <div className="w-48 border-r border-border shrink-0">
             {creatingSegment ? (
               <div className="p-3 space-y-2">
                 <input
@@ -348,7 +348,7 @@ export function SegmentEvalOverlay({
                       setCreatingSegment(false);
                       setNewSegmentName("");
                     }}
-                    className="flex-1 text-[10px] py-1 rounded bg-white/5 text-foreground-muted hover:text-foreground transition-colors"
+                    className="flex-1 text-[10px] py-1 rounded bg-canvas-surface border border-border text-foreground-muted hover:text-foreground transition-colors"
                   >
                     Cancel
                   </button>
@@ -418,7 +418,7 @@ export function SegmentEvalOverlay({
           </div>
 
           {/* Right: AI Chat */}
-          <div className="w-80 border-l border-white/5 shrink-0 flex flex-col">
+          <div className="w-80 border-l border-border shrink-0 flex flex-col">
             <BlockChatSection
               canvasId={canvasId}
               blockType="customer_segments"

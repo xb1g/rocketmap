@@ -79,7 +79,7 @@ function StepIndicator({
   const currentIdx = stepOrder.indexOf(currentStep);
 
   return (
-    <div className="rounded-[14px] border border-white/6 bg-white/2 p-4 space-y-2">
+    <div className="rounded-[14px] border border-border bg-canvas-surface p-4 space-y-2">
       {STEPS.map((s, i) => {
         const isActive = s.key === currentStep;
         const isDone = currentIdx > i || currentStep === "done";
@@ -111,7 +111,7 @@ function StepIndicator({
               ) : isActive ? (
                 <div className="w-3 h-3 rounded-full border-2 border-state-ai border-t-transparent animate-spin" />
               ) : (
-                <div className="w-2 h-2 rounded-full bg-white/20" />
+                <div className="w-2 h-2 rounded-full bg-foreground/20" />
               )}
             </div>
             <span
@@ -140,7 +140,7 @@ function ThinkingPanel({ text }: { text: string }) {
   if (!text) return null;
 
   return (
-    <div className="rounded-[14px] border border-white/6 bg-white/2 overflow-hidden">
+    <div className="rounded-[14px] border border-border bg-canvas-surface overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between px-4 py-2.5 text-xs text-foreground-muted hover:text-foreground transition-colors"
@@ -370,7 +370,7 @@ export function AssumptionsView({
 
       {/* Empty state */}
       {!loading && assumptions.length === 0 && step === "idle" && (
-        <div className="rounded-[14px] border border-white/6 bg-white/2 p-8 text-center">
+        <div className="rounded-[14px] border border-border bg-canvas-surface p-8 text-center">
           <p className="text-foreground-muted text-sm">
             No assumptions yet. Click &ldquo;Extract Assumptions&rdquo; to
             scan your canvas, or add one manually.
@@ -437,7 +437,7 @@ export function AssumptionsView({
                       />
                     ))}
                     {items.length === 0 && (
-                      <div className="rounded-[14px] border border-dashed border-white/6 p-4 text-center">
+                      <div className="rounded-[14px] border border-dashed border-border p-4 text-center">
                         <p className="text-[11px] text-foreground-muted/50">
                           No items
                         </p>

@@ -61,7 +61,7 @@ describe('SegmentCard', () => {
         <SegmentCard
           segment={mockSegment}
           mode="full"
-          onEdit={vi.fn()}
+          onSave={vi.fn()}
           onFocus={vi.fn()}
           onLink={vi.fn()}
         />
@@ -76,7 +76,7 @@ describe('SegmentCard', () => {
         <SegmentCard
           segment={mockSegment}
           mode="full"
-          onEdit={vi.fn()}
+          onSave={vi.fn()}
           onFocus={vi.fn()}
           onLink={vi.fn()}
         />

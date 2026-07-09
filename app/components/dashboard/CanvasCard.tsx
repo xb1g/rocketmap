@@ -29,22 +29,6 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(days / 30)}mo ago`;
 }
 
-const MINI_GRID_BLOCKS: {
-  type: BlockType;
-  col: string;
-  row: string;
-}[] = [
-  { type: "key_partnerships", col: "1 / 3", row: "1 / 3" },
-  { type: "key_activities", col: "3 / 5", row: "1 / 2" },
-  { type: "key_resources", col: "3 / 5", row: "2 / 3" },
-  { type: "value_prop", col: "5 / 7", row: "1 / 3" },
-  { type: "customer_relationships", col: "7 / 9", row: "1 / 2" },
-  { type: "channels", col: "7 / 9", row: "2 / 3" },
-  { type: "customer_segments", col: "9 / 11", row: "1 / 3" },
-  { type: "cost_structure", col: "1 / 6", row: "3 / 4" },
-  { type: "revenue_streams", col: "6 / 11", row: "3 / 4" },
-];
-
 export function CanvasCard({
   canvas,
   onShare,
@@ -52,204 +36,87 @@ export function CanvasCard({
   onDuplicate,
   onDelete,
 }: CanvasCardProps) {
-  const filledSet = new Set(canvas.filledBlocks);
   const progressPct = Math.round((canvas.blocksCount / 9) * 100);
-  const hasViability = canvas.viabilityScore != null;
-  const viabilityScore = canvas.viabilityScore ?? 0;
-  const potentialScore = canvas.viabilityPotentialScore ?? viabilityScore;
-  const hasPotential = potentialScore > viabilityScore;
-
-  const handleCardClick = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest(".canvas-card-menu")) return;
-    window.location.href = `/canvas/${canvas.slug}`;
-  };
 
   return (
-    <div
-      className="canvas-card"
-      style={{ position: "relative", cursor: "pointer" }}
-      onClick={handleCardClick}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: "0.5rem",
-          paddingRight: "2rem",
-        }}
-      >
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="canvas-card-title">{canvas.title}</div>
-          {canvas.description && (
-            <div className="canvas-card-desc">{canvas.description}</div>
-          )}
+    <article className="canvas-card">
+      <div className="canvas-card-main">
+        <div className="canvas-card-text">
+          <Link
+            href={`/canvas/${canvas.slug}`}
+            className="canvas-card-title"
+          >
+            {canvas.title}
+          </Link>
+          {canvas.description ? (
+            <p className="canvas-card-desc">{canvas.description}</p>
+          ) : null}
+        </div>
+
+        <div className="canvas-card-menu">
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger>
+              <button
+                className="canvas-card-menu-btn"
+                aria-label="Canvas options"
+                type="button"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <circle cx="12" cy="5" r="1.5" />
+                  <circle cx="12" cy="12" r="1.5" />
+                  <circle cx="12" cy="19" r="1.5" />
+                </svg>
+              </button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content size="1" variant="soft">
+              <DropdownMenu.Item asChild>
+                <Link
+                  href={`/canvas/${canvas.slug}`}
+                  style={{ textDecoration: "none", color: "inherit" }}
+                >
+                  Open
+                </Link>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item onSelect={() => onShare(canvas.slug)}>
+                Copy link
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                onSelect={() => onTogglePublic(canvas.$id, !canvas.isPublic)}
+              >
+                {canvas.isPublic ? "Make private" : "Make public"}
+              </DropdownMenu.Item>
+              <DropdownMenu.Item onSelect={() => onDuplicate(canvas.$id)}>
+                Duplicate
+              </DropdownMenu.Item>
+              <DropdownMenu.Separator />
+              <DropdownMenu.Item color="red" onSelect={() => onDelete(canvas.$id)}>
+                Delete
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
         </div>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "1rem",
-          marginBottom: "0.75rem",
-        }}
-      >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(10, 1fr)",
-            gridTemplateRows: "repeat(2, 1fr) 0.65fr",
-            gap: "2px",
-            width: "80px",
-            height: "48px",
-            flexShrink: 0,
-          }}
-        >
-          {MINI_GRID_BLOCKS.map((block) => (
+      <div className="canvas-card-footer">
+        <div className="canvas-card-progress">
+          <div className="canvas-card-progress-track">
             <div
-              key={block.type}
-              className={`canvas-blocks-mini-cell ${filledSet.has(block.type) ? "filled" : ""}`}
-              style={{ gridColumn: block.col, gridRow: block.row }}
-            />
-          ))}
-        </div>
-
-        {hasViability ? (
-          <div className="canvas-card-viability">
-            <div
-              className={`canvas-card-viability-ring ${
-                hasPotential ? "canvas-card-viability-ring--dual" : ""
-              }`}
-              style={
-                {
-                  "--viability-color": "rgba(255, 255, 255, 0.55)",
-                  "--viability-pct": `${viabilityScore}%`,
-                  "--viability-potential-pct": `${potentialScore}%`,
-                } as React.CSSProperties
-              }
-            >
-              <span className="canvas-card-viability-value">
-                {Math.round(viabilityScore)}
-              </span>
-            </div>
-            <span
-              className="canvas-card-viability-label"
-              style={{ color: "var(--foreground-muted)" }}
-            >
-              {hasPotential
-                ? `${Math.round(viabilityScore)} → ${Math.round(potentialScore)}`
-                : "Evidence"}
-            </span>
-          </div>
-        ) : (
-          <div className="canvas-card-viability canvas-card-viability--empty">
-            <div className="canvas-card-viability-ring canvas-card-viability-ring--empty">
-              <span className="canvas-card-viability-value" style={{ opacity: 0.3 }}>
-                -
-              </span>
-            </div>
-            <span
-              className="canvas-card-viability-label"
-              style={{ opacity: 0.35 }}
-            >
-              Not scored
-            </span>
-          </div>
-        )}
-
-        <div style={{ flex: 1 }} />
-
-        <div style={{ textAlign: "right", flexShrink: 0 }}>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "0.75rem",
-              color: "var(--foreground-muted)",
-              marginBottom: "0.25rem",
-            }}
-          >
-            {canvas.blocksCount}/9 blocks
-          </div>
-          <div className="canvas-progress" style={{ width: "64px" }}>
-            <div
-              className="canvas-progress-bar"
+              className="canvas-card-progress-bar"
               style={{ width: `${progressPct}%` }}
             />
           </div>
+          <span className="canvas-card-progress-label">{canvas.blocksCount}/9</span>
+        </div>
+
+        <div className="canvas-card-meta">
+          <span
+            className={`canvas-card-visibility ${canvas.isPublic ? "public" : "private"}`}
+          >
+            {canvas.isPublic ? "Public" : "Private"}
+          </span>
+          <span className="canvas-card-time">{timeAgo(canvas.$updatedAt ?? "")}</span>
         </div>
       </div>
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-        }}
-      >
-        <span
-          className={`mode-badge ${canvas.isPublic ? "mode-badge-lean" : "mode-badge-bmc"}`}
-        >
-          {canvas.isPublic ? "Public" : "Private"}
-        </span>
-        <span className="mode-badge mode-badge-bmc">BMC</span>
-        <span className="canvas-card-meta">{timeAgo(canvas.$updatedAt ?? "")}</span>
-      </div>
-
-      <div
-        className="canvas-card-menu"
-        style={{
-          position: "absolute",
-          top: "1rem",
-          right: "1rem",
-          zIndex: 10,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger>
-            <button
-              style={{
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
-                borderRadius: "6px",
-                padding: "0.25rem 0.5rem",
-                color: "var(--foreground-muted)",
-                cursor: "pointer",
-                fontSize: "0.85rem",
-                lineHeight: 1,
-              }}
-            >
-              &middot;&middot;&middot;
-            </button>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content size="1" variant="soft">
-            <DropdownMenu.Item>
-              <Link
-                href={`/canvas/${canvas.slug}`}
-                style={{ textDecoration: "none", color: "inherit" }}
-              >
-                Open
-              </Link>
-            </DropdownMenu.Item>
-            <DropdownMenu.Item onSelect={() => onShare(canvas.slug)}>
-              Copy link
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              onSelect={() => onTogglePublic(canvas.$id, !canvas.isPublic)}
-            >
-              {canvas.isPublic ? "Make private" : "Make public"}
-            </DropdownMenu.Item>
-            <DropdownMenu.Item onClick={() => onDuplicate(canvas.$id)}>
-              Duplicate
-            </DropdownMenu.Item>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item color="red" onClick={() => onDelete(canvas.$id)}>
-              Delete
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-      </div>
-    </div>
+    </article>
   );
 }

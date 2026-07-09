@@ -41,7 +41,7 @@ export function InlineEditableTitle({
 
   if (readOnly) {
     return (
-      <span className="font-display text-lg font-semibold truncate max-w-80 text-foreground/90">
+      <span className="font-display text-lg truncate max-w-80 text-foreground/90">
         {value}
       </span>
     );
@@ -51,7 +51,7 @@ export function InlineEditableTitle({
     return (
       <input
         ref={inputRef}
-        className="font-display text-lg font-semibold bg-transparent border-b border-(--chroma-indigo)/50 outline-none px-0.5 py-0 max-w-80 transition-all"
+        className="font-display text-lg bg-transparent border-b border-(--chroma-indigo)/50 outline-none px-0.5 py-0 max-w-80 transition-all"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={save}
@@ -66,7 +66,7 @@ export function InlineEditableTitle({
   return (
     <button
       onClick={() => setEditing(true)}
-      className="font-display text-lg font-semibold truncate max-w-80 hover:text-(--chroma-indigo) transition-colors cursor-text text-left"
+      className="font-display text-lg truncate max-w-80 hover:text-(--chroma-indigo) transition-colors cursor-text text-left"
       title="Click to edit title"
     >
       {value}

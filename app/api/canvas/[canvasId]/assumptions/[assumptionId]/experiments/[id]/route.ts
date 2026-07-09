@@ -7,9 +7,23 @@ import {
   ASSUMPTIONS_TABLE_ID,
 } from '@/lib/appwrite';
 import { verifyCanvasOwnership, verifyAssumptionBelongsToCanvas, verifyExperimentBelongsToAssumption, isForbiddenError } from '@/lib/utils';
+import type { DecisionSignal, ExperimentResult } from '@/lib/types/canvas';
 
 interface RouteContext {
   params: Promise<{ canvasId: string; assumptionId: string; id: string }>;
+}
+
+const DECISION_SIGNALS = new Set([
+  'kill',
+  'pivot',
+  'double_down',
+  'insufficient_evidence',
+]);
+
+function defaultDecisionSignal(result: ExperimentResult): DecisionSignal {
+  if (result === 'supports') return 'double_down';
+  if (result === 'contradicts') return 'pivot';
+  return 'insufficient_evidence';
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
@@ -26,15 +40,29 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (body.result !== undefined) updates.result = body.result;
     if (body.evidence !== undefined) updates.evidence = body.evidence;
     if (body.sourceUrl !== undefined) updates.sourceUrl = body.sourceUrl;
+    if (body.successThreshold !== undefined) {
+      updates.successThreshold = body.successThreshold
+        ? String(body.successThreshold).slice(0, 500)
+        : null;
+    }
 
     // If marking as completed, auto-update assumption status
     if (body.status === 'completed') {
       updates.completedAt = new Date().toISOString();
 
       if (body.result) {
+        const requestedDecisionSignal = body.decisionSignal;
+        if (
+          requestedDecisionSignal !== undefined &&
+          !DECISION_SIGNALS.has(requestedDecisionSignal)
+        ) {
+          return NextResponse.json({ error: 'Invalid decision signal' }, { status: 400 });
+        }
+
         const assumptionUpdates: Record<string, unknown> = {
           lastTestedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          decisionSignal: requestedDecisionSignal ?? defaultDecisionSignal(body.result as ExperimentResult),
         };
 
         if (body.result === 'supports') assumptionUpdates.status = 'validated';

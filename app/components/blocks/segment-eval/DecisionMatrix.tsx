@@ -29,10 +29,10 @@ function CriterionRow({
   onScoreChange: (score: number) => void;
 }) {
   return (
-    <div className="border-b border-white/3 last:border-b-0">
+    <div className="border-b border-border last:border-b-0">
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-3 py-2 px-1 text-left hover:bg-white/2 transition-colors"
+        className="w-full flex items-center gap-3 py-2 px-1 text-left hover:bg-foreground/5 transition-colors"
       >
         <ConfidenceDot level={criterion.confidence} />
         <span className="text-xs text-foreground flex-1">{criterion.name}</span>
@@ -63,8 +63,8 @@ function CriterionRow({
                 onClick={() => onScoreChange(s)}
                 className={`w-6 h-6 rounded text-[10px] font-mono transition-colors ${
                   criterion.score === s
-                    ? 'bg-white/15 text-foreground border border-white/20'
-                    : 'bg-white/3 text-foreground-muted/50 border border-white/5 hover:bg-white/8'
+                    ? 'bg-foreground/10 text-foreground border border-foreground/20'
+                    : 'bg-canvas-surface text-foreground-muted/50 border border-border hover:bg-foreground/5'
                 }`}
               >
                 {s}
@@ -128,7 +128,7 @@ export function DecisionMatrix({
               </span>
             </div>
 
-            <div className="rounded-lg bg-white/2 border border-white/5 overflow-hidden">
+            <div className="rounded-lg bg-canvas-surface border border-border overflow-hidden">
               {criteria.map((c) => (
                 <CriterionRow
                   key={c.id}

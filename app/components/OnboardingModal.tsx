@@ -44,7 +44,7 @@ export function OnboardingModal({ isOpen, onComplete, onChatToCreate }: Onboardi
           {/* Step 1: Welcome */}
           {step === 1 && (
             <Flex direction="column" gap="4" className="py-8">
-              <Heading size="8" className="font-display text-center">
+              <Heading size="8" className="font-display font-normal text-center">
                 Welcome to RocketMap
               </Heading>
               <Text size="4" className="text-foreground-muted text-center leading-relaxed">
@@ -56,7 +56,7 @@ export function OnboardingModal({ isOpen, onComplete, onChatToCreate }: Onboardi
           {/* Step 2: How It Works */}
           {step === 2 && (
             <Flex direction="column" gap="4" className="py-6">
-              <Heading size="7" className="font-display text-center">
+              <Heading size="7" className="font-display font-normal text-center">
                 How It Works
               </Heading>
               <div className="grid gap-2 my-4" style={{
@@ -107,7 +107,7 @@ export function OnboardingModal({ isOpen, onComplete, onChatToCreate }: Onboardi
           {/* Step 3: Start Building */}
           {step === 3 && (
             <Flex direction="column" gap="4" className="py-8">
-              <Heading size="7" className="font-display text-center">
+              <Heading size="7" className="font-display font-normal text-center">
                 Ready to Validate Your Startup?
               </Heading>
               <Text size="3" className="text-foreground-muted text-center leading-relaxed">

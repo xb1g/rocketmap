@@ -58,17 +58,17 @@ export function LinkPicker({
   return (
     <div
       ref={popoverRef}
-      className="absolute z-50 w-52 rounded-[12px] border border-white/8 bg-canvas-surface shadow-xl shadow-black/40"
+      className="absolute z-50 w-52 rounded-[12px] border border-border bg-canvas-surface shadow-xl shadow-[0_12px_24px_rgba(var(--ink-shadow),0.12)]"
       style={{ bottom: "100%", left: 0, marginBottom: 4 }}
     >
       {/* Tab bar */}
-      <div className="flex border-b border-white/6">
+      <div className="flex border-b border-border">
         <button
           onClick={() => setTab("segments")}
           className={`flex-1 text-[9px] py-1.5 transition-colors ${
             tab === "segments"
               ? "text-foreground border-b border-(--chroma-indigo)"
-              : "text-foreground-muted/50 hover:text-foreground-muted"
+              : "text-foreground-subtle hover:text-foreground-muted"
           }`}
         >
           Segments
@@ -78,7 +78,7 @@ export function LinkPicker({
           className={`flex-1 text-[9px] py-1.5 transition-colors ${
             tab === "blocks"
               ? "text-foreground border-b border-(--chroma-indigo)"
-              : "text-foreground-muted/50 hover:text-foreground-muted"
+              : "text-foreground-subtle hover:text-foreground-muted"
           }`}
         >
           Blocks
@@ -89,7 +89,7 @@ export function LinkPicker({
         {tab === "segments" && (
           <>
             {segments.length === 0 && (
-              <p className="text-[9px] text-foreground-muted/40 px-1 py-2 text-center">
+              <p className="text-[9px] text-foreground-subtle px-1 py-2 text-center">
                 No segments yet
               </p>
             )}
@@ -101,8 +101,8 @@ export function LinkPicker({
                   onClick={() => onToggleSegment(seg.$id)}
                   className={`flex items-center gap-1.5 w-full text-left px-1.5 py-1 rounded transition-colors ${
                     isLinked
-                      ? "bg-white/8 text-foreground"
-                      : "text-foreground-muted/70 hover:bg-white/5 hover:text-foreground-muted"
+                      ? "bg-foreground/8 text-foreground"
+                      : "text-foreground-muted/70 hover:bg-foreground/5 hover:text-foreground-muted"
                   }`}
                 >
                   <span
@@ -138,7 +138,7 @@ export function LinkPicker({
               if (items.length === 0) return null;
               return (
                 <div key={def.type} className="mb-1">
-                  <p className="text-[8px] font-mono uppercase tracking-wider text-foreground-muted/40 px-1 py-0.5">
+                  <p className="text-[8px] font-mono uppercase tracking-wider text-foreground-subtle px-1 py-0.5">
                     {def.bmcLabel}
                   </p>
                   {items.map((otherItem) => {
@@ -150,8 +150,8 @@ export function LinkPicker({
                         onClick={() => onToggleItem(linkId)}
                         className={`flex items-center gap-1.5 w-full text-left px-1.5 py-1 rounded transition-colors ${
                           isLinked
-                            ? "bg-white/8 text-foreground"
-                            : "text-foreground-muted/70 hover:bg-white/5 hover:text-foreground-muted"
+                            ? "bg-foreground/8 text-foreground"
+                            : "text-foreground-muted/70 hover:bg-foreground/5 hover:text-foreground-muted"
                         }`}
                       >
                         <span className="text-[10px] truncate flex-1">
@@ -179,7 +179,7 @@ export function LinkPicker({
             {otherBlocks.every(
               (def) => (allBlockItems.get(def.type) ?? []).length === 0,
             ) && (
-              <p className="text-[9px] text-foreground-muted/40 px-1 py-2 text-center">
+              <p className="text-[9px] text-foreground-subtle px-1 py-2 text-center">
                 No items in other blocks yet
               </p>
             )}

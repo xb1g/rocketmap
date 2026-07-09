@@ -27,6 +27,7 @@ import type {
   ViabilityData,
   Assumption,
 } from "@/lib/types/canvas";
+import { getSegmentColor } from "@/lib/types/canvas";
 import { computeLiveScore } from "@/lib/utils/viability";
 import type { HoveredItem } from "@/app/components/canvas/ConnectionOverlay";
 import type { ConsistencyData } from "@/app/components/canvas/ConsistencyReport";
@@ -127,6 +128,7 @@ export function CanvasClient({
     return map;
   });
   const [hoveredItem, setHoveredItem] = useState<HoveredItem | null>(null);
+  const [focusSegmentId, setFocusSegmentId] = useState<string | null>(null);
   const [viabilityData, setViabilityData] = useState<ViabilityData | null>(
     initialViabilityData ?? null,
   );
@@ -155,6 +157,29 @@ export function CanvasClient({
   const saveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
   );
+
+  // ─── Segment Focus View (client-side lens over the single canvas) ──────────
+  const segmentList = useMemo(() => Array.from(segments.values()), [segments]);
+
+  // How many block items across all blocks link to each segment.
+  const segmentItemCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const block of blocks.values()) {
+      for (const item of block.content.items ?? []) {
+        for (const segId of item.linkedSegmentIds ?? []) {
+          counts.set(segId, (counts.get(segId) ?? 0) + 1);
+        }
+      }
+    }
+    return counts;
+  }, [blocks]);
+
+  // Display color of the currently-focused segment (undefined when not focusing).
+  const focusSegmentColor = useMemo(() => {
+    if (!focusSegmentId) return undefined;
+    const idx = segmentList.findIndex((s) => s.$id === focusSegmentId);
+    return idx === -1 ? undefined : getSegmentColor(segmentList[idx], idx);
+  }, [focusSegmentId, segmentList]);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
@@ -534,6 +559,65 @@ export function CanvasClient({
   const handleConsistencyCheck = useCallback(async () => {
     if (readOnly) return;
     setIsCheckingConsistency(true);
+    const consistencyToolCallIds = new Set<string>();
+    const looksLikeConsistencyData = (value: unknown): value is ConsistencyData => {
+      if (!value || typeof value !== "object") return false;
+      const record = value as Record<string, unknown>;
+      return (
+        Array.isArray(record.contradictions) &&
+        Array.isArray(record.missingLinks) &&
+        typeof record.overallScore === "number"
+      );
+    };
+    const extractConsistencyResult = (value: unknown): ConsistencyData | null => {
+      if (!value || typeof value !== "object") return null;
+      const record = value as Record<string, unknown>;
+      if (
+        record.toolName === "checkConsistency" &&
+        typeof record.toolCallId === "string"
+      ) {
+        consistencyToolCallIds.add(record.toolCallId);
+      }
+      if (record.toolName === "checkConsistency" && record.result) {
+        return record.result as ConsistencyData;
+      }
+      if (record.type === "tool-input-available" && record.toolName === "checkConsistency" && typeof record.toolCallId === "string") {
+        consistencyToolCallIds.add(record.toolCallId);
+      }
+      if (
+        record.type === "tool-output-available" &&
+        typeof record.toolCallId === "string" &&
+        consistencyToolCallIds.has(record.toolCallId) &&
+        record.output
+      ) {
+        return record.output as ConsistencyData;
+      }
+      if (
+        (record.type === "tool-checkConsistency" ||
+          record.type === "dynamic-tool" ||
+          record.toolName === "checkConsistency") &&
+        record.output
+      ) {
+        return record.output as ConsistencyData;
+      }
+      if (looksLikeConsistencyData(record)) {
+        return record;
+      }
+      if (looksLikeConsistencyData(record.output)) {
+        return record.output;
+      }
+      if (looksLikeConsistencyData(record.result)) {
+        return record.result;
+      }
+      if (Array.isArray(record.parts)) {
+        for (const part of record.parts) {
+          const result = extractConsistencyResult(part);
+          if (result) return result;
+        }
+      }
+      return null;
+    };
+
     try {
       const res = await fetch(`/api/canvas/${canvasId}/chat`, {
         method: "POST",
@@ -541,16 +625,26 @@ export function CanvasClient({
         body: JSON.stringify({
           messages: [
             {
+              id: `consistency-${Date.now()}`,
               role: "user",
-              content:
-                "Run a full consistency check across all blocks. Use the checkConsistency tool to provide your structured analysis of contradictions, missing links, and overall coherence.",
+              parts: [
+                {
+                  type: "text",
+                  text:
+                    "Run a full consistency check across all blocks. Use the checkConsistency tool to provide your structured analysis of contradictions, missing links, chain findings, and overall coherence.",
+                },
+              ],
             },
           ],
         }),
       });
 
+      if (!res.ok || !res.body) {
+        throw new Error("Consistency check failed");
+      }
+
       // Parse streaming response for checkConsistency tool result
-      const reader = res.body!.getReader();
+      const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
 
@@ -563,24 +657,22 @@ export function CanvasClient({
         buffer = lines.pop() ?? "";
 
         for (const line of lines) {
-          if (!line.includes('"checkConsistency"')) continue;
+          if (!line.trim() || line === "data: [DONE]") continue;
           try {
             const json = line.startsWith("data: ") ? line.slice(6) : line;
             const event = JSON.parse(json);
             const items: unknown[] = Array.isArray(event) ? event : [event];
             for (const item of items) {
-              const e = item as Record<string, unknown>;
-              if (e?.toolName === "checkConsistency" && e?.result) {
-                setConsistencyData(e.result as ConsistencyData);
-              }
+              const result = extractConsistencyResult(item);
+              if (result) setConsistencyData(result);
             }
           } catch {
             // partial or non-JSON line
           }
         }
       }
-    } catch {
-      // silently fail
+    } catch (error) {
+      console.error("Consistency check failed:", error);
     } finally {
       setIsCheckingConsistency(false);
     }
@@ -738,6 +830,7 @@ export function CanvasClient({
           { method: "DELETE" },
         );
         if (!res.ok) return;
+        setFocusSegmentId((cur) => (cur === segmentId ? null : cur));
         setSegments((prev) => {
           const next = new Map(prev);
           next.delete(segmentId);
@@ -1262,6 +1355,10 @@ export function CanvasClient({
         onConvertLeanToBmc={handleConvertLeanToBmc}
         hasLeanContent={hasLeanContent}
         isConverting={isConverting}
+        segments={segmentList}
+        focusSegmentId={focusSegmentId}
+        segmentItemCounts={segmentItemCounts}
+        onFocusSegmentChange={setFocusSegmentId}
       />
 
       <CanvasTabs
@@ -1294,7 +1391,9 @@ export function CanvasClient({
           analyzingBlock={analyzingBlock}
           chatTargetBlock={activeChatBlock}
           dimmed={false}
-          allSegments={Array.from(segments.values())}
+          allSegments={segmentList}
+          focusSegmentId={focusSegmentId}
+          focusSegmentColor={focusSegmentColor}
           hoveredItem={hoveredItem}
           onBlockChange={handleBlockChange}
           onBlockFocus={setFocusedBlock}

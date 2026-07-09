@@ -39,12 +39,12 @@ export function BlockFocusHeader({
       <div className="flex items-center gap-3">
         {def ? (
           <BlockTooltip definition={def} mode={mode}>
-            <h2 className="font-display font-semibold text-[15px] cursor-help decoration-dotted underline-offset-4 hover:decoration-solid hover:text-chroma-indigo transition-all">
+            <h2 className="font-display text-[15px] cursor-help decoration-dotted underline-offset-4 hover:decoration-solid hover:text-chroma-indigo transition-all">
               {label}
             </h2>
           </BlockTooltip>
         ) : (
-          <h2 className="font-display font-semibold text-[15px]">{label}</h2>
+          <h2 className="font-display text-[15px]">{label}</h2>
         )}
         <span
           className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border"

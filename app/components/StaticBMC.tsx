@@ -2,35 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 
-type BlockType =
-  | "key_partnerships"
-  | "key_activities"
-  | "key_resources"
-  | "value_prop"
-  | "customer_relationships"
-  | "channels"
-  | "customer_segments"
-  | "cost_structure"
-  | "revenue_streams";
-
-interface BlockDefinition {
-  type: BlockType;
-  bmcLabel: string;
-  gridCol: string;
-  gridRow: string;
-}
-
-const BLOCK_DEFINITIONS: BlockDefinition[] = [
-  { type: "key_partnerships", bmcLabel: "Key Partners", gridCol: "1 / 3", gridRow: "1 / 3" },
-  { type: "key_activities", bmcLabel: "Key Activities", gridCol: "3 / 5", gridRow: "1 / 2" },
-  { type: "key_resources", bmcLabel: "Key Resources", gridCol: "3 / 5", gridRow: "2 / 3" },
-  { type: "value_prop", bmcLabel: "Value Propositions", gridCol: "5 / 7", gridRow: "1 / 3" },
-  { type: "customer_relationships", bmcLabel: "Customer Relations", gridCol: "7 / 9", gridRow: "1 / 2" },
-  { type: "channels", bmcLabel: "Channels", gridCol: "7 / 9", gridRow: "2 / 3" },
-  { type: "customer_segments", bmcLabel: "Customer Segments", gridCol: "9 / 11", gridRow: "1 / 3" },
-  { type: "cost_structure", bmcLabel: "Cost Structure", gridCol: "1 / 6", gridRow: "3 / 4" },
-  { type: "revenue_streams", bmcLabel: "Revenue Streams", gridCol: "6 / 11", gridRow: "3 / 4" },
-];
+import type { BlockState, BlockType, CanvasMode, Segment } from "@/lib/types/canvas";
+import { BLOCK_DEFINITIONS } from "./canvas/constants";
+import { BlockCell } from "./canvas/BlockCell";
 
 const AIRBNB_DATA: Record<BlockType, string> = {
   key_partnerships: "Hosts, Photographers, Insurance, Payment Processors",
@@ -44,99 +18,140 @@ const AIRBNB_DATA: Record<BlockType, string> = {
   revenue_streams: "Service fees (Guest: 6-12%, Host: 3%)",
 };
 
-function BlockTypeIcon({ type }: { type: BlockType }) {
-  const common = {
-    width: 11,
-    height: 11,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-  };
+const DEMO_SEGMENTS: Segment[] = [
+  {
+    $id: "seg-travelers",
+    name: "Travelers",
+    description: "Budget-conscious travelers seeking authentic local experiences over traditional hotels.",
+    earlyAdopterFlag: true,
+    priorityScore: 85,
+    demographics: "Ages 25-40, urban professionals, $50-120k income",
+    psychographics: "Experience-seekers, value authenticity over luxury",
+    behavioral: "Books 2-4 trips per year, researches extensively on social media",
+    geographic: "North America, Western Europe, major APAC cities",
+    estimatedSize: "450M globally",
+    colorHex: "#6366f1",
+  },
+  {
+    $id: "seg-hosts",
+    name: "Hosts",
+    description: "Property owners looking to monetize spare space with minimal effort.",
+    earlyAdopterFlag: false,
+    priorityScore: 70,
+    demographics: "Ages 30-55, homeowners, suburban and urban",
+    psychographics: "Entrepreneurial-minded, values flexibility and extra income",
+    behavioral: "Lists property seasonally, responsive to guest inquiries",
+    geographic: "Global, concentrated in tourist destinations",
+    estimatedSize: "4M active listings",
+    colorHex: "#f43f5e",
+  },
+];
 
-  switch (type) {
-    case "key_partnerships":
-      return (
-        <svg {...common}>
-          <path d="M10 13a5 5 0 0 1 0-7l2-2a5 5 0 1 1 7 7l-1 1" />
-          <path d="M14 11a5 5 0 0 1 0 7l-2 2a5 5 0 1 1-7-7l1-1" />
-        </svg>
-      );
-    case "key_activities":
-      return (
-        <svg {...common}>
-          <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" />
-        </svg>
-      );
-    case "key_resources":
-      return (
-        <svg {...common}>
-          <ellipse cx="12" cy="5" rx="7" ry="3" />
-          <path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5" />
-          <path d="M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" />
-        </svg>
-      );
-    case "value_prop":
-      return (
-        <svg {...common}>
-          <path d="m12 3 1.7 4.4L18 9.1l-4.3 1.7L12 15l-1.7-4.2L6 9.1l4.3-1.7L12 3z" />
-        </svg>
-      );
-    case "customer_relationships":
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="8" r="3" />
-          <path d="M5 20a7 7 0 0 1 14 0" />
-        </svg>
-      );
-    case "channels":
-      return (
-        <svg {...common}>
-          <path d="M3 11v2a4 4 0 0 0 4 4h2" />
-          <path d="M3 7v2a8 8 0 0 0 8 8h2" />
-          <path d="M3 3v2a12 12 0 0 0 12 12h2" />
-        </svg>
-      );
-    case "customer_segments":
-      return (
-        <svg {...common}>
-          <circle cx="9" cy="8" r="2.5" />
-          <circle cx="16" cy="9.5" r="2" />
-          <path d="M4.5 20a5 5 0 0 1 9 0" />
-          <path d="M14 20a4 4 0 0 1 6 0" />
-        </svg>
-      );
-    case "cost_structure":
-      return (
-        <svg {...common}>
-          <path d="M3 7h18v10H3z" />
-          <path d="M7 11h10" />
-          <path d="M9 15h3" />
-        </svg>
-      );
-    case "revenue_streams":
-      return (
-        <svg {...common}>
-          <path d="M4 19h16" />
-          <path d="M7 15v-3" />
-          <path d="M12 15V9" />
-          <path d="M17 15V6" />
-        </svg>
-      );
-    default:
-      return null;
-  }
+interface DemoBlockConfig {
+  value: string;
+  state: BlockState;
+  confidenceScore: number;
+  hasAnalysis: boolean;
+  isAnalyzing?: boolean;
+  isFocused?: boolean;
 }
+
+const DEMO_BLOCKS: Record<BlockType, DemoBlockConfig> = {
+  key_partnerships: { value: AIRBNB_DATA.key_partnerships, state: "calm", confidenceScore: 0.5, hasAnalysis: false },
+  key_activities: { value: AIRBNB_DATA.key_activities, state: "calm", confidenceScore: 0.5, hasAnalysis: false },
+  key_resources: { value: AIRBNB_DATA.key_resources, state: "calm", confidenceScore: 0.5, hasAnalysis: false },
+  value_prop: { value: AIRBNB_DATA.value_prop, state: "healthy", confidenceScore: 0.85, hasAnalysis: true },
+  customer_relationships: { value: AIRBNB_DATA.customer_relationships, state: "calm", confidenceScore: 0.5, hasAnalysis: false },
+  channels: { value: AIRBNB_DATA.channels, state: "calm", confidenceScore: 0.5, hasAnalysis: false },
+  customer_segments: { value: AIRBNB_DATA.customer_segments, state: "ai", confidenceScore: 0.65, hasAnalysis: true },
+  cost_structure: { value: AIRBNB_DATA.cost_structure, state: "calm", confidenceScore: 0.5, hasAnalysis: false },
+  revenue_streams: { value: AIRBNB_DATA.revenue_streams, state: "warning", confidenceScore: 0.35, hasAnalysis: true },
+};
+
+interface DemoTask {
+  id: string;
+  title: string;
+  block: BlockType;
+  priority: "high" | "medium" | "low";
+  status: "open" | "in-progress" | "done";
+}
+
+const DEMO_TASKS: DemoTask[] = [
+  { id: "t1", title: "Validate pricing split with 5 hosts", block: "revenue_streams", priority: "high", status: "open" },
+  { id: "t2", title: "Interview 10 budget travelers about booking pain points", block: "customer_segments", priority: "high", status: "open" },
+  { id: "t3", title: "Map trust-building touchpoints in the guest journey", block: "customer_relationships", priority: "medium", status: "open" },
+  { id: "t4", title: "Run SEO channel experiment for 2 weeks", block: "channels", priority: "medium", status: "in-progress" },
+  { id: "t5", title: "Confirm insurance partner terms and coverage gaps", block: "key_partnerships", priority: "high", status: "open" },
+  { id: "t6", title: "List fixed vs variable cost assumptions", block: "cost_structure", priority: "low", status: "done" },
+];
+
+// Build demo block cards for non-segment blocks so BlockCard renders content
+function buildDemoBlocks(type: BlockType): Array<{
+  $id: string;
+  blockType: BlockType;
+  contentJson: string;
+  confidenceScore: number;
+  riskScore: number;
+  segments: Segment[];
+  state: BlockState;
+}> {
+  const config = DEMO_BLOCKS[type];
+  const items = config.value.split(",").map(s => s.trim()).filter(Boolean);
+  return items.map((item, i) => ({
+    $id: `demo-${type}-${i}`,
+    blockType: type,
+    contentJson: JSON.stringify({ text: item, tags: [] }),
+    confidenceScore: config.confidenceScore,
+    riskScore: 0,
+    segments: [],
+    state: config.state,
+  }));
+}
+
+const NOOP = () => {};
 
 type DemoMode = "none" | "segments" | "zoom" | "tasks";
 
+function TaskIcon({ status }: { status: DemoTask["status"] }) {
+  if (status === "done") {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-state-healthy">
+        <path d="M20 6 9 17l-5-5" />
+      </svg>
+    );
+  }
+  if (status === "in-progress") {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-state-warning">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 6v6l4 2" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-foreground-subtle">
+      <circle cx="12" cy="12" r="10" />
+    </svg>
+  );
+}
+
+function PriorityBadge({ priority }: { priority: DemoTask["priority"] }) {
+  const styles = {
+    high: "bg-state-critical/10 text-state-critical border-state-critical/20",
+    medium: "bg-state-warning/10 text-state-warning border-state-warning/20",
+    low: "bg-state-healthy/10 text-state-healthy border-state-healthy/20",
+  };
+  return (
+    <span className={`text-[9px] font-mono uppercase tracking-[0.08em] px-1.5 py-0.5 rounded border ${styles[priority]}`}>
+      {priority}
+    </span>
+  );
+}
+
 export function StaticBMC() {
   const [mode, setMode] = useState<DemoMode>("none");
-  const [activeSegment, setActiveSegment] = useState(0); // 0: Travelers, 1: Hosts
+  const [activeSegment, setActiveSegment] = useState(0);
 
-  // Auto-rotate segments if in segment mode
   useEffect(() => {
     if (mode !== "segments") return;
     const interval = setInterval(() => {
@@ -155,22 +170,33 @@ export function StaticBMC() {
       }
     }
     if (mode === "zoom") {
-       return ["customer_segments", "revenue_streams"].includes(type);
+      return ["customer_segments", "revenue_streams"].includes(type);
+    }
+    if (mode === "tasks") {
+      return DEMO_TASKS.some(t => t.block === type);
     }
     return true;
   };
 
-  const getBlockStateClass = (type: BlockType) => {
-    if (mode === "tasks" && ["key_partnerships", "key_activities", "customer_segments"].includes(type)) {
-      return "bmc-cell-state-ai";
+  const getBlockState = (type: BlockType): BlockState => {
+    if (mode === "tasks" && DEMO_TASKS.some(t => t.block === type)) {
+      return "ai";
     }
     if (mode === "segments" && isHighlighted(type)) {
-      return "bmc-cell-state-ai";
+      return "ai";
     }
     if (mode === "zoom" && isHighlighted(type)) {
-      return "bmc-cell-state-healthy";
+      return "healthy";
     }
-    return "bmc-cell-state-calm";
+    return DEMO_BLOCKS[type].state;
+  };
+
+  const getIsAnalyzing = (type: BlockType): boolean => {
+    return mode === "tasks" && DEMO_TASKS.some(t => t.block === type && t.status !== "done");
+  };
+
+  const getIsFocused = (type: BlockType): boolean => {
+    return mode === "zoom" && ["customer_segments", "revenue_streams"].includes(type);
   };
 
   return (
@@ -207,7 +233,7 @@ export function StaticBMC() {
       </div>
 
       {/* The Canvas Shell */}
-      <div className="relative p-8 bg-canvas-surface rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-visible min-h-[750px] flex flex-col">
+      <div className="relative p-6 md:p-8 bg-canvas-surface rounded-[14px] border border-border overflow-hidden min-h-[750px] flex flex-col">
         {/* Header Overlay */}
         <div className="flex items-center justify-between mb-8 px-1 relative z-10 shrink-0">
           <div className="flex items-center gap-4">
@@ -226,6 +252,12 @@ export function StaticBMC() {
                     Target: {activeSegment === 0 ? "Travelers" : "Hosts"}
                   </span>
                 )}
+                {mode === "tasks" && (
+                  <span className="text-[10px] font-bold text-state-warning font-mono uppercase tracking-[0.08em] flex items-center gap-1.5 ml-2">
+                    <span className="w-1 h-1 rounded-full bg-state-warning animate-ping" />
+                    6 tasks extracted
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -238,156 +270,104 @@ export function StaticBMC() {
           </div>
         </div>
 
-        {/* Grid Container */}
-        <div className="bmc-grid flex-1 relative min-h-0">
-          {BLOCK_DEFINITIONS.map((def) => {
-            const highlighted = isHighlighted(def.type);
-            const isZoomed = mode === "zoom" && highlighted;
-            const stateClass = getBlockStateClass(def.type);
+        {/* Grid Container - Real BlockCells */}
+        <div className={`bmc-grid flex-1 relative min-h-0 transition-all duration-500 ${mode === "tasks" ? "md:pr-[300px]" : ""}`}>
+          {BLOCK_DEFINITIONS.map((definition) => {
+            const highlighted = isHighlighted(definition.type);
+            const config = DEMO_BLOCKS[definition.type];
+            const isSegmentBlock = definition.type === "customer_segments";
+            const dimmed = mode === "tasks" ? !highlighted : !highlighted && mode !== "none";
             
             return (
               <div
-                key={def.type}
-                className={`bmc-cell bmc-cell-panel h-full group relative state-transition ${stateClass}
-                  ${highlighted ? "opacity-100" : "opacity-15 blur-[0.5px] scale-[0.98] grayscale-[0.5]"}
-                  transition-all duration-700
-                `}
+                key={definition.type}
+                className={`bmc-cell ${
+                  dimmed ? "opacity-20 blur-[1px] scale-[0.98]" : "opacity-100"
+                } transition-all duration-700`}
                 style={{
-                  gridColumn: def.gridCol,
-                  gridRow: def.gridRow,
+                  gridColumn: definition.gridCol,
+                  gridRow: definition.gridRow,
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: 0,
                 }}
               >
-                {/* Block Header (Matched to BlockCell.tsx) */}
-                <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1 shrink-0">
-                  <span className="inline-flex items-center gap-1 font-display-small uppercase tracking-wider text-foreground-muted">
-                    <span className="w-4 h-4 rounded-md border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.05)] text-foreground-muted/70 shrink-0 inline-flex items-center justify-center">
-                      <BlockTypeIcon type={def.type} />
-                    </span>
-                    <span className="text-[10px] tracking-[0.1em] font-bold">{def.bmcLabel}</span>
-                  </span>
-                  <div className="flex-1" />
-                  {highlighted && (
-                     <div className="flex gap-1">
-                        <span className="w-1 h-1 rounded-full bg-[rgba(255,255,255,0.10)]" />
-                        <span className="w-1 h-1 rounded-full bg-[rgba(255,255,255,0.10)]" />
-                     </div>
-                  )}
-                </div>
-
-                {/* Content Area */}
-                <div className="relative flex-1 px-2.5 pb-2.5 mt-0.5">
-                   {/* Normal Mode Styled Text */}
-                   <div className={`text-[12px] leading-[1.5] transition-all duration-500
-                      ${highlighted ? "text-foreground/80" : "text-foreground/20"}
-                      ${isZoomed ? "opacity-0 scale-95 translate-y-4" : "opacity-100 scale-100 translate-y-0"}
-                   `}>
-                    {AIRBNB_DATA[def.type]}
-                  </div>
-
-                  {/* Zoom: Customer Segments Detail */}
-                  {def.type === "customer_segments" && mode === "zoom" && (
-                    <div className="absolute inset-x-2.5 top-0 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                       <div className="space-y-1.5">
-                          <div className="flex justify-between text-[9px] font-mono text-foreground-muted uppercase tracking-wider">
-                            <span>TAM (Global Travel)</span>
-                            <span className="text-foreground/60 font-bold">$2.3T</span>
-                          </div>
-                          <div className="h-1 w-full bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden">
-                             <div className="h-full w-full bg-state-healthy/30" />
-                          </div>
-                       </div>
-                       <div className="space-y-1.5">
-                          <div className="flex justify-between text-[9px] font-mono text-foreground-muted uppercase tracking-wider">
-                            <span>SAM (Alternative Stays)</span>
-                            <span className="text-foreground/60 font-bold">$140B</span>
-                          </div>
-                          <div className="h-1 w-full bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden">
-                             <div className="h-full w-[45%] bg-state-healthy/50 animate-[width_1.5s_ease-out]" />
-                          </div>
-                       </div>
-                       <div className="pt-2 border-t border-[rgba(255,255,255,0.05)] space-y-2">
-                          <div className="flex items-center gap-2 p-1.5 rounded bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.05)]">
-                             <div className="w-5 h-5 rounded-full bg-state-healthy/20 border border-state-healthy/30 flex items-center justify-center text-[8px] font-bold text-state-healthy">P1</div>
-                             <div className="flex-1">
-                                <div className="text-[10px] font-bold text-foreground">The Digital Nomad</div>
-                                <div className="text-[8px] text-foreground-muted uppercase tracking-tighter">Early Adopter Segment</div>
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-                  )}
-
-                  {/* Zoom: Revenue Detail */}
-                  {def.type === "revenue_streams" && mode === "zoom" && (
-                    <div className="absolute inset-x-2.5 top-0 flex flex-col gap-2.5 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                       <div className="grid grid-cols-2 gap-2">
-                          <div className="p-2 rounded bg-state-healthy/5 border border-state-healthy/10">
-                             <div className="text-[8px] text-state-healthy/50 uppercase font-mono tracking-wider font-bold">LTV</div>
-                             <div className="text-sm font-bold text-state-healthy">$842</div>
-                          </div>
-                          <div className="p-2 rounded bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.05)]">
-                             <div className="text-[8px] text-foreground-muted uppercase font-mono tracking-wider">CAC</div>
-                             <div className="text-sm font-bold text-foreground/80">$124</div>
-                          </div>
-                       </div>
-                       <div className="flex-1 flex flex-col justify-end gap-1 mt-1">
-                          <div className="flex items-end gap-1 h-10">
-                             {[35, 60, 45, 90, 75, 85].map((h, i) => (
-                               <div key={i} className="flex-1 bg-state-healthy/30 rounded-t-[1px] animate-in slide-in-from-bottom duration-1000" style={{ height: `${h}%`, animationDelay: `${i * 100}ms` }} />
-                             ))}
-                          </div>
-                          <div className="text-[8px] text-foreground/20 uppercase font-mono text-center tracking-widest mt-1">Growth Dynamics</div>
-                       </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Task Engine Simulation Overlay */}
-                {mode === "tasks" && def.type === "key_activities" && (highlighted) && (
-                  <div className="absolute inset-0 bg-background/90 z-20 flex flex-col p-3 animate-in fade-in duration-500">
-                    <div className="text-[9px] font-bold text-state-warning uppercase tracking-[0.08em] mb-3 flex items-center gap-2">
-                       <span className="w-1.5 h-1.5 bg-state-warning rounded-full animate-ping" />
-                       Risk Engine
-                    </div>
-                    <div className="space-y-2.5">
-                       <div className="p-2 rounded border border-state-warning/20 bg-state-warning/03 flex flex-col gap-1.5 translate-x-1 opacity-0 animate-[fade-in_0.6s_forwards,translate-x_0.6s_forwards]">
-                          <div className="flex items-center justify-between">
-                             <span className="text-[8px] text-state-warning/80 font-mono font-bold uppercase">Assumption</span>
-                             <span className="text-[8px] text-foreground-muted font-mono">P: 0.85</span>
-                          </div>
-                          <div className="text-[10px] leading-tight text-foreground">&ldquo;Hosts accept strangers without professional insurance.&rdquo;</div>
-                       </div>
-                       <div className="p-2 rounded border border-state-ai/20 bg-state-ai/03 flex flex-col gap-1.5 translate-x-1 opacity-0 animate-[fade-in_0.6s_1s_forwards,translate-x_0.6s_1s_forwards]">
-                          <div className="flex items-center justify-between">
-                             <span className="text-[8px] text-state-ai font-mono font-bold uppercase">Strategy</span>
-                             <span className="text-[8px] text-foreground-muted font-mono">MITIGATE</span>
-                          </div>
-                          <div className="text-[10px] leading-tight text-foreground">Deploy &ldquo;Host Guarantee&rdquo; $1M default coverage program.</div>
-                       </div>
-                    </div>
-                  </div>
-                )}
+                <BlockCell
+                  definition={definition}
+                  mode={"bmc" as const}
+                  value={config.value}
+                  state={getBlockState(definition.type)}
+                  isFocused={getIsFocused(definition.type)}
+                  isAnalyzing={getIsAnalyzing(definition.type)}
+                  isChatTarget={false}
+                  confidenceScore={config.confidenceScore}
+                  hasAnalysis={config.hasAnalysis}
+                  readOnly={true}
+                  blocks={isSegmentBlock ? undefined : buildDemoBlocks(definition.type)}
+                  linkedSegments={isSegmentBlock ? DEMO_SEGMENTS : undefined}
+                  allSegments={DEMO_SEGMENTS}
+                  onChange={NOOP}
+                  onFocus={NOOP}
+                  onBlur={NOOP}
+                  onExpand={NOOP}
+                  onAddToChat={NOOP}
+                  onAnalyze={NOOP}
+                />
               </div>
             );
           })}
         </div>
 
-        {/* Floating AI Status (Task Engine) */}
+        {/* Task Engine Panel */}
         {mode === "tasks" && (
-           <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 px-6 py-3 rounded-2xl bg-canvas-surface border border-state-warning/30 shadow-[0_0_40px_rgba(245,158,11,0.15)] animate-in zoom-in slide-in-from-bottom-8 duration-500">
-              <div className="flex items-center gap-5">
-                 <div className="flex -space-x-2.5">
-                    {[1, 2, 3].map(i => (
-                       <div key={i} className="w-9 h-9 rounded-full border-2 border-background bg-[rgba(255,255,255,0.06)] flex items-center justify-center text-[10px] font-bold shadow-lg">AI</div>
-                    ))}
-                 </div>
-                 <div className="h-8 w-px bg-[rgba(255,255,255,0.06)]" />
-                 <div className="pr-2">
-                    <div className="text-[11px] font-bold text-state-warning tracking-wide">Task Engine Scanning</div>
-                    <div className="text-[10px] text-foreground-muted font-mono">Synthesizing 12 structural risks...</div>
-                 </div>
+          <div className="absolute top-24 right-6 bottom-6 w-[280px] z-20 animate-in slide-in-from-right-8 fade-in duration-500">
+            <div className="h-full flex flex-col rounded-[14px] bg-canvas-surface/95 backdrop-blur-sm border border-border shadow-[0_16px_48px_rgba(var(--ink-shadow),0.18)] overflow-hidden">
+              <div className="px-4 py-3 border-b border-border bg-surface-raised/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-foreground-muted font-medium">Validation Sprint</span>
+                  <span className="text-[10px] font-mono text-state-warning font-medium">{DEMO_TASKS.filter(t => t.status !== "done").length} open</span>
+                </div>
               </div>
-           </div>
+              <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                {DEMO_TASKS.map((task, i) => {
+                  const blockDef = BLOCK_DEFINITIONS.find(d => d.type === task.block);
+                  const blockLabel = blockDef?.bmcLabel ?? task.block;
+                  return (
+                    <div
+                      key={task.id}
+                      className="group p-3 rounded-xl bg-surface-raised border border-border hover:border-state-warning/30 transition-all duration-200 animate-in slide-in-from-right-4 fade-in"
+                      style={{ animationDelay: `${i * 80}ms`, animationFillMode: "backwards" }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5 shrink-0">
+                          <TaskIcon status={task.status} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-xs font-medium leading-relaxed ${task.status === "done" ? "text-foreground-muted line-through" : "text-foreground"}`}>
+                            {task.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-[9px] font-mono uppercase tracking-[0.08em] text-foreground-muted bg-foreground/5 px-1.5 py-0.5 rounded">
+                              {blockLabel}
+                            </span>
+                            <PriorityBadge priority={task.priority} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="px-4 py-3 border-t border-border bg-surface-raised/50">
+                <div className="flex items-center gap-2 text-[10px] font-mono text-foreground-muted">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-chroma-indigo">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                  <span>AI prioritizes by risk</span>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

@@ -43,7 +43,7 @@ export function CanvasHelpTooltip() {
           </span>
         </div>
 
-        <div className="pt-2 border-t border-white/10">
+        <div className="pt-2 border-t border-border">
           <span className="block text-[11px] italic text-state-ai/90 leading-tight">
             &ldquo;Calm Until Critical&rdquo; — colors represent validation health. Gray is
             calm, Red is high-risk.
@@ -58,7 +58,7 @@ export function CanvasHelpTooltip() {
       <Tooltip content={tooltipContent}>
         <button
           type="button"
-          className="w-7 h-7 rounded-full bg-canvas-surface border border-white/15 flex items-center justify-center text-foreground-muted hover:text-chroma-cyan hover:border-chroma-cyan/40 hover:glow-ai transition-all duration-300 shadow-xl hover:-translate-y-0.5 active:scale-90 group"
+          className="w-7 h-7 rounded-full bg-canvas-surface border border-border flex items-center justify-center text-foreground-muted hover:text-chroma-cyan hover:border-chroma-cyan/40 hover:glow-ai transition-all duration-300 shadow-xl shadow-[0_12px_24px_rgba(var(--ink-shadow),0.12)] hover:-translate-y-0.5 active:scale-90 group"
           aria-label="How RocketMap works"
         >
           <span className="font-mono text-xs font-bold group-hover:scale-110 transition-transform">

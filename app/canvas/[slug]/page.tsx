@@ -20,6 +20,7 @@ import type {
 } from "@/lib/types/canvas";
 import { BLOCK_DEFINITIONS } from "@/app/components/canvas/constants";
 import { CanvasClient } from "./CanvasClient";
+import { CanvasBackgroundIllustration } from "@/app/components/canvas/CanvasBackgroundIllustration";
 import { getUserIdFromCanvasLike, listCanvasesByOwner } from "@/lib/utils";
 import { normalizeViabilityData } from "@/lib/utils/viability";
 
@@ -411,6 +412,7 @@ export default async function CanvasPage({ params }: PageProps) {
 
   return (
     <div className="canvas-page-bg text-lg" style={{ backgroundColor: "var(--background)" }}>
+      <CanvasBackgroundIllustration />
       <CanvasClient
         canvasId={canvas.$id as string}
         initialCanvasData={canvasData}

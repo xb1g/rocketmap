@@ -6,7 +6,7 @@ export function BeachheadBadge({ status }: { status: BeachheadStatus }) {
   const config = {
     primary: { bg: 'bg-chroma-indigo/20', text: 'text-chroma-indigo', label: 'Primary' },
     secondary: { bg: 'bg-state-warning/15', text: 'text-state-warning', label: 'Secondary' },
-    later: { bg: 'bg-white/5', text: 'text-foreground-muted/50', label: 'Later' },
+    later: { bg: 'bg-foreground/5', text: 'text-foreground-muted/50', label: 'Later' },
   }[status];
 
   return (
@@ -51,7 +51,7 @@ export function ScoreBar({ score, maxScore = 5 }: { score: number; maxScore?: nu
 
   return (
     <div className="flex items-center gap-2 flex-1">
-      <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-foreground/5 rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500 ease-out"
           style={{ width: `${pct}%`, background: color }}
@@ -71,7 +71,7 @@ export function ConfidenceBar({ value }: { value: number }) {
         <span className="text-[10px] text-foreground-muted/50 uppercase tracking-wider">Data Confidence</span>
         <span className="text-[10px] font-mono text-foreground-muted/60">{value}%</span>
       </div>
-      <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+      <div className="h-1 bg-foreground/5 rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{
@@ -99,7 +99,7 @@ export function MetricCard({
   sub?: string;
 }) {
   return (
-    <div className="px-3 py-2.5 rounded-lg bg-white/3 border border-white/5">
+    <div className="px-3 py-2.5 rounded-lg bg-canvas-surface border border-border">
       <div className="text-[9px] font-mono text-foreground-muted/50 uppercase tracking-wider mb-1">{label}</div>
       <div className="text-sm font-mono text-foreground">{value}</div>
       {sub && <div className="text-[10px] text-foreground-muted/40 mt-0.5">{sub}</div>}

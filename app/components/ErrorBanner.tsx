@@ -1,29 +1,83 @@
-'use client';
+"use client";
 
-import { Callout } from '@radix-ui/themes';
+import { useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 
 interface ErrorBannerProps {
   error: string | null;
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
-  auth_failed: 'Authentication failed. Please try again.',
-  session_expired: 'Your session has expired. Please sign in again.',
-  unauthorized: 'Please sign in to continue.',
+  auth_failed: "Authentication failed. Please try again.",
+  session_expired: "Your session has expired. Please sign in again.",
+  unauthorized: "Please sign in to continue.",
 };
 
 export function ErrorBanner({ error }: ErrorBannerProps) {
-  if (!error) {
+  const [visible, setVisible] = useState(true);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    setVisible(true);
+  }, [error, searchParams]);
+
+  if (!error || !visible) {
     return null;
   }
 
-  const message = ERROR_MESSAGES[error] || 'An error occurred. Please try again.';
+  const message = ERROR_MESSAGES[error] || "An error occurred. Please try again.";
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
-      <Callout.Root color="red" className="glow-critical">
-        <Callout.Text>{message}</Callout.Text>
-      </Callout.Root>
+    <div className="w-full flex justify-center px-6 mb-8">
+      <div
+        role="alert"
+        className="inline-flex items-center gap-2.5 rounded-full border border-state-critical/30 bg-state-critical/10 px-4 py-2 shadow-[0_8px_24px_rgba(var(--ink-shadow),0.08)]"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="shrink-0 text-state-critical"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" x2="12" y1="8" y2="12" />
+          <line x1="12" x2="12.01" y1="16" y2="16" />
+        </svg>
+        <p className="text-sm font-medium text-foreground whitespace-nowrap">
+          {message}
+        </p>
+        <button
+          type="button"
+          onClick={() => setVisible(false)}
+          aria-label="Dismiss error"
+          className="shrink-0 -mr-1 p-1 rounded-full text-foreground-muted hover:text-foreground transition-colors"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
+}
+
+export function ErrorBannerFromParams() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
+  return <ErrorBanner error={error} />;
 }

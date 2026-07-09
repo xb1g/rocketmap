@@ -22,6 +22,8 @@ interface BMCGridProps {
   chatTargetBlock: BlockType | null;
   dimmed: boolean;
   allSegments: Segment[];
+  focusSegmentId?: string | null;
+  focusSegmentColor?: string;
   hoveredItem: HoveredItem | null;
   onBlockChange: (blockType: BlockType, value: string) => void;
   onBlockFocus: (blockType: BlockType) => void;
@@ -66,6 +68,8 @@ export function BMCGrid({
   chatTargetBlock,
   dimmed,
   allSegments,
+  focusSegmentId,
+  focusSegmentColor,
   hoveredItem,
   onBlockChange,
   onBlockFocus,
@@ -123,6 +127,14 @@ export function BMCGrid({
 
           // Adapt items → blocks prop for BlockCard rendering
           const items = block?.content.items ?? [];
+          // Does this block hold anything relevant to the focused segment?
+          const focusHasMatch = focusSegmentId
+            ? def.type === "customer_segments"
+              ? allSegments.some((s) => s.$id === focusSegmentId)
+              : items.some((it) =>
+                  (it.linkedSegmentIds ?? []).includes(focusSegmentId),
+                )
+            : false;
           const segmentById = new Map(allSegments.map(s => [s.$id, s]));
           const blockCards = items.map((item) => {
             // Resolve item-level linkedSegmentIds to full Segment objects
@@ -156,6 +168,9 @@ export function BMCGrid({
               blocks={blockCards.length > 0 ? blockCards : undefined}
               allSegments={allSegments}
               allBlockItems={allBlockItems}
+              focusSegmentId={focusSegmentId}
+              focusColor={focusSegmentColor}
+              focusHasMatch={focusHasMatch}
               readOnly={readOnly}
               onChange={(v) => onBlockChange(def.type, v)}
               onFocus={() => onBlockFocus(def.type)}

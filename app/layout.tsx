@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Crimson_Text, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "@radix-ui/themes/styles.css";
-import { Theme } from "@radix-ui/themes";
+import { ThemeProvider } from "./components/ThemeProvider";
 
 const inter = Inter({
   variable: "--font-body",
@@ -14,6 +14,7 @@ const crimsonText = Crimson_Text({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["400", "600", "700"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -37,15 +38,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${crimsonText.variable} ${geistMono.variable} antialiased bg-background text-foreground font-body`}
       >
-        <Theme
-          appearance="dark"
-          accentColor="iris"
-          grayColor="gray"
-          radius="large"
-          scaling="100%"
-        >
-          {children}
-        </Theme>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

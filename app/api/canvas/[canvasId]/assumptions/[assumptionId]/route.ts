@@ -11,6 +11,13 @@ interface RouteContext {
   params: Promise<{ canvasId: string; assumptionId: string }>;
 }
 
+const DECISION_SIGNALS = new Set([
+  'kill',
+  'pivot',
+  'double_down',
+  'insufficient_evidence',
+]);
+
 export async function GET(_request: NextRequest, context: RouteContext) {
   try {
     const user = await requireAuth();
@@ -48,6 +55,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (body.confidenceScore !== undefined) updates.confidenceScore = body.confidenceScore;
     if (body.suggestedExperiment !== undefined) updates.suggestedExperiment = body.suggestedExperiment;
     if (body.suggestedExperimentDuration !== undefined) updates.suggestedExperimentDuration = body.suggestedExperimentDuration;
+    if (body.decisionSignal !== undefined) {
+      if (!DECISION_SIGNALS.has(body.decisionSignal)) {
+        return NextResponse.json({ error: 'Invalid decision signal' }, { status: 400 });
+      }
+      updates.decisionSignal = body.decisionSignal;
+    }
     if (body.lastTestedAt !== undefined) updates.lastTestedAt = body.lastTestedAt;
     if (body.segmentIds !== undefined) updates.segmentIds = JSON.stringify(body.segmentIds);
 

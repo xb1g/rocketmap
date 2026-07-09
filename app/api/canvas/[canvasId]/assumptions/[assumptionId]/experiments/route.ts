@@ -42,31 +42,36 @@ export async function POST(request: NextRequest, context: RouteContext) {
     await verifyAssumptionBelongsToCanvas(canvasId, assumptionId);
     const body = await request.json();
 
-    const { type, description, successCriteria, costEstimate, durationEstimate } = body;
+    const { type, description, successCriteria, successThreshold, costEstimate, durationEstimate } = body;
     if (!type || !description || !successCriteria) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     const now = new Date().toISOString();
 
+    const experimentData: Record<string, unknown> = {
+      assumption: assumptionId,
+      type,
+      description,
+      successCriteria,
+      status: 'planned',
+      result: null,
+      evidence: '',
+      sourceUrl: null,
+      costEstimate: costEstimate ? String(costEstimate).slice(0, 50) : null,
+      durationEstimate: durationEstimate ? String(durationEstimate).slice(0, 50) : null,
+      createdAt: now,
+      completedAt: null,
+    };
+    if (successThreshold) {
+      experimentData.successThreshold = String(successThreshold).slice(0, 500);
+    }
+
     const experiment = await serverTablesDB.createRow({
       databaseId: DATABASE_ID,
       tableId: EXPERIMENTS_TABLE_ID,
       rowId: ID.unique(),
-      data: {
-        assumption: assumptionId,
-        type,
-        description,
-        successCriteria,
-        status: 'planned',
-        result: null,
-        evidence: '',
-        sourceUrl: null,
-        costEstimate: costEstimate ? String(costEstimate).slice(0, 50) : null,
-        durationEstimate: durationEstimate ? String(durationEstimate).slice(0, 50) : null,
-        createdAt: now,
-        completedAt: null,
-      },
+      data: experimentData,
     });
 
     // Update assumption status to 'testing'

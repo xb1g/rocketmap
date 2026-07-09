@@ -4,10 +4,19 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserAvatar } from "./UserAvatar";
+import { ThemeToggle } from "@/app/components/ThemeToggle";
 import { signOut } from "@/lib/oauth";
 
 interface DashboardSidebarProps {
   user: { name: string; email: string };
+  aiQuota: {
+    allowed: boolean;
+    used: number;
+    limit: number;
+    tier: string;
+    resetsAt: string;
+    lifetimeCalls: number;
+  };
 }
 
 const navItems = [
@@ -88,7 +97,55 @@ const navItems = [
   },
 ];
 
-export function DashboardSidebar({ user }: DashboardSidebarProps) {
+function formatCurrency(n: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(n);
+}
+
+function tierLabel(tier: string): string {
+  if (tier === "pro") return "Pro";
+  if (tier === "free") return "Free";
+  return tier.slice(0, 1).toUpperCase() + tier.slice(1);
+}
+
+function SidebarUsage({
+  used,
+  limit,
+  tier,
+}: {
+  used: number;
+  limit: number;
+  tier: string;
+}) {
+  const percent = limit > 0 ? Math.min(100, Math.max(0, (used / limit) * 100)) : 0;
+  const status = percent >= 90 ? "critical" : percent >= 70 ? "warning" : "healthy";
+
+  return (
+    <div className="sidebar-usage">
+      <div className="sidebar-usage-header">
+        <span className="sidebar-usage-label">AI Usage</span>
+        <span className={`sidebar-usage-tier sidebar-usage-tier-${tier === "pro" ? "pro" : "free"}`}>
+          {tierLabel(tier)}
+        </span>
+      </div>
+      <div className="sidebar-usage-bar" role="img" aria-label={`${Math.round(percent)} percent used`}>
+        <div
+          className={`sidebar-usage-fill sidebar-usage-fill-${status}`}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      <div className="sidebar-usage-figures">
+        <span className="sidebar-usage-used">{formatCurrency(used)}</span>
+        <span className="sidebar-usage-limit">/ {formatCurrency(limit)}</span>
+      </div>
+    </div>
+  );
+}
+
+export function DashboardSidebar({ user, aiQuota }: DashboardSidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -156,38 +213,47 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
           ))}
         </nav>
 
-        <div className="sidebar-user">
-          <UserAvatar name={user.name || user.email} size="sm" />
-          <div className="sidebar-user-info">
-            <div className="sidebar-user-email">{user.email}</div>
+        <div className="sidebar-lower">
+          <SidebarUsage
+            used={aiQuota.used}
+            limit={aiQuota.limit}
+            tier={aiQuota.tier}
+          />
+
+          <div className="sidebar-theme">
+            <ThemeToggle variant="segmented" showLabels={false} />
           </div>
-          <button
-            onClick={() => signOut()}
-            style={{
-              background: "none",
-              border: "none",
-              color: "var(--foreground-muted)",
-              cursor: "pointer",
-              padding: "0.25rem",
-              fontSize: "0.75rem",
-            }}
-            title="Sign out"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+
+          <div className="sidebar-user">
+            <UserAvatar name={user.name || user.email} size="md" />
+            <div className="sidebar-user-info">
+              <div className="sidebar-user-name">
+                {user.name || user.email.split("@")[0]}
+              </div>
+              <div className="sidebar-user-email">{user.email}</div>
+            </div>
+            <button
+              className="sidebar-user-signout"
+              onClick={() => signOut()}
+              title="Sign out"
+              aria-label="Sign out"
             >
-              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-          </button>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            </button>
+          </div>
         </div>
       </aside>
     </>

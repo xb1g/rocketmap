@@ -12,7 +12,14 @@ export type BlockType =
 
 export type CanvasMode = "bmc" | "lean";
 export type BlockState = "calm" | "healthy" | "warning" | "critical" | "ai";
-export type CanvasTab = "canvas" | "analysis" | "assumptions" | "economics" | "notes" | "debug";
+export type CanvasTab =
+  | "canvas"
+  | "market"
+  | "analysis"
+  | "assumptions"
+  | "economics"
+  | "notes"
+  | "debug";
 
 export interface BlockContent {
   bmc: string;
@@ -40,6 +47,17 @@ export const SEGMENT_COLORS = [
   "#6366f1", "#f43f5e", "#10b981", "#f59e0b", "#8b5cf6",
   "#06b6d4", "#ec4899", "#84cc16", "#f97316", "#14b8a6",
 ] as const;
+
+/**
+ * Resolve a segment's display color: its explicit `colorHex` if set,
+ * otherwise a stable fallback from SEGMENT_COLORS keyed by list position.
+ */
+export function getSegmentColor(
+  segment: { colorHex?: string } | undefined,
+  index: number,
+): string {
+  return segment?.colorHex || SEGMENT_COLORS[index % SEGMENT_COLORS.length];
+}
 
 export interface AIAnalysis {
   draft: string;
@@ -277,6 +295,7 @@ export type AssumptionRiskLevel = 'high' | 'medium' | 'low';
 export type ExperimentType = 'survey' | 'interview' | 'mvp' | 'ab_test' | 'research' | 'other';
 export type ExperimentStatus = 'planned' | 'running' | 'completed';
 export type ExperimentResult = 'supports' | 'contradicts' | 'mixed' | 'inconclusive';
+export type DecisionSignal = 'kill' | 'pivot' | 'double_down' | 'insufficient_evidence';
 
 export interface Assumption {
   $id: string;
@@ -293,6 +312,7 @@ export interface Assumption {
   linkedValidationItemIds: string[];
   suggestedExperiment?: string;
   suggestedExperimentDuration?: string;
+  decisionSignal?: DecisionSignal;
   createdAt: string;
   updatedAt: string;
   lastTestedAt?: string;
@@ -304,6 +324,7 @@ export interface Experiment {
   type: ExperimentType;
   description: string;
   successCriteria: string;
+  successThreshold?: string;
   status: ExperimentStatus;
   result?: ExperimentResult;
   evidence: string;

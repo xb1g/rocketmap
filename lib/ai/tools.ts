@@ -27,7 +27,7 @@ export const analyzeBlock = tool({
 });
 
 export const checkConsistency = tool({
-  description: 'Check consistency across multiple business model canvas blocks and identify contradictions, missing links, and logical gaps.',
+  description: 'Check consistency across multiple business model canvas blocks and Business Model OS zone dependencies. Identify contradictions, missing links, broken chain edges, and logical gaps.',
   inputSchema: z.object({
     contradictions: z.array(z.object({
       blocks: z.array(z.string()).describe('The two or more blocks involved'),
@@ -40,6 +40,14 @@ export const checkConsistency = tool({
       to: z.string().describe('Target block'),
       issue: z.string().describe('What connection is missing'),
     })).describe('Missing connections between blocks'),
+    chainFindings: z.array(z.object({
+      fromZone: z.string().describe('Upstream BM-OS zone, e.g. customer_market'),
+      toZone: z.string().describe('Downstream BM-OS zone, e.g. revenue_pricing'),
+      issue: z.string().describe('Broken dependency-chain link or unsupported handoff'),
+      severity: z.enum(['minor', 'major', 'critical']),
+      evidenceNeeded: z.string().describe('Metric, experiment, or evidence required to validate this link'),
+      suggestion: z.string().describe('Specific change or test to repair the chain link'),
+    })).optional().describe('Dependency-chain findings across BM-OS zones'),
     overallScore: z.number().min(0).max(100).describe('Overall coherence score 0-100'),
   }),
   execute: async (params) => params,
@@ -77,6 +85,7 @@ export const suggestExperiment = tool({
     experimentType: z.enum(['survey', 'interview', 'mvp', 'ab_test', 'research', 'other']),
     description: z.string().describe('Step-by-step instructions for running the experiment'),
     successCriteria: z.string().describe('How to know if the assumption is validated (specific, measurable)'),
+    successThreshold: z.string().describe('The explicit pass/fail threshold for the experiment, such as a numeric target, observed behavior, or paid commitment count'),
     costEstimate: z.string().describe('$0, $50, $500, etc.'),
     durationEstimate: z.string().describe('5 min, 1 week, 1 month, etc.'),
     reasoning: z.string().describe('Why this is the cheapest/fastest validation method')

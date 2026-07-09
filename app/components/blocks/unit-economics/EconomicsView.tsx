@@ -104,7 +104,7 @@ export function EconomicsView({
   return (
     <div className="space-y-6">
       {/* Tab bar */}
-      <div className="flex items-center gap-1 border-b border-white/8 pb-0">
+      <div className="flex items-center gap-1 border-b border-border pb-0">
         {tabs.map((t) => (
           <button
             key={t.key}

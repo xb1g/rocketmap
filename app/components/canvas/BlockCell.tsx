@@ -433,7 +433,7 @@ export function BlockCell({
       <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1 flex-shrink-0">
           <span className="inline-flex items-center gap-1 font-display-small uppercase tracking-wider text-foreground-muted">
-            <span className="w-4 h-4 rounded-md border border-white/12 bg-foreground/5 text-foreground-muted/70 shrink-0 inline-flex items-center justify-center">
+            <span className="w-4 h-4 rounded-md border border-border bg-canvas-surface text-foreground-muted/70 shrink-0 inline-flex items-center justify-center">
               <BlockTypeIcon type={definition.type} />
             </span>
             <span>{displayLabel}</span>
@@ -514,7 +514,7 @@ export function BlockCell({
           {onBlockCreate && (
             <button
               onClick={onBlockCreate}
-              className="w-full rounded-md border border-dashed border-white/8 hover:border-white/15 px-2 py-1 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/3 transition-colors text-left"
+              className="w-full rounded-md border border-dashed border-border hover:border-foreground/20 px-2 py-1 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-foreground/5 transition-colors text-left"
             >
               + Add block
             </button>
@@ -542,11 +542,11 @@ export function BlockCell({
 
           {/* New segment button */}
           {addingNew ? (
-            <div className="rounded-md border border-white/12 bg-white/3 p-1.5 space-y-1">
+            <div className="rounded-md border border-border bg-canvas-surface p-1.5 space-y-1">
               <input
                 value={newSegmentName}
                 onChange={(e) => setNewSegmentName(e.target.value)}
-                className="w-full bg-foreground/5 rounded px-1.5 py-0.5 text-[10px] font-medium text-foreground outline-none border border-white/12 focus:border-foreground/25"
+                className="w-full bg-foreground/5 rounded px-1.5 py-0.5 text-[10px] font-medium text-foreground outline-none border border-border focus:border-foreground/25"
                 placeholder="Segment name"
                 autoFocus
                 onKeyDown={(e) => {
@@ -563,7 +563,7 @@ export function BlockCell({
               <textarea
                 value={newSegmentDesc}
                 onChange={(e) => setNewSegmentDesc(e.target.value)}
-                className="w-full bg-foreground/5 rounded px-1.5 py-0.5 text-[10px] text-foreground-muted outline-none border border-white/12 focus:border-foreground/25 resize-none"
+                className="w-full bg-foreground/5 rounded px-1.5 py-0.5 text-[10px] text-foreground-muted outline-none border border-border focus:border-foreground/25 resize-none"
                 placeholder="Description..."
                 rows={2}
                 onKeyDown={(e) => {
@@ -599,7 +599,7 @@ export function BlockCell({
             !readOnly && (
               <button
                 onClick={() => setAddingNew(true)}
-                className="w-full rounded-md border border-dashed border-white/8 hover:border-white/15 px-2 py-1.5 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-white/3 transition-colors text-left"
+                className="w-full rounded-md border border-dashed border-border hover:border-foreground/20 px-2 py-1.5 text-[10px] text-foreground-muted/40 hover:text-foreground-muted/70 hover:bg-foreground/5 transition-colors text-left"
               >
                 + New segment
               </button>

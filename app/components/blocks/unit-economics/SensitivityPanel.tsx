@@ -183,7 +183,7 @@ export function SensitivityPanel({
 
                 {/* Before / After comparison */}
                 <div className="grid grid-cols-2 gap-2 text-[10px]">
-                  <div className="space-y-1 p-2 rounded bg-white/3">
+                  <div className="space-y-1 p-2 rounded bg-canvas-surface">
                     <div className="text-foreground-muted/50 uppercase tracking-wider">Original</div>
                     <div className="text-foreground-muted">
                       LTV/CAC: {result.original.ltvCacRatio.toFixed(1)}x
@@ -192,7 +192,7 @@ export function SensitivityPanel({
                       LTV: {formatCurrency(result.original.ltv)}
                     </div>
                   </div>
-                  <div className="space-y-1 p-2 rounded bg-white/3">
+                  <div className="space-y-1 p-2 rounded bg-canvas-surface">
                     <div className="text-foreground-muted/50 uppercase tracking-wider">Adjusted</div>
                     <div style={{ color: verdict.color }}>
                       LTV/CAC: {result.adjusted.ltvCacRatio.toFixed(1)}x

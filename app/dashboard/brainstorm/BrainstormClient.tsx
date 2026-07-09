@@ -26,12 +26,12 @@ const templates = [
   {
     name: 'Hardware Product',
     desc: 'Physical product with manufacturing, supply chain, and direct-to-consumer distribution.',
-    emoji: '\uD83D\uDD27',
+    emoji: '\uD83D\DD27',
   },
   {
     name: 'Service Business',
     desc: 'Professional services with expertise-driven value and client relationship focus.',
-    emoji: '\uD83E\uDD1D',
+    emoji: '\uD83E\DD1D',
   },
 ];
 
@@ -96,7 +96,7 @@ export function BrainstormClient() {
   return (
     <>
       <div style={{ marginBottom: '2rem' }}>
-        <Heading size="8" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, marginBottom: '0.25rem' }}>
+        <Heading size="8" style={{ fontFamily: 'var(--font-display)', fontWeight: 400, marginBottom: '0.25rem' }}>
           Brainstorm
         </Heading>
         <Text size="2" style={{ color: 'var(--foreground-muted)' }}>
@@ -184,8 +184,8 @@ export function BrainstormClient() {
               <div
                 key={idea.id}
                 style={{
-                  background: 'rgba(255,255,255,0.025)',
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  background: 'var(--canvas-surface)',
+                  border: '1px solid var(--border)',
                   borderRadius: '12px',
                   padding: '1rem',
                   display: 'flex',

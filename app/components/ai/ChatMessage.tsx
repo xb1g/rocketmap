@@ -79,8 +79,8 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
       <div
         className={`max-w-[85%] px-3 py-2 text-xs font-body leading-relaxed ${
           isUser
-            ? "rounded-2xl rounded-br-md bg-white/5 text-foreground/90 whitespace-pre-wrap border border-white/6"
-            : "rounded-2xl rounded-bl-md bg-white/3 text-foreground/75 border border-white/4 chat-markdown"
+            ? "rounded-2xl rounded-br-md bg-canvas-surface text-foreground/90 whitespace-pre-wrap border border-border"
+            : "rounded-2xl rounded-bl-md bg-canvas-surface text-foreground/75 border border-foreground/10 chat-markdown"
         }`}
       >
         {isUser ? content : <ReactMarkdown remarkPlugins={REMARK_PLUGINS}>{content}</ReactMarkdown>}
@@ -159,21 +159,21 @@ export function ChatMessageWithParts({
                       }
                       if (e.key === "Escape") cancelEdit();
                     }}
-                    className="px-4 py-3 text-sm font-body leading-relaxed rounded-2xl rounded-br-md bg-white/5 text-foreground/90 whitespace-pre-wrap border border-white/8 outline-none resize-y min-h-[120px] w-full"
+                    className="px-4 py-3 text-sm font-body leading-relaxed rounded-2xl rounded-br-md bg-canvas-surface text-foreground/90 whitespace-pre-wrap border border-border outline-none resize-y min-h-[120px] w-full"
                     rows={Math.max(4, editText.split("\n").length)}
                     autoFocus
                   />
                   <div className="flex gap-1.5 justify-end">
                     <button
                       onClick={cancelEdit}
-                      className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded-md text-foreground-muted/50 hover:text-foreground-muted/80 hover:bg-white/5 transition-colors"
+                      className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded-md text-foreground-muted/50 hover:text-foreground-muted/80 hover:bg-foreground/5 transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={submitEdit}
                       disabled={!editText.trim()}
-                      className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded-md bg-chroma-indigo/15 text-chroma-indigo hover:bg-chroma-indigo/25 disabled:opacity-30 transition-colors"
+                      className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded-md bg-chroma-indigo/10 text-chroma-indigo hover:bg-chroma-indigo/20 disabled:opacity-30 transition-colors"
                     >
                       Send
                     </button>
@@ -187,8 +187,8 @@ export function ChatMessageWithParts({
                 <div
                   className={`px-3 py-2 text-xs font-body leading-relaxed ${
                     isUser
-                      ? "rounded-2xl rounded-br-md bg-white/5 text-foreground/90 whitespace-pre-wrap border border-white/6"
-                      : "rounded-2xl rounded-bl-md bg-white/3 text-foreground/75 border border-white/4 chat-markdown"
+                      ? "rounded-2xl rounded-br-md bg-canvas-surface text-foreground/90 whitespace-pre-wrap border border-border"
+                      : "rounded-2xl rounded-bl-md bg-canvas-surface text-foreground/75 border border-foreground/10 chat-markdown"
                   }`}
                 >
                   {isUser ? (
@@ -201,7 +201,7 @@ export function ChatMessageWithParts({
                 {isUser && onEditMessage && hovered && !isEditing && (
                   <button
                     onClick={startEdit}
-                    className="absolute -left-7 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-md text-foreground-muted/30 hover:text-foreground-muted/70 hover:bg-white/5 transition-all"
+                    className="absolute -left-7 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-md text-foreground-muted/30 hover:text-foreground-muted/70 hover:bg-foreground/5 transition-all"
                     aria-label="Edit message"
                   >
                     <svg
@@ -393,7 +393,7 @@ export function ChatMessageWithParts({
           <div className="flex items-center gap-1 -mb-0.5">
             <button
               onClick={onRegenerate}
-              className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded-md text-foreground-muted/30 hover:text-foreground-muted/70 hover:bg-white/5 transition-all"
+              className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded-md text-foreground-muted/30 hover:text-foreground-muted/70 hover:bg-foreground/5 transition-all"
               aria-label="Regenerate response"
             >
               <svg
@@ -453,9 +453,9 @@ function SingleEditCard({
   };
 
   return (
-    <div className="rounded-xl border border-(--chroma-amber)/25 bg-(--chroma-amber)/4 overflow-hidden">
+    <div className="rounded-xl border border-(--chroma-amber)/20 bg-(--chroma-amber)/3 overflow-hidden">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-white/5 flex items-center gap-2">
+      <div className="px-3 py-2 border-b border-border flex items-center gap-2">
         <svg
           width="12"
           height="12"
@@ -495,7 +495,7 @@ function SingleEditCard({
             {edit.oldContent}
           </div>
         ) : (
-          <div className="text-foreground-muted/30 bg-white/2 px-2.5 py-1.5 rounded-md italic">
+          <div className="text-foreground-muted/30 bg-foreground/5 px-2.5 py-1.5 rounded-md italic">
             (empty)
           </div>
         )}
@@ -505,11 +505,11 @@ function SingleEditCard({
           <textarea
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
-            className="w-full text-state-healthy/80 bg-state-healthy/7 px-2.5 py-1.5 rounded-md whitespace-pre-wrap border border-state-healthy/20 focus:border-state-healthy/40 outline-none resize-y min-h-[60px] font-mono text-[11px] leading-relaxed"
+            className="w-full text-primary/90 bg-primary/10 px-2.5 py-1.5 rounded-md whitespace-pre-wrap border border-primary/25 focus:border-primary/45 outline-none resize-y min-h-[60px] font-mono text-[11px] leading-relaxed"
             rows={Math.max(3, editedContent.split("\n").length)}
           />
         ) : (
-          <div className="text-state-healthy/80 bg-state-healthy/7 px-2.5 py-1.5 rounded-md whitespace-pre-wrap">
+          <div className="text-primary/90 bg-primary/10 px-2.5 py-1.5 rounded-md whitespace-pre-wrap">
             {edit.newContent}
           </div>
         )}
@@ -528,19 +528,19 @@ function SingleEditCard({
         <div className="flex gap-2 px-3 pb-3">
           <button
             onClick={() => onAccept()}
-            className="flex-1 px-3 py-1.5 rounded-lg bg-state-healthy/15 hover:bg-state-healthy/25 text-state-healthy/90 text-[11px] font-mono uppercase tracking-wider transition-colors"
+            className="flex-1 px-3 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary/90 text-[11px] font-mono uppercase tracking-wider transition-colors"
           >
             Accept
           </button>
           <button
             onClick={() => setIsEditing(true)}
-            className="px-3 py-1.5 rounded-lg bg-white/4 hover:bg-white/8 text-foreground-muted/60 hover:text-foreground-muted/80 text-[11px] font-mono uppercase tracking-wider transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-foreground/5 hover:bg-foreground/10 text-foreground-muted/60 hover:text-foreground-muted/80 text-[11px] font-mono uppercase tracking-wider transition-colors"
           >
             Edit
           </button>
           <button
             onClick={onReject}
-            className="flex-1 px-3 py-1.5 rounded-lg bg-white/4 hover:bg-state-critical/15 text-foreground-muted/50 hover:text-state-critical/80 text-[11px] font-mono uppercase tracking-wider transition-colors"
+            className="flex-1 px-3 py-1.5 rounded-lg bg-foreground/5 hover:bg-state-critical/15 text-foreground-muted/50 hover:text-state-critical/80 text-[11px] font-mono uppercase tracking-wider transition-colors"
           >
             Reject
           </button>
@@ -551,13 +551,13 @@ function SingleEditCard({
         <div className="flex gap-2 px-3 pb-3">
           <button
             onClick={handleAcceptEdited}
-            className="flex-1 px-3 py-1.5 rounded-lg bg-state-healthy/15 hover:bg-state-healthy/25 text-state-healthy/90 text-[11px] font-mono uppercase tracking-wider transition-colors"
+            className="flex-1 px-3 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary/90 text-[11px] font-mono uppercase tracking-wider transition-colors"
           >
             Accept Edit
           </button>
           <button
             onClick={handleCancelEdit}
-            className="px-3 py-1.5 rounded-lg bg-white/4 hover:bg-white/8 text-foreground-muted/50 text-[11px] font-mono uppercase tracking-wider transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-foreground/5 hover:bg-foreground/10 text-foreground-muted/50 text-[11px] font-mono uppercase tracking-wider transition-colors"
           >
             Cancel
           </button>
@@ -566,7 +566,7 @@ function SingleEditCard({
 
       {isAccepted && (
         <div className="px-3 pb-2.5 flex items-center justify-center gap-2">
-          <span className="text-state-healthy/70 text-[10px] font-mono uppercase tracking-wider">
+          <span className="text-primary/80 text-[10px] font-mono uppercase tracking-wider">
             Changes applied
           </span>
           {onRevert && (
@@ -615,9 +615,9 @@ function SegmentProposalCard({
   const badge = PRIORITY_BADGE[segment.priority] ?? PRIORITY_BADGE.medium;
 
   return (
-    <div className="rounded-xl border border-(--chroma-indigo)/25 bg-(--chroma-indigo)/4 overflow-hidden">
+    <div className="rounded-xl border border-(--chroma-indigo)/20 bg-(--chroma-indigo)/3 overflow-hidden">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-white/5 flex items-center gap-2">
+      <div className="px-3 py-2 border-b border-border flex items-center gap-2">
         <svg
           width="12"
           height="12"
@@ -698,13 +698,13 @@ function SegmentProposalCard({
         <div className="flex gap-2 px-3 pb-3">
           <button
             onClick={onAccept}
-            className="flex-1 px-3 py-1.5 rounded-lg bg-state-healthy/15 hover:bg-state-healthy/25 text-state-healthy/90 text-[11px] font-mono uppercase tracking-wider transition-colors"
+            className="flex-1 px-3 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary/90 text-[11px] font-mono uppercase tracking-wider transition-colors"
           >
             Create
           </button>
           <button
             onClick={onReject}
-            className="flex-1 px-3 py-1.5 rounded-lg bg-white/4 hover:bg-state-critical/15 text-foreground-muted/50 hover:text-state-critical/80 text-[11px] font-mono uppercase tracking-wider transition-colors"
+            className="flex-1 px-3 py-1.5 rounded-lg bg-foreground/5 hover:bg-state-critical/15 text-foreground-muted/50 hover:text-state-critical/80 text-[11px] font-mono uppercase tracking-wider transition-colors"
           >
             Skip
           </button>
@@ -713,7 +713,7 @@ function SegmentProposalCard({
 
       {isAccepted && (
         <div className="px-3 pb-2.5 text-center">
-          <span className="text-state-healthy/70 text-[10px] font-mono uppercase tracking-wider">
+          <span className="text-primary/80 text-[10px] font-mono uppercase tracking-wider">
             Segment created
           </span>
         </div>
@@ -746,7 +746,7 @@ function ItemProposalCard({
   onReject: () => void;
 }) {
   return (
-    <div className="rounded-lg border border-white/8 bg-white/3 overflow-hidden">
+    <div className="rounded-lg border border-border bg-canvas-surface overflow-hidden">
       <div className="px-3 py-2 flex items-start gap-2">
         <svg
           width="11"
@@ -778,13 +778,13 @@ function ItemProposalCard({
           <div className="flex gap-1 shrink-0">
             <button
               onClick={onAccept}
-              className="px-2 py-0.5 rounded-md bg-state-healthy/12 hover:bg-state-healthy/22 text-state-healthy/80 text-[10px] font-mono uppercase tracking-wider transition-colors"
+              className="px-2 py-0.5 rounded-md bg-primary/12 hover:bg-primary/22 text-primary/80 text-[10px] font-mono uppercase tracking-wider transition-colors"
             >
               Add
             </button>
             <button
               onClick={onReject}
-              className="px-2 py-0.5 rounded-md bg-white/4 hover:bg-state-critical/12 text-foreground-muted/40 hover:text-state-critical/70 text-[10px] font-mono uppercase tracking-wider transition-colors"
+              className="px-2 py-0.5 rounded-md bg-foreground/5 hover:bg-state-critical/12 text-foreground-muted/40 hover:text-state-critical/70 text-[10px] font-mono uppercase tracking-wider transition-colors"
             >
               Skip
             </button>
@@ -792,7 +792,7 @@ function ItemProposalCard({
         )}
 
         {isAccepted && (
-          <span className="text-state-healthy/60 text-[9px] font-mono uppercase tracking-wider shrink-0">
+          <span className="text-primary/60 text-[9px] font-mono uppercase tracking-wider shrink-0">
             Added
           </span>
         )}
@@ -852,7 +852,7 @@ function GenerateCanvasCard({
     : 0;
 
   return (
-    <div className="rounded-xl border border-(--chroma-indigo)/20 bg-(--chroma-indigo)/5 overflow-hidden">
+    <div className="rounded-xl border border-(--chroma-indigo)/15 bg-(--chroma-indigo)/4 overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2">
         {isPending ? (
@@ -874,7 +874,7 @@ function GenerateCanvasCard({
             height="12"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="var(--state-healthy)"
+            stroke="var(--primary)"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -905,7 +905,7 @@ function GenerateCanvasCard({
                 className="w-1.5 h-1.5 rounded-full"
                 style={{
                   background: hasContent(args?.[k])
-                    ? "var(--state-healthy)"
+                    ? "var(--primary)"
                     : "var(--state-calm)",
                 }}
                 title={k.replace(/_/g, " ")}
@@ -962,7 +962,7 @@ function GenerateCanvasCard({
               <summary className="cursor-pointer hover:text-foreground-muted/50 transition-colors">
                 tool args ({Object.keys(args).length} fields)
               </summary>
-              <pre className="mt-1 p-2 rounded-md bg-black/20 overflow-x-auto max-h-40 overflow-y-auto text-[8px] leading-relaxed">
+              <pre className="mt-1 p-2 rounded-md bg-foreground/10 overflow-x-auto max-h-40 overflow-y-auto text-[8px] leading-relaxed">
                 {JSON.stringify(args, null, 2)}
               </pre>
             </details>

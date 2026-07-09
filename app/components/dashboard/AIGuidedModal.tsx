@@ -335,7 +335,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
           <>
             <div style={{
               padding: '16px 20px 12px',
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              borderBottom: '1px solid rgba(var(--ink-shadow), 0.08)',
               flexShrink: 0,
               display: 'flex',
               justifyContent: 'space-between',
@@ -351,7 +351,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
               </div>
               <button
                 onClick={handleClose}
-                className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-foreground-muted/40 hover:text-foreground-muted/80 hover:bg-white/5 transition-all mt-0.5"
+                className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-foreground-muted/40 hover:text-foreground-muted/80 hover:bg-foreground/5 transition-all mt-0.5"
                 aria-label="Close"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -365,10 +365,10 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
               {/* New Conversation button */}
               <button
                 onClick={startNewSession}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors text-left group"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-foreground/5 transition-colors text-left group"
               >
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15))', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
+                  style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--chroma-indigo) 8%, transparent), color-mix(in srgb, var(--chroma-pink) 8%, transparent))', border: '1px solid color-mix(in srgb, var(--chroma-indigo) 18%, transparent)' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--chroma-indigo)" strokeWidth="2" strokeLinecap="round">
                     <line x1="12" y1="5" x2="12" y2="19" />
                     <line x1="5" y1="12" x2="19" y2="12" />
@@ -381,14 +381,14 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
 
               {/* Separator */}
               {sessions.length > 0 && (
-                <div className="border-t border-white/5 my-1" />
+                <div className="border-t border-border my-1" />
               )}
 
               {/* Session list */}
               {sessions.map((session) => (
                 <div
                   key={session.id}
-                  className="group flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+                  className="group flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-foreground/5 transition-colors cursor-pointer"
                   onClick={() => session.status === 'completed' && session.canvasSlug
                     ? router.push(`/canvas/${session.canvasSlug}`)
                     : resumeSession(session)
@@ -397,14 +397,14 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                     style={{
                       background: session.status === 'completed'
-                        ? 'rgba(34, 197, 94, 0.1)'
-                        : 'rgba(255, 255, 255, 0.03)',
+                        ? 'rgba(var(--primary-rgb), 0.12)'
+                        : 'rgba(var(--ink-shadow), 0.04)',
                       border: session.status === 'completed'
-                        ? '1px solid rgba(34, 197, 94, 0.2)'
-                        : '1px solid rgba(255, 255, 255, 0.06)',
+                        ? '1px solid rgba(var(--primary-rgb), 0.25)'
+                        : '1px solid rgba(var(--ink-shadow), 0.08)',
                     }}>
                     {session.status === 'completed' ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--state-healthy)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     ) : (
@@ -448,7 +448,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
             {creationState === 'chatting' && (
               <div style={{
                 padding: '16px 20px 12px',
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                borderBottom: '1px solid rgba(var(--ink-shadow), 0.08)',
                 flexShrink: 0,
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -458,7 +458,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
                   {sessions.length > 1 && (
                     <button
                       onClick={handleBackToBrowse}
-                      className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-foreground-muted/40 hover:text-foreground-muted/80 hover:bg-white/5 transition-all"
+                      className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-foreground-muted/40 hover:text-foreground-muted/80 hover:bg-foreground/5 transition-all"
                       aria-label="Back to sessions"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -477,7 +477,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
                 </div>
                 <button
                   onClick={handleClose}
-                  className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-foreground-muted/40 hover:text-foreground-muted/80 hover:bg-white/5 transition-all mt-0.5"
+                  className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-foreground-muted/40 hover:text-foreground-muted/80 hover:bg-foreground/5 transition-all mt-0.5"
                   aria-label="Close"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -503,14 +503,14 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
                     className="w-16 h-16 rounded-2xl flex items-center justify-center"
                     style={{
                       background: creationState === 'done'
-                        ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05))'
+                        ? 'linear-gradient(135deg, rgba(var(--primary-rgb), 0.15), rgba(var(--primary-rgb), 0.05))'
                         : 'linear-gradient(135deg, var(--chroma-indigo), var(--chroma-pink))',
                       opacity: creationState === 'done' ? 1 : 0.15,
                     }}
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
                     {creationState === 'done' ? (
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--state-healthy)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     ) : (
@@ -544,7 +544,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
                         key={i}
                         className="w-1.5 h-1.5 rounded-full transition-all duration-500"
                         style={{
-                          background: i <= creationStep ? 'var(--chroma-indigo)' : 'rgba(255,255,255,0.08)',
+                          background: i <= creationStep ? 'var(--chroma-indigo)' : 'rgba(var(--ink-shadow), 0.08)',
                           transform: i === creationStep ? 'scale(1.3)' : 'scale(1)',
                         }}
                       />
@@ -566,7 +566,7 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
                   <p className="text-xs text-foreground-muted">{errorMessage}</p>
                 </div>
                 <button
-                  className="px-4 py-2 text-xs rounded-lg bg-white/5 hover:bg-white/10 text-foreground-muted hover:text-foreground transition-colors"
+                  className="px-4 py-2 text-xs rounded-lg bg-foreground/5 hover:bg-foreground/10 text-foreground-muted hover:text-foreground transition-colors"
                   onClick={() => {
                     setCreationState('chatting');
                     setErrorMessage('');
@@ -582,8 +582,8 @@ export function AIGuidedModal({ open, onOpenChange }: AIGuidedModalProps) {
                     <div
                       className="w-10 h-10 rounded-full flex items-center justify-center"
                       style={{
-                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1))',
-                        border: '1px solid rgba(99, 102, 241, 0.2)',
+                        background: 'linear-gradient(135deg, color-mix(in srgb, var(--chroma-indigo) 6%, transparent), color-mix(in srgb, var(--chroma-pink) 6%, transparent))',
+                        border: '1px solid color-mix(in srgb, var(--chroma-indigo) 14%, transparent)',
                       }}
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--chroma-indigo)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

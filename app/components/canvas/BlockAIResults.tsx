@@ -49,20 +49,20 @@ export function BlockAIResults({ analysis, usage, isAnalyzing }: BlockAIResultsP
       return (
         <div className="px-4 py-3 flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <div className="h-2 w-16 rounded bg-white/8 animate-pulse" />
-            <div className="h-2.5 w-full rounded bg-white/5 animate-pulse" />
-            <div className="h-2.5 w-4/5 rounded bg-white/5 animate-pulse" />
-            <div className="h-2.5 w-3/5 rounded bg-white/5 animate-pulse" />
+            <div className="h-2 w-16 rounded bg-foreground/10 animate-pulse" />
+            <div className="h-2.5 w-full rounded bg-foreground/5 animate-pulse" />
+            <div className="h-2.5 w-4/5 rounded bg-foreground/5 animate-pulse" />
+            <div className="h-2.5 w-3/5 rounded bg-foreground/5 animate-pulse" />
           </div>
           <div className="flex flex-col gap-2">
-            <div className="h-2 w-20 rounded bg-white/8 animate-pulse" />
-            <div className="h-2.5 w-full rounded bg-white/5 animate-pulse" />
-            <div className="h-2.5 w-2/3 rounded bg-white/5 animate-pulse" />
+            <div className="h-2 w-20 rounded bg-foreground/10 animate-pulse" />
+            <div className="h-2.5 w-full rounded bg-foreground/5 animate-pulse" />
+            <div className="h-2.5 w-2/3 rounded bg-foreground/5 animate-pulse" />
           </div>
           <div className="flex flex-col gap-2">
-            <div className="h-2 w-12 rounded bg-white/8 animate-pulse" />
-            <div className="h-2.5 w-full rounded bg-white/5 animate-pulse" />
-            <div className="h-2.5 w-3/4 rounded bg-white/5 animate-pulse" />
+            <div className="h-2 w-12 rounded bg-foreground/10 animate-pulse" />
+            <div className="h-2.5 w-full rounded bg-foreground/5 animate-pulse" />
+            <div className="h-2.5 w-3/4 rounded bg-foreground/5 animate-pulse" />
           </div>
         </div>
       );
@@ -97,7 +97,7 @@ export function BlockAIResults({ analysis, usage, isAnalyzing }: BlockAIResultsP
         color="var(--chroma-cyan)"
       />
       {usage && (
-        <div className="font-mono text-[9px] uppercase tracking-widest text-foreground/20 pt-3 border-t border-white/5 flex gap-3">
+        <div className="font-mono text-[9px] uppercase tracking-widest text-foreground/20 pt-3 border-t border-border flex gap-3">
           <span>{usage.totalTokens} tokens</span>
           <span className="opacity-60">
             ({usage.inputTokens} in / {usage.outputTokens} out)

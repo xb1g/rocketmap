@@ -13,9 +13,19 @@ interface MissingLink {
   issue: string;
 }
 
+interface ChainFinding {
+  fromZone: string;
+  toZone: string;
+  issue: string;
+  severity: "minor" | "major" | "critical";
+  evidenceNeeded: string;
+  suggestion: string;
+}
+
 export interface ConsistencyData {
   contradictions: Contradiction[];
   missingLinks: MissingLink[];
+  chainFindings?: ChainFinding[];
   overallScore: number;
 }
 
@@ -52,7 +62,7 @@ export function ConsistencyReport({ data, isLoading }: ConsistencyReportProps) {
       {/* Score */}
       <div className="flex items-center gap-3">
         <div
-          className="text-2xl font-display font-bold"
+          className="text-2xl font-display"
           style={{
             color:
               data.overallScore >= 70
@@ -76,7 +86,7 @@ export function ConsistencyReport({ data, isLoading }: ConsistencyReportProps) {
           {data.contradictions.map((c, i) => (
             <div
               key={i}
-              className="p-3 rounded-[14px] bg-white/3 border border-white/6 border-t-2 flex flex-col gap-1.5"
+              className="p-3 rounded-[14px] bg-canvas-surface border border-border border-t-2 flex flex-col gap-1.5"
               style={{ borderTopColor: SEVERITY_COLORS[c.severity] }}
             >
               <div className="flex items-center gap-2">
@@ -101,6 +111,45 @@ export function ConsistencyReport({ data, isLoading }: ConsistencyReportProps) {
         </div>
       )}
 
+      {/* Chain Findings */}
+      {data.chainFindings && data.chainFindings.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <span className="text-[10px] uppercase tracking-wider text-foreground-muted font-medium">
+            Chain Findings ({data.chainFindings.length})
+          </span>
+          {data.chainFindings.map((finding, i) => (
+            <div
+              key={i}
+              className="p-3 rounded-[14px] bg-canvas-surface border border-border border-t-2 flex flex-col gap-1.5"
+              style={{ borderTopColor: SEVERITY_COLORS[finding.severity] }}
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: SEVERITY_COLORS[finding.severity] }}
+                />
+                <span
+                  className="text-[9px] font-mono uppercase tracking-wider"
+                  style={{ color: SEVERITY_COLORS[finding.severity] }}
+                >
+                  {finding.severity}
+                </span>
+                <span className="text-[10px] text-foreground-muted">
+                  {finding.fromZone} -&gt; {finding.toZone}
+                </span>
+              </div>
+              <p className="text-xs text-foreground/80">{finding.issue}</p>
+              <p className="text-xs text-foreground-muted">
+                Evidence needed: {finding.evidenceNeeded}
+              </p>
+              <p className="text-xs text-(--chroma-cyan)/70">
+                {finding.suggestion}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Missing Links */}
       {data.missingLinks.length > 0 && (
         <div className="flex flex-col gap-2">
@@ -110,7 +159,7 @@ export function ConsistencyReport({ data, isLoading }: ConsistencyReportProps) {
           {data.missingLinks.map((ml, i) => (
             <div
               key={i}
-              className="p-3 rounded-[14px] bg-white/3 border border-white/6 flex flex-col gap-1"
+              className="p-3 rounded-[14px] bg-canvas-surface border border-border flex flex-col gap-1"
             >
               <span className="text-[10px] font-mono uppercase tracking-wider text-foreground-muted">
                 {ml.from} &rarr; {ml.to}

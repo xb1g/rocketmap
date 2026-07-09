@@ -67,7 +67,7 @@ export const SegmentCard = forwardRef<HTMLDivElement, SegmentCardProps>(
       return (
         <button
           ref={ref as React.Ref<HTMLButtonElement>}
-          className="flex items-center gap-1.5 w-full text-left px-1.5 py-0.5 rounded-[12px] hover:bg-white/5 transition-colors group/seg"
+          className="flex items-center gap-1.5 w-full text-left px-1.5 py-0.5 rounded-[12px] hover:bg-foreground/5 transition-colors group/seg"
           onClick={onLink}
         >
           <span
@@ -93,7 +93,7 @@ export const SegmentCard = forwardRef<HTMLDivElement, SegmentCardProps>(
     return (
       <div
         ref={ref}
-        className="rounded-[14px] border border-white/6 bg-white/[2.5%] hover:bg-white/5 transition-colors"
+        className="rounded-[14px] border border-border bg-canvas-surface hover:bg-foreground/5 transition-colors"
       >
         <div className="p-1.5">
           <div className="flex items-start gap-1.5">
@@ -136,10 +136,10 @@ export const SegmentCard = forwardRef<HTMLDivElement, SegmentCardProps>(
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1 mt-1 pt-1 border-t border-white/5">
+          <div className="flex items-center gap-1 mt-1 pt-1 border-t border-border">
             <button
               onClick={onFocus}
-              className="flex items-center gap-1 text-[9px] text-foreground-muted/40 hover:text-foreground-muted transition-colors px-1 py-0.5 rounded-[12px] hover:bg-white/5"
+              className="flex items-center gap-1 text-[9px] text-foreground-muted/40 hover:text-foreground-muted transition-colors px-1 py-0.5 rounded-[12px] hover:bg-foreground/5"
               title="Open in focus view"
             >
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -152,7 +152,7 @@ export const SegmentCard = forwardRef<HTMLDivElement, SegmentCardProps>(
             </button>
             <button
               onClick={onLink}
-              className="flex items-center gap-1 text-[9px] text-foreground-muted/40 hover:text-foreground-muted transition-colors px-1 py-0.5 rounded-[12px] hover:bg-white/5"
+              className="flex items-center gap-1 text-[9px] text-foreground-muted/40 hover:text-foreground-muted transition-colors px-1 py-0.5 rounded-[12px] hover:bg-foreground/5"
               title="Link to other blocks"
             >
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

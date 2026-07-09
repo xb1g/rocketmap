@@ -4,6 +4,6 @@
   ],
   "teardown": [],
   "run": [
-    "bun dev"
+    "bun dev --port 3001"
   ]
 }

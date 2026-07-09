@@ -1,6 +1,8 @@
 import type { BlockData, BlockType, DeepDiveModule, MarketResearchData } from '@/lib/types/canvas';
 import type { AgentType } from '@/lib/types/ai';
 import { BLOCK_DEFINITIONS } from '@/app/components/canvas/constants';
+import { buildZoneOutputs } from '@/lib/zones/adapters';
+import { serializeZoneOutputs } from '@/lib/zones/serialization';
 
 export const BASE_SYSTEM_PROMPT = `You are RocketMap AI, an adversarial business model validator. You do NOT simply generate content — you analyze structural coherence, extract hidden assumptions, simulate risk scenarios, and flag contradictions.
 
@@ -241,6 +243,7 @@ export interface AssumptionContext {
   riskLevel: string;
   confidenceScore: number;
   blockTypes: string[];
+  decisionSignal?: string;
 }
 
 export function buildSystemPrompt(agentType: AgentType, blocks: BlockData[], assumptions?: AssumptionContext[]): string {
@@ -249,7 +252,11 @@ export function buildSystemPrompt(agentType: AgentType, blocks: BlockData[], ass
 
   let focusInstruction: string;
   if (agentType === 'general') {
-    focusInstruction = `You are the system-level AI performing cross-block reasoning. Analyze the ENTIRE canvas for contradictions, missing links, and logical gaps between blocks.`;
+    focusInstruction = `You are the system-level AI performing cross-block reasoning. Analyze the ENTIRE canvas for contradictions, missing links, and logical gaps between blocks.
+
+Use the Business Model OS dependency chain as the primary validation frame:
+segment -> JTBD -> value proposition -> product -> payment moment -> unit economics -> channel -> partnership -> operating model -> scalability -> defensibility -> metrics -> experiments.
+Prioritize chain-level failures such as TAM not supporting revenue, pricing not exceeding cost-to-serve, beachhead not matching value proposition target, channels exceeding allowable CAC, or partnerships creating fragile dependencies.`;
 
     if (assumptions && assumptions.length > 0) {
       focusInstruction += `\n\nAdditionally, review the tracked assumptions below and:
@@ -266,10 +273,15 @@ export function buildSystemPrompt(agentType: AgentType, blocks: BlockData[], ass
   if (assumptions && assumptions.length > 0) {
     const lines = assumptions.map((a) => {
       const blocks = a.blockTypes.length > 0 ? ` (affects: ${a.blockTypes.join(', ')})` : '';
-      return `[${a.status.toUpperCase()} | ${a.riskLevel.toUpperCase()} RISK] ${a.statement}${blocks} - Confidence: ${a.confidenceScore}%`;
+      const decision = a.decisionSignal ? ` - Decision: ${a.decisionSignal}` : '';
+      return `[${a.status.toUpperCase()} | ${a.riskLevel.toUpperCase()} RISK] ${a.statement}${blocks} - Confidence: ${a.confidenceScore}%${decision}`;
     });
     assumptionSection = `\n\n## Tracked Assumptions:\n${lines.join('\n')}`;
   }
+
+  const zoneSection = agentType === 'general'
+    ? `\n\nBusiness Model OS zone outputs:\n${serializeZoneOutputs(buildZoneOutputs(blocks))}`
+    : '';
 
   return `${BASE_SYSTEM_PROMPT}
 
@@ -278,7 +290,7 @@ ${focusInstruction}
 The canvas supports two modes: BMC (Business Model Canvas) and Lean Canvas. Some blocks are shared between both modes (Channels, Customer Segments, Cost Structure, Revenue Streams). Non-shared blocks may have different content in each mode — both are shown below.
 
 Current canvas state:
-${canvasState}${assumptionSection}`;
+${canvasState}${zoneSection}${assumptionSection}`;
 }
 
 // ─── Deep Dive Prompts ───────────────────────────────────────────────────────

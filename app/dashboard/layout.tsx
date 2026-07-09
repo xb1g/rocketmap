@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/appwrite-server';
 import { DashboardSidebar } from '../components/dashboard/DashboardSidebar';
+import { checkAiQuota } from '@/lib/ai/quota';
+import { getAiUsageStatsFromUser } from '@/lib/ai/user-preferences';
 
 export default async function DashboardLayout({
   children,
@@ -13,13 +15,23 @@ export default async function DashboardLayout({
     redirect('/?error=unauthorized');
   }
 
+  const aiQuota = await checkAiQuota(user);
+  const aiUsage = getAiUsageStatsFromUser(user);
+
   return (
     <div className="dashboard-layout">
-      <div className="dashboard-atmosphere" />
       <DashboardSidebar
         user={{
           name: user.name || '',
           email: user.email,
+        }}
+        aiQuota={{
+          allowed: aiQuota.allowed,
+          used: aiQuota.used,
+          limit: aiQuota.limit,
+          tier: aiQuota.tier,
+          resetsAt: aiQuota.resetsAt,
+          lifetimeCalls: aiUsage.calls,
         }}
       />
       <main className="dashboard-main">

@@ -24,7 +24,7 @@
 
 | Usage               | Font         | Weight        | Sizes     | CSS Variable          |
 | ------------------- | ------------ | ------------- | --------- | --------------------- |
-| **Body Text**       | Lexend Deca  | 400           | 12px–16px | `var(--font-body)`    |
+| **Body Text**       | Inter        | 400           | 12px–16px | `var(--font-body)`    |
 | **Headings/Titles** | Crimson Text | 400, 600, 700 | 24px–48px | `var(--font-display)` |
 | **Monospace/Data**  | Geist Mono   | 400, 500      | 10px–14px | `var(--font-mono)`    |
 
@@ -32,9 +32,9 @@
 
 ```tsx
 // ✅ CORRECT - from app/layout.tsx
-import { Lexend_Deca, Crimson_Text, Geist_Mono } from "next/font/google";
+import { Inter, Crimson_Text, Geist_Mono } from "next/font/google";
 
-const lexendDeca = Lexend_Deca({ variable: "--font-body", subsets: ["latin"] });
+const inter = Inter({ variable: "--font-body", subsets: ["latin"] });
 const crimsonText = Crimson_Text({
   variable: "--font-display",
   subsets: ["latin"],
@@ -45,7 +45,7 @@ const geistMono = Geist_Mono({ variable: "--font-mono", subsets: ["latin"] });
 
 ### Usage Rules
 
-#### Body Text (Lexend Deca)
+#### Body Text (Inter)
 
 - **Default:** `font-family: var(--font-body)`
 - **When:** Description text, UI labels, microcopy, form inputs
@@ -122,7 +122,7 @@ const geistMono = Geist_Mono({ variable: "--font-mono", subsets: ["latin"] });
 
 | State         | CSS Variable       | Hex Value | Use Case                 |
 | ------------- | ------------------ | --------- | ------------------------ |
-| **Calm**      | `--state-calm`     | `#3a3a3a` | Default block, neutral   |
+| **Calm**      | `--state-calm`     | `#e6dfd0` | Default block, neutral   |
 | **Healthy**   | `--state-healthy`  | `#22c55e` | Validated, good data     |
 | **Warning**   | `--state-warning`  | `#f59e0b` | Fragile, needs attention |
 | **Critical**  | `--state-critical` | `#ef4444` | Contradiction, high risk |
@@ -139,24 +139,42 @@ const geistMono = Geist_Mono({ variable: "--font-mono", subsets: ["latin"] });
 
 ### Background & Text
 
-| Element            | CSS Variable         | Hex Value |
-| ------------------ | -------------------- | --------- |
-| Background         | `--background`       | `#07070a` |
-| Canvas Surface     | `--canvas-surface`   | `#1a1a1a` |
-| Foreground (Text)  | `--foreground`       | `#ffffff` |
-| Foreground (Muted) | `--foreground-muted` | `#a1a1a1` |
+| Element            | CSS Variable           | Light Value | Dark Value  |
+| ------------------ | ---------------------- | ----------- | ----------- |
+| Background         | `--background`         | `#f5f0e3`   | `#07070a`   |
+| Canvas Surface     | `--canvas-surface`     | `#faf7ef`   | `#1a1a1a`   |
+| Foreground (Text)  | `--foreground`         | `#2a2520`   | `#ffffff`   |
+| Foreground (Muted) | `--foreground-muted`   | `#7a7268`   | `#a1a1a1`   |
+| Foreground (Subtle)| `--foreground-subtle`  | `#a39a8d`   | `#6b6b6b`   |
+| Border             | `--border`             | `#e6dfd0`   | `rgba(255,255,255,0.1)` |
+| Primary Action     | `--primary`            | `#c4a35a`   | `#e6b84a`   |
+| Primary RGB        | `--primary-rgb`        | `196,163,90`| `52,182,74` |
+| Ink Shadow         | `--ink-shadow`         | `42,37,32`  | `0,0,0`     |
+
+### Theme Switching
+
+RocketMap supports **light** (Warm Parchment) and **dark** (Da Vinci's Workshop) themes. The user can toggle between them, and the choice is persisted via `next-themes`.
+
+Implementation:
+- `app/components/ThemeProvider.tsx` wires `next-themes` into Radix Themes.
+- `app/components/ThemeToggle.tsx` exposes a light/dark/system cycle button.
+- `app/globals.css` defines variables in `:root` (light) and `.dark` (dark).
+- Tailwind `@theme inline` maps utility classes to these variables.
 
 ### Color Usage Rules
 
 ✅ **DO:**
 
+- Use CSS variables (`--background`, `--foreground`, `--primary`, etc.) or Tailwind token classes so components work in both themes
 - Use state colors for block states (calm/healthy/warning/critical)
-- Layer chromatic colors in gradients for depth
-- Use high contrast white on dark backgrounds
+- Layer chromatic colors in gradients for depth, but keep them rare on light surfaces
+- Use high contrast ink on parchment backgrounds and chalk on dark backgrounds
 - Apply glow effects based on state
+- Tint shadows with `--ink-shadow` (`rgba(var(--ink-shadow), ...)`) instead of hardcoding black
 
 ❌ **DON'T:**
 
+- Hardcode light-only or dark-only surface/text colors in components
 - Use arbitrary colors not in the palette
 - Mix multiple states in one component
 - Use pure black or white for text (use CSS variables)
@@ -278,7 +296,7 @@ HEALTHY (Green, validated)
 ✅ **GOOD:**
 
 ```
-"Use Lexend Deca for body text (already configured)"
+"Use Inter for body text (already configured)"
 ```
 
 **Rule:** Never suggest fonts outside the design system. Reference variables: `var(--font-body)`, `var(--font-display)`, `var(--font-mono)`.
@@ -352,12 +370,12 @@ Include this in every LLM prompt context:
 RocketMap uses a strict design system:
 
 TYPOGRAPHY:
-- Body: Lexend Deca (var(--font-body))
+- Body: Inter (var(--font-body))
 - Display: Crimson Text (var(--font-display))
 - Monospace: Geist Mono (var(--font-mono))
 
 COLORS (use only these):
-- Calm: #3a3a3a, Healthy: #22c55e, Warning: #f59e0b, Critical: #ef4444, AI: #6366f1
+- Calm: #e6dfd0, Healthy: #22c55e, Warning: #f59e0b, Critical: #ef4444, AI: #6366f1
 
 COMPONENTS:
 - Block glow states: .glow-calm, .glow-healthy, .glow-warning, .glow-critical, .glow-ai
@@ -382,7 +400,7 @@ Use this before shipping any UI changes:
 
 ### Typography ✓
 
-- [ ] All body text uses `var(--font-body)` (Lexend Deca)
+- [ ] All body text uses `var(--font-body)` (Inter)
 - [ ] All headings use `var(--font-display)` (Crimson Text) or `.font-display` class
 - [ ] All data/metrics use `var(--font-mono)` (Geist Mono)
 - [ ] No fonts outside the canonical three
@@ -436,12 +454,35 @@ Use this before shipping any UI changes:
 
 ```css
 /* Typography */
---font-body: Lexend Deca --font-display: Crimson Text --font-mono: Geist Mono
-  /* States */ --state-calm: #3a3a3a --state-healthy: #22c55e --state-warning:
-  #f59e0b --state-critical: #ef4444 --state-ai: #6366f1 /* Chromatic */
-  --chroma-indigo: #6366f1 --chroma-cyan: #06b6d4 --chroma-pink: #ec4899
-  --chroma-amber: #f59e0b /* Backgrounds */ --background: #07070a
-  --canvas-surface: #1a1a1a --foreground: #ffffff --foreground-muted: #a1a1a1;
+--font-body: Inter
+--font-display: Crimson Text
+--font-mono: Geist Mono
+
+/* States */
+--state-calm: #e6dfd0
+--state-healthy: #22c55e
+--state-warning: #f59e0b
+--state-critical: #ef4444
+--state-ai: #6366f1
+
+/* Chromatic */
+--chroma-indigo: #6366f1
+--chroma-cyan: #06b6d4
+--chroma-pink: #ec4899
+--chroma-amber: #f59e0b
+
+/* Backgrounds & Text */
+--background: #f5f0e3
+--canvas-surface: #faf7ef
+--foreground: #2a2520
+--foreground-muted: #7a7268
+--foreground-subtle: #a39a8d
+--border: #e6dfd0
+
+/* Primary Action */
+--primary: #c4a35a
+--primary-hover: #d4b36a
+--primary-deep: #a08040
 ```
 
 ### Common Component Pattern

@@ -163,7 +163,7 @@ export function ExpandedCanvasOverview({
           {linkedSegments.map((seg) => (
             <span
               key={seg.$id}
-              className="inline-flex items-center gap-1.5 text-[10px] px-2 py-1 rounded-full border border-white/8 text-foreground-muted/70"
+              className="inline-flex items-center gap-1.5 text-[10px] px-2 py-1 rounded-full border border-border text-foreground-muted/70"
             >
               <span
                 className="w-2 h-2 rounded-full shrink-0"
@@ -187,7 +187,7 @@ export function ExpandedCanvasOverview({
           ))}
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed border-white/8 p-8 text-center">
+        <div className="rounded-lg border border-dashed border-border p-8 text-center">
           <p className="text-sm text-foreground-muted/40">
             No items yet. Add items from the side panel.
           </p>
@@ -213,7 +213,7 @@ export function ExpandedCanvasOverview({
                 <button
                   key={d.type}
                   onClick={() => onBlockSelect(d.type)}
-                  className="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1.5 rounded-md border border-white/8 bg-white/2 hover:bg-white/5 hover:border-white/15 text-foreground-muted/60 hover:text-foreground-muted transition-all"
+                  className="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1.5 rounded-md border border-border bg-canvas-surface hover:bg-foreground/5 hover:border-foreground/20 text-foreground-muted/60 hover:text-foreground-muted transition-all"
                 >
                   <BlockIcon type={d.type} size={11} />
                   <span>{bLabel}</span>
@@ -249,7 +249,7 @@ function ItemRow({
   const tags = item.tags ?? [];
 
   return (
-    <div className="rounded-lg border border-white/8 bg-white/2 p-3.5 space-y-2 hover:border-white/12 transition-colors">
+    <div className="rounded-lg border border-border bg-canvas-surface p-3.5 space-y-2 hover:border-foreground/20 transition-colors">
       {/* Item name */}
       <p className="text-[13px] text-foreground leading-snug">{item.name}</p>
 
@@ -259,7 +259,7 @@ function ItemRow({
           {tags.map((tag, i) => (
             <span
               key={`${tag}-${i}`}
-              className="text-[9px] px-1.5 py-0.5 rounded-full bg-foreground/5 border border-white/8 text-foreground-muted/60"
+              className="text-[9px] px-1.5 py-0.5 rounded-full bg-foreground/5 border border-border text-foreground-muted/60"
             >
               {tag}
             </span>
@@ -276,7 +276,7 @@ function ItemRow({
               {itemSegments.map((seg) => (
                 <span
                   key={seg.$id}
-                  className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full border border-white/8 text-foreground-muted/50"
+                  className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full border border-border text-foreground-muted/50"
                 >
                   <span
                     className="w-1.5 h-1.5 rounded-full shrink-0"

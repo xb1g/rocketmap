@@ -122,7 +122,7 @@ export function ChatMessages({
   if (visible.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-2 px-6 text-center">
-        <div className="w-8 h-8 rounded-full bg-canvas-surface border border-white/6 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full bg-canvas-surface border border-border flex items-center justify-center">
           <svg
             width="14"
             height="14"
@@ -267,7 +267,7 @@ function AIStatusIndicator({
 
   return (
     <div className="flex justify-start">
-      <div className="flex items-center gap-2 px-3 py-2 rounded-2xl rounded-bl-md bg-white/3 border border-chroma-indigo/15">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-2xl rounded-bl-md bg-canvas-surface border border-chroma-indigo/10">
         {activity.icon === 'thinking' && <ThinkingDots />}
         {activity.icon === 'tool' && <ToolSpinner />}
         <span className="text-[11px] font-mono text-foreground-muted/60 uppercase tracking-wider">{activity.label}</span>

@@ -32,6 +32,7 @@ export function ExperimentDesignModal({
     assumption.suggestedExperiment ?? "",
   );
   const [successCriteria, setSuccessCriteria] = useState("");
+  const [successThreshold, setSuccessThreshold] = useState("");
   const [costEstimate, setCostEstimate] = useState("");
   const [durationEstimate, setDurationEstimate] = useState(
     assumption.suggestedExperimentDuration ?? "",
@@ -51,9 +52,10 @@ export function ExperimentDesignModal({
       );
       if (res.ok) {
         const data = await res.json();
-        setType(data.type);
+        setType(data.experimentType ?? data.type);
         setDescription(data.description);
         setSuccessCriteria(data.successCriteria);
+        setSuccessThreshold(data.successThreshold ?? "");
         setCostEstimate(data.costEstimate);
         setDurationEstimate(data.durationEstimate);
       }
@@ -77,6 +79,7 @@ export function ExperimentDesignModal({
             type,
             description: description.trim(),
             successCriteria: successCriteria.trim(),
+            successThreshold: successThreshold.trim() || undefined,
             costEstimate: costEstimate.trim() || undefined,
             durationEstimate: durationEstimate.trim() || undefined,
           }),
@@ -95,14 +98,14 @@ export function ExperimentDesignModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/25"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-lg mx-4 rounded-[14px] border border-white/8 bg-background p-6 space-y-5">
+      <div className="w-full max-w-lg mx-4 rounded-[14px] border border-border bg-canvas-surface p-6 space-y-5">
         <div className="flex items-center justify-between">
-          <h3 className="font-display-small text-base">Design Experiment</h3>
+          <h3 className="font-display-small text-base text-foreground">Design Experiment</h3>
           <div className="flex items-center gap-2">
             <button
               onClick={handleAISuggest}
@@ -125,9 +128,9 @@ export function ExperimentDesignModal({
         </div>
 
         {/* Assumption being tested */}
-        <div className="rounded-[12px] border border-white/6 bg-white/2 p-3">
-          <p className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted/60 mb-1">Testing assumption:</p>
-          <p className="text-sm leading-relaxed">{assumption.statement}</p>
+        <div className="rounded-[12px] border border-border bg-canvas-surface p-3">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-foreground-subtle mb-1">Testing assumption:</p>
+          <p className="text-sm leading-relaxed text-foreground">{assumption.statement}</p>
         </div>
 
         {/* Type */}
@@ -136,7 +139,7 @@ export function ExperimentDesignModal({
           <select
             value={type}
             onChange={(e) => setType(e.target.value as ExperimentType)}
-            className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
+            className="w-full rounded-[12px] border border-border bg-canvas-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/55 focus:shadow-[0_0_0_3px_rgba(var(--primary-rgb),0.16)]"
           >
             {EXPERIMENT_TYPES.map((et) => (
               <option key={et.value} value={et.value}>
@@ -154,7 +157,7 @@ export function ExperimentDesignModal({
             onChange={(e) => setDescription(e.target.value)}
             placeholder="How will you test this assumption?"
             rows={3}
-            className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
+            className="w-full rounded-[12px] border border-border bg-canvas-surface px-3 py-2 text-sm text-foreground placeholder:text-foreground-subtle focus:outline-none focus:border-primary/55 focus:shadow-[0_0_0_3px_rgba(var(--primary-rgb),0.16)]"
           />
         </div>
 
@@ -166,7 +169,18 @@ export function ExperimentDesignModal({
             onChange={(e) => setSuccessCriteria(e.target.value)}
             placeholder="What result would validate this assumption?"
             rows={2}
-            className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
+            className="w-full rounded-[12px] border border-border bg-canvas-surface px-3 py-2 text-sm text-foreground placeholder:text-foreground-subtle focus:outline-none focus:border-primary/55 focus:shadow-[0_0_0_3px_rgba(var(--primary-rgb),0.16)]"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-mono uppercase tracking-wider text-foreground-muted">Success Threshold</label>
+          <input
+            type="text"
+            value={successThreshold}
+            onChange={(e) => setSuccessThreshold(e.target.value)}
+            placeholder="e.g. 5 paid deposits, 30% reply rate, CAC under $120"
+            className="w-full rounded-[12px] border border-border bg-canvas-surface px-3 py-2 text-sm text-foreground placeholder:text-foreground-subtle focus:outline-none focus:border-primary/55 focus:shadow-[0_0_0_3px_rgba(var(--primary-rgb),0.16)]"
           />
         </div>
 
@@ -179,7 +193,7 @@ export function ExperimentDesignModal({
               value={costEstimate}
               onChange={(e) => setCostEstimate(e.target.value)}
               placeholder="e.g. $500"
-              className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
+              className="w-full rounded-[12px] border border-border bg-canvas-surface px-3 py-2 text-sm text-foreground placeholder:text-foreground-subtle focus:outline-none focus:border-primary/55 focus:shadow-[0_0_0_3px_rgba(var(--primary-rgb),0.16)]"
             />
           </div>
           <div className="space-y-1.5">
@@ -189,7 +203,7 @@ export function ExperimentDesignModal({
               value={durationEstimate}
               onChange={(e) => setDurationEstimate(e.target.value)}
               placeholder="e.g. 2 weeks"
-              className="w-full rounded-[12px] border border-white/8 bg-white/3 px-3 py-2 text-sm placeholder:text-foreground-muted/40 focus:outline-none focus:border-state-healthy/55 focus:shadow-[0_0_0_3px_rgba(34,197,94,0.16)]"
+              className="w-full rounded-[12px] border border-border bg-canvas-surface px-3 py-2 text-sm text-foreground placeholder:text-foreground-subtle focus:outline-none focus:border-primary/55 focus:shadow-[0_0_0_3px_rgba(var(--primary-rgb),0.16)]"
             />
           </div>
         </div>

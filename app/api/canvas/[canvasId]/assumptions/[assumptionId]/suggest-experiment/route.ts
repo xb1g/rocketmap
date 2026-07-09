@@ -34,7 +34,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
     const blocks = await getCanvasBlocks(canvasId, user.$id);
     const systemPrompt = buildSystemPrompt('general', blocks);
 
-    const { result, usage } = await generateTextWithLogging('suggest-experiment', {
+    const { result } = await generateTextWithLogging('suggest-experiment', {
       model: getAnthropicModelForUser(user, 'claude-haiku-4-5-20251001'),
       system: systemPrompt,
       prompt: `Suggest the cheapest and fastest experiment to validate this assumption:
@@ -48,6 +48,7 @@ Return ONLY valid JSON (no markdown, no explanation):
   "experimentType": "survey|interview|mvp|ab_test|research|other",
   "description": "step-by-step instructions",
   "successCriteria": "how to know if validated (specific, measurable)",
+  "successThreshold": "numeric or observable threshold that decides pass/fail",
   "costEstimate": "$0",
   "durationEstimate": "1 week",
   "reasoning": "why this is cheapest/fastest method"
@@ -62,6 +63,7 @@ Return ONLY valid JSON (no markdown, no explanation):
       experimentType: string;
       description: string;
       successCriteria: string;
+      successThreshold?: string;
       costEstimate: string;
       durationEstimate: string;
       reasoning: string;

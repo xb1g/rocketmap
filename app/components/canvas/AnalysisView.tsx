@@ -34,7 +34,7 @@ function BlockSummary({ block, mode }: { block: BlockData; mode: CanvasMode }) {
   const hasAnalysis = !!block.aiAnalysis;
 
   return (
-    <div className="p-3 rounded-[14px] bg-white/[2.5%] border border-white/6 flex flex-col gap-2">
+    <div className="p-3 rounded-[14px] bg-canvas-surface border border-border flex flex-col gap-2">
       <div className="flex items-center justify-between">
         {def ? (
           <BlockTooltip definition={def} mode={mode}>
@@ -124,7 +124,7 @@ function RiskOverview({ canvasId }: { canvasId: string }) {
       <span className="text-[10px] font-mono uppercase tracking-wider text-foreground-muted font-medium">
         Risk Overview
       </span>
-      <div className="rounded-[14px] border border-white/6 bg-white/2 p-4 space-y-3">
+      <div className="rounded-[14px] border border-border bg-canvas-surface p-4 space-y-3">
         {/* Risk score bar */}
         <div className="flex items-center justify-between">
           <span className="text-xs text-foreground-muted">Risk Score</span>
@@ -135,7 +135,7 @@ function RiskOverview({ canvasId }: { canvasId: string }) {
             {riskScore}/100
           </span>
         </div>
-        <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+        <div className="h-1.5 rounded-full bg-foreground/5 overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{
@@ -147,19 +147,19 @@ function RiskOverview({ canvasId }: { canvasId: string }) {
 
         {/* Risk level breakdown */}
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between p-2 rounded-[12px] bg-white/3 border-t-2" style={{ borderTopColor: "var(--state-critical)" }}>
+          <div className="flex items-center justify-between p-2 rounded-[12px] bg-canvas-surface border-t-2" style={{ borderTopColor: "var(--state-critical)" }}>
             <span className="text-xs text-foreground-muted">High</span>
             <span className="text-sm font-mono font-medium" style={{ color: "var(--state-critical)" }}>
               {summary.high}
             </span>
           </div>
-          <div className="flex items-center justify-between p-2 rounded-[12px] bg-white/3 border-t-2" style={{ borderTopColor: "var(--state-warning)" }}>
+          <div className="flex items-center justify-between p-2 rounded-[12px] bg-canvas-surface border-t-2" style={{ borderTopColor: "var(--state-warning)" }}>
             <span className="text-xs text-foreground-muted">Medium</span>
             <span className="text-sm font-mono font-medium" style={{ color: "var(--state-warning)" }}>
               {summary.medium}
             </span>
           </div>
-          <div className="flex items-center justify-between p-2 rounded-[12px] bg-white/3 border-t-2" style={{ borderTopColor: "var(--state-healthy)" }}>
+          <div className="flex items-center justify-between p-2 rounded-[12px] bg-canvas-surface border-t-2" style={{ borderTopColor: "var(--state-healthy)" }}>
             <span className="text-xs text-foreground-muted">Low</span>
             <span className="text-sm font-mono font-medium" style={{ color: "var(--state-healthy)" }}>
               {summary.low}
@@ -168,7 +168,7 @@ function RiskOverview({ canvasId }: { canvasId: string }) {
         </div>
 
         {/* Status breakdown */}
-        <div className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-wider text-foreground-muted pt-1 border-t border-white/5">
+        <div className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-wider text-foreground-muted pt-1 border-t border-border">
           <span>{summary.untested} untested</span>
           <span style={{ color: "var(--state-healthy)" }}>{summary.validated} validated</span>
           <span style={{ color: "var(--state-critical)" }}>{summary.refuted} refuted</span>

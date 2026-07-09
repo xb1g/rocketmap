@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import type { CanvasMode } from "@/lib/types/canvas";
+import type { CanvasMode, Segment } from "@/lib/types/canvas";
 import { InlineEditableTitle } from "./InlineEditableTitle";
+import { ThemeToggle } from "@/app/components/ThemeToggle";
+import { SegmentFocusPicker } from "./SegmentFocusPicker";
 
 type SaveStatus = "saved" | "saving" | "unsaved";
 
@@ -16,6 +18,10 @@ interface CanvasToolbarProps {
   onConvertLeanToBmc: () => void;
   hasLeanContent: boolean;
   isConverting: boolean;
+  segments: Segment[];
+  focusSegmentId: string | null;
+  segmentItemCounts: Map<string, number>;
+  onFocusSegmentChange: (segmentId: string | null) => void;
 }
 
 export function CanvasToolbar({
@@ -28,6 +34,10 @@ export function CanvasToolbar({
   onConvertLeanToBmc,
   hasLeanContent,
   isConverting,
+  segments,
+  focusSegmentId,
+  segmentItemCounts,
+  onFocusSegmentChange,
 }: CanvasToolbarProps) {
   return (
     <div className="flex items-center justify-between px-2 py-2">
@@ -44,7 +54,7 @@ export function CanvasToolbar({
           <InlineEditableTitle value={title} readOnly={readOnly} onSave={onTitleChange} />
         </div>
         {readOnly && (
-          <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-full bg-foreground/10 text-foreground-muted border border-white/15">
+          <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-full bg-canvas-surface text-foreground-muted border border-border">
             Read-only
           </span>
         )}
@@ -94,10 +104,18 @@ export function CanvasToolbar({
             {isConverting ? "Converting..." : "Lean\u2192BMC"}
           </button>
         )}
+        <SegmentFocusPicker
+          segments={segments}
+          focusSegmentId={focusSegmentId}
+          segmentItemCounts={segmentItemCounts}
+          onFocusSegmentChange={onFocusSegmentChange}
+        />
       </div>
 
-      {/* Right: save status */}
-      <div className="flex items-center gap-1.5 font-mono text-[10px] text-foreground-muted min-w-12 md:min-w-20 justify-end shrink-0">
+      {/* Right: theme + save status */}
+      <div className="flex items-center gap-2 shrink-0">
+        <ThemeToggle variant="segmented" showLabels={false} />
+        <div className="flex items-center gap-1.5 font-mono text-[10px] text-foreground-muted min-w-12 md:min-w-20 justify-end">
         {saveStatus === "saved" && (
           <>
             <span className="text-state-healthy">&#10003;</span>
@@ -116,6 +134,7 @@ export function CanvasToolbar({
             <span className="uppercase tracking-wider hidden md:inline">Unsaved</span>
           </>
         )}
+        </div>
       </div>
     </div>
   );

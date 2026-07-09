@@ -26,11 +26,11 @@ export function BlockTooltip({
           <span className="block text-[13px] leading-snug text-foreground font-medium">
             {tooltipBody}
           </span>
-          <span className="flex items-start gap-2 mt-1 pt-1.5 border-t border-white/10">
-            <span className="text-[9px] font-bold px-1 py-px rounded bg-chroma-cyan/20 text-chroma-cyan border border-chroma-cyan/30 uppercase tracking-tighter mt-0.5">
+          <span className="flex items-start gap-2 mt-1 pt-1.5 border-t border-border">
+            <span className="text-[9px] font-bold px-1 py-px rounded bg-chroma-cyan/12 text-chroma-cyan border border-chroma-cyan/25 uppercase tracking-tighter mt-0.5">
               AI
             </span>
-            <span className="text-[11px] italic text-chroma-cyan/90 leading-tight">
+            <span className="text-[11px] italic text-chroma-cyan/80 leading-tight">
               {tooltipAI}
             </span>
           </span>

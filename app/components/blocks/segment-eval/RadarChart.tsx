@@ -77,7 +77,7 @@ export function RadarChart({ criteria, size = 280 }: RadarChartProps) {
           key={i}
           points={points}
           fill="none"
-          stroke="rgba(255,255,255,0.06)"
+          stroke="rgba(var(--ink-shadow),0.06)"
           strokeWidth="1"
         />
       ))}
@@ -90,7 +90,7 @@ export function RadarChart({ criteria, size = 280 }: RadarChartProps) {
           y1={cy}
           x2={a.ex}
           y2={a.ey}
-          stroke="rgba(255,255,255,0.06)"
+          stroke="rgba(var(--ink-shadow),0.06)"
           strokeWidth="1"
         />
       ))}

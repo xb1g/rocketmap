@@ -55,7 +55,7 @@ function EstimateSection({
 }) {
   if (!estimate) return null;
   return (
-    <div className="space-y-2 p-3 rounded-lg bg-white/3">
+    <div className="space-y-2 p-3 rounded-lg bg-canvas-surface">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-foreground">{label}</span>
         <div className="flex items-center gap-2">
@@ -205,7 +205,7 @@ export function TamSamSomModule({
 
           {/* Reasoning */}
           {current.reasoning && (
-            <div className="p-3 rounded-lg bg-white/3 space-y-1">
+            <div className="p-3 rounded-lg bg-canvas-surface space-y-1">
               <span className="text-[10px] text-foreground-muted uppercase tracking-wider">
                 Reasoning
               </span>

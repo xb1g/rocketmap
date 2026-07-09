@@ -111,7 +111,7 @@ function SegmentEditCard({
 
   if (readOnly) {
     return (
-      <div className="p-3 rounded-lg bg-foreground/3 border border-white/8 space-y-2.5 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
+      <div className="p-3 rounded-lg bg-canvas-surface border border-border space-y-2.5 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
         <div className="flex items-center gap-2">
           <span
             className="w-2.5 h-2.5 rounded-full shrink-0"
@@ -137,7 +137,7 @@ function SegmentEditCard({
   }
 
   return (
-    <div className="p-3 rounded-lg bg-foreground/3 border border-white/8 space-y-2.5 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
+    <div className="p-3 rounded-lg bg-canvas-surface border border-border space-y-2.5 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
       <div className="flex items-center gap-2">
         <span
           className="w-2.5 h-2.5 rounded-full shrink-0"
@@ -167,7 +167,7 @@ function SegmentEditCard({
           setDescription(e.target.value);
           debouncedUpdate({ description: e.target.value });
         }}
-        className="w-full bg-foreground/3 rounded px-2.5 py-1.5 text-xs text-foreground-muted outline-none resize-none border border-foreground/5 focus:border-white/10"
+        className="w-full bg-foreground/3 rounded px-2.5 py-1.5 text-xs text-foreground-muted outline-none resize-none border border-border focus:border-foreground/25"
         rows={2}
         placeholder="Describe this segment..."
       />
@@ -350,7 +350,7 @@ function LinkedSegmentsSection({
             value={newSegmentName}
             onChange={(e) => onSetNewName(e.target.value)}
             placeholder="Segment name..."
-            className="flex-1 bg-foreground/3 rounded px-2 py-1.5 text-xs text-foreground outline-none border border-foreground/5 focus:border-white/15"
+            className="flex-1 bg-foreground/3 rounded px-2 py-1.5 text-xs text-foreground outline-none border border-border focus:border-foreground/25"
             autoFocus
             onKeyDown={async (e) => {
               if (e.key === "Enter" && newSegmentName.trim()) {
@@ -395,7 +395,7 @@ function LinkedSegmentsSection({
 
       {/* Multi-select link picker */}
       {showLinkPicker && !readOnly && onSegmentLink && (
-        <div className="mb-2 rounded-lg bg-foreground/3 border border-white/8 overflow-hidden">
+        <div className="mb-2 rounded-lg bg-canvas-surface border border-border overflow-hidden">
           <div className="max-h-44 overflow-y-auto p-1 space-y-0.5">
             {unlinkable.length > 0 ? (
               unlinkable.map((seg) => {
@@ -406,7 +406,7 @@ function LinkedSegmentsSection({
                     onClick={() => togglePendingLink(seg.$id)}
                     className={`flex items-center gap-1.5 w-full text-left px-2 py-1.5 rounded transition-colors ${
                       isSelected
-                        ? "bg-foreground/8 border border-white/15"
+                        ? "bg-foreground/5 border border-border"
                         : "hover:bg-foreground/5 border border-transparent"
                     }`}
                   >

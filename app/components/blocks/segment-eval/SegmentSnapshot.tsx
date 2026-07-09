@@ -48,7 +48,7 @@ function ProfileInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-transparent text-xs text-foreground outline-none border-b border-white/5 pb-1 focus:border-white/20 transition-colors placeholder:text-foreground-muted/30"
+        className="w-full bg-transparent text-xs text-foreground outline-none border-b border-border pb-1 focus:border-foreground/20 transition-colors placeholder:text-foreground-subtle"
       />
     </div>
   );
@@ -151,10 +151,10 @@ export function SegmentSnapshot({
       )}
 
       {/* Segment Profile Section */}
-      <div className="border border-white/5 rounded-lg overflow-hidden">
+      <div className="border border-border rounded-lg overflow-hidden">
         <button
           onClick={() => setProfileOpen(!profileOpen)}
-          className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/3 transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-foreground/5 transition-colors"
         >
           <span className="text-[9px] font-mono uppercase tracking-wider text-foreground-muted/50 flex-1">
             Segment Profile
@@ -268,7 +268,7 @@ export function SegmentSnapshot({
 
       {/* ARPU + Revenue potential */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="px-3 py-2.5 rounded-lg bg-white/3 border border-white/5">
+        <div className="px-3 py-2.5 rounded-lg bg-canvas-surface border border-border">
           <div className="text-[9px] font-mono text-foreground-muted/50 uppercase tracking-wider mb-1">
             ARPU (Monthly)
           </div>
@@ -302,13 +302,13 @@ export function SegmentSnapshot({
           className={`w-full py-2.5 rounded-lg text-xs font-medium transition-all ${
             isScoring
               ? 'bg-chroma-indigo/10 text-chroma-indigo/60 glow-ai'
-              : 'bg-chroma-indigo/20 text-chroma-indigo hover:bg-chroma-indigo/30'
+              : 'bg-chroma-indigo/10 text-chroma-indigo hover:bg-chroma-indigo/20'
           }`}
         >
           {isScoring ? 'AI Scoring…' : 'Score This Segment'}
         </button>
       ) : (
-        <div className="px-3 py-2.5 rounded-lg bg-white/2 border border-white/5 text-[11px] text-foreground-muted/50 leading-snug">
+        <div className="px-3 py-2.5 rounded-lg bg-canvas-surface border border-border text-[11px] text-foreground-muted/50 leading-snug">
           Fill in {missingFields.join(', ')} to enable scoring.
         </div>
       ))}
