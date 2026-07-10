@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { MarketView } from '@/app/components/canvas/MarketView';
 
 describe('MarketView', () => {
-  it('renders JTBD as a first-class market panel', () => {
+  it('renders market sizing and beachhead panels without JTBD content', () => {
     render(
       <MarketView
         canvasId="canvas-1"
@@ -17,7 +17,9 @@ describe('MarketView', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: 'JTBD' })).toBeInTheDocument();
-    expect(screen.getByText('Generate JTBD with AI')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Market' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'TAM / SAM / SOM' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Segment decision' })).toBeInTheDocument();
+    expect(screen.queryByText('Generate JTBD with AI')).not.toBeInTheDocument();
   });
 });

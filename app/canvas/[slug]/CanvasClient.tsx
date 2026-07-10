@@ -46,6 +46,7 @@ import { MobileFocusSheet } from "@/app/components/canvas/MobileFocusSheet";
 import { AnalysisView } from "@/app/components/canvas/AnalysisView";
 import { AssumptionsView } from "@/app/components/canvas/AssumptionsView";
 import { MarketView } from "@/app/components/canvas/MarketView";
+import { JTBDView } from "@/app/components/canvas/JTBDView";
 import { DebugPanel } from "@/app/components/canvas/DebugPanel";
 import { ChatBar } from "@/app/components/ai/ChatBar";
 import { BlockChatSection } from "@/app/components/ai/BlockChatSection";
@@ -1542,7 +1543,7 @@ export function CanvasClient({
       )}
 
       {activeTab === "jtbd" && (
-        <MarketView
+        <JTBDView
           canvasId={canvasId}
           customerSegmentsBlock={blocks.get("customer_segments")}
           segments={segmentList}
