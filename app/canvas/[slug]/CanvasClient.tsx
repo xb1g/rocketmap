@@ -45,6 +45,7 @@ import { MobileCanvasCarousel } from "@/app/components/canvas/MobileCanvasCarous
 import { MobileFocusSheet } from "@/app/components/canvas/MobileFocusSheet";
 import { AnalysisView } from "@/app/components/canvas/AnalysisView";
 import { AssumptionsView } from "@/app/components/canvas/AssumptionsView";
+import { MarketView } from "@/app/components/canvas/MarketView";
 import { DebugPanel } from "@/app/components/canvas/DebugPanel";
 import { ChatBar } from "@/app/components/ai/ChatBar";
 import { BlockChatSection } from "@/app/components/ai/BlockChatSection";
@@ -638,6 +639,7 @@ export function CanvasClient({
               ],
             },
           ],
+          persistAssistant: false,
         }),
       });
 
@@ -1515,6 +1517,48 @@ export function CanvasClient({
           consistencyData={consistencyData}
           isCheckingConsistency={isCheckingConsistency}
           onRunConsistencyCheck={handleConsistencyCheck}
+        />
+      )}
+
+      {activeTab === "market" && (
+        <MarketView
+          canvasId={canvasId}
+          customerSegmentsBlock={blocks.get("customer_segments")}
+          segments={segmentList}
+          allBlocksFilled={allBlocksFilled}
+          filledCount={filledCount}
+          readOnly={readOnly}
+          onDataChange={(data) =>
+            handleDeepDiveDataChange("customer_segments", data)
+          }
+          onOpenCustomerSegments={() => {
+            if (isMobile) {
+              setMobileSheetBlock("customer_segments");
+            } else {
+              setExpandedBlock("customer_segments");
+            }
+          }}
+        />
+      )}
+
+      {activeTab === "jtbd" && (
+        <MarketView
+          canvasId={canvasId}
+          customerSegmentsBlock={blocks.get("customer_segments")}
+          segments={segmentList}
+          allBlocksFilled={allBlocksFilled}
+          filledCount={filledCount}
+          readOnly={readOnly}
+          onDataChange={(data) =>
+            handleDeepDiveDataChange("customer_segments", data)
+          }
+          onOpenCustomerSegments={() => {
+            if (isMobile) {
+              setMobileSheetBlock("customer_segments");
+            } else {
+              setExpandedBlock("customer_segments");
+            }
+          }}
         />
       )}
 

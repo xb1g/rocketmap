@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { test, expect } from 'vitest'
 import { CanvasTabs } from '@/app/components/canvas/CanvasTabs'
 
-test('renders assumptions tab', () => {
+test('renders market, JTBD, and assumptions tabs', () => {
   render(
     <CanvasTabs
       activeTab="canvas"
@@ -13,5 +13,7 @@ test('renders assumptions tab', () => {
       onExplainViability={() => {}}
     />
   )
+  expect(screen.getByText(/market/i)).toBeInTheDocument()
+  expect(screen.getByText('JTBD')).toBeInTheDocument()
   expect(screen.getByText(/assumptions/i)).toBeInTheDocument()
 })

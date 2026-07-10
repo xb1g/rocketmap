@@ -7,7 +7,9 @@ import type {
   Segment,
 } from "@/lib/types/canvas";
 import { TamSamSomModule } from "@/app/components/blocks/market-research/TamSamSomModule";
+import { JTBDModule } from "@/app/components/blocks/jtbd/JTBDModule";
 import { InlineSegmentEval } from "@/app/components/blocks/segment-eval/InlineSegmentEval";
+import { normalizeJTBDData } from "@/lib/zones/phase1-jtbd";
 
 interface MarketViewProps {
   canvasId: string;
@@ -56,6 +58,7 @@ export function MarketView({
     (segment) => segment.$id === primaryBeachhead?.segmentId,
   );
   const [generatingTam, setGeneratingTam] = useState(false);
+  const [generatingJtbd, setGeneratingJtbd] = useState(false);
 
   const handleGenerateTam = async (inputs: Record<string, string>) => {
     if (readOnly || !allBlocksFilled || generatingTam) return;
@@ -83,6 +86,41 @@ export function MarketView({
   const handleSaveTam = async (tamSamSom: NonNullable<MarketResearchData["tamSamSom"]>) => {
     if (readOnly) return;
     const updated = { ...data, tamSamSom };
+    onDataChange(updated);
+
+    await fetch(`/api/canvas/${canvasId}/blocks/customer_segments/deep-dive`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deepDiveJson: JSON.stringify(updated) }),
+    });
+  };
+
+  const handleGenerateJtbd = async () => {
+    if (readOnly || !allBlocksFilled || generatingJtbd) return;
+    setGeneratingJtbd(true);
+
+    try {
+      const res = await fetch(
+        `/api/canvas/${canvasId}/blocks/customer_segments/deep-dive`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ module: "jtbd", inputs: {} }),
+        },
+      );
+
+      if (res.ok) {
+        const json = await res.json();
+        onDataChange(json.updatedDeepDive as MarketResearchData);
+      }
+    } finally {
+      setGeneratingJtbd(false);
+    }
+  };
+
+  const handleSaveJtbd = async (jtbd: NonNullable<MarketResearchData["jtbd"]>) => {
+    if (readOnly) return;
+    const updated = { ...data, jtbd };
     onDataChange(updated);
 
     await fetch(`/api/canvas/${canvasId}/blocks/customer_segments/deep-dive`, {
@@ -125,6 +163,34 @@ export function MarketView({
         )}
 
         <div className="market-view-grid">
+          <section className="market-view-panel">
+            <div className="market-view-panel-header">
+              <div>
+                <div className="market-view-kicker">Pain + JTBD</div>
+                <h3>JTBD</h3>
+              </div>
+              <button
+                type="button"
+                className="market-view-link"
+                onClick={onOpenCustomerSegments}
+              >
+                Open customer block
+              </button>
+            </div>
+            <JTBDModule
+              data={normalizeJTBDData(data.jtbd)}
+              segments={linkedSegments.map((segment) => ({
+                id: segment.$id ?? String(segment.id ?? segment.name),
+                $id: segment.$id,
+                name: segment.name,
+              }))}
+              isGenerating={generatingJtbd}
+              aiEnabled={allBlocksFilled && !readOnly}
+              onGenerate={handleGenerateJtbd}
+              onSave={handleSaveJtbd}
+            />
+          </section>
+
           <section className="market-view-panel">
             <div className="market-view-panel-header">
               <div>

@@ -15,6 +15,7 @@ export type BlockState = "calm" | "healthy" | "warning" | "critical" | "ai";
 export type CanvasTab =
   | "canvas"
   | "market"
+  | "jtbd"
   | "analysis"
   | "assumptions"
   | "economics"

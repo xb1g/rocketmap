@@ -29,7 +29,11 @@ export async function POST(request: Request, context: RouteContext) {
       return createQuotaExceededResponse(quota);
     }
     const { canvasId } = await context.params;
-    const { messages, chatKey } = await request.json();
+    const { messages, chatKey, persistAssistant = true } = await request.json() as {
+      messages: Parameters<typeof convertToModelMessages>[0];
+      chatKey?: string;
+      persistAssistant?: boolean;
+    };
 
     const blocks = await getCanvasBlocks(canvasId, user.$id);
 
@@ -80,36 +84,38 @@ export async function POST(request: Request, context: RouteContext) {
       onUsage: (usage) => recordAiUsage(user.$id, 'canvas-chat', usage, { canvasId, model: modelId }),
     });
 
-    // Save assistant response (text + tool results with args) after stream completes
-    Promise.resolve(result.steps).then((steps) => {
-      const parts: Array<Record<string, unknown>> = [];
-      for (const step of steps) {
-        if (step.text) parts.push({ type: 'text', text: step.text });
-        // Build a map of toolCallId → args from tool calls
-        const argsMap = new Map<string, unknown>();
-        for (const tc of step.toolCalls) {
-          const call = tc as unknown as { toolCallId: string; args: unknown };
-          argsMap.set(call.toolCallId, call.args);
+    if (persistAssistant) {
+      // Save assistant response (text + tool results with args) after stream completes
+      Promise.resolve(result.steps).then((steps) => {
+        const parts: Array<Record<string, unknown>> = [];
+        for (const step of steps) {
+          if (step.text) parts.push({ type: 'text', text: step.text });
+          // Build a map of toolCallId → args from tool calls
+          const argsMap = new Map<string, unknown>();
+          for (const tc of step.toolCalls) {
+            const call = tc as unknown as { toolCallId: string; args: unknown };
+            argsMap.set(call.toolCallId, call.args);
+          }
+          for (const tc of step.toolResults) {
+            const tr = tc as unknown as { toolName: string; toolCallId: string; result: unknown };
+            parts.push({
+              type: 'tool-result',
+              toolName: tr.toolName,
+              toolCallId: tr.toolCallId,
+              args: argsMap.get(tr.toolCallId) ?? {},
+              result: tr.result,
+            });
+          }
         }
-        for (const tc of step.toolResults) {
-          const tr = tc as unknown as { toolName: string; toolCallId: string; result: unknown };
-          parts.push({
-            type: 'tool-result',
-            toolName: tr.toolName,
-            toolCallId: tr.toolCallId,
-            args: argsMap.get(tr.toolCallId) ?? {},
-            result: tr.result,
-          });
+        if (parts.length > 0) {
+          saveChatMessage(canvasId, chatKey || 'general', user.$id, {
+            messageId: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: JSON.stringify({ parts }),
+          }).catch((err) => console.error('[chat-persist] Failed to save assistant message:', err));
         }
-      }
-      if (parts.length > 0) {
-        saveChatMessage(canvasId, chatKey || 'general', user.$id, {
-          messageId: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: JSON.stringify({ parts }),
-        }).catch((err) => console.error('[chat-persist] Failed to save assistant message:', err));
-      }
-    }).catch(() => {});
+      }).catch(() => {});
+    }
 
     return result.toUIMessageStreamResponse();
   } catch (error: unknown) {
