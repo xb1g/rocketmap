@@ -38,8 +38,8 @@ const ECONOMICS_TABS: { key: DeepDiveModule; label: string }[] = [
 
 const BLOCK_MODULE_TABS: Partial<Record<BlockType, { key: DeepDiveModule; label: string }[]>> = {
   customer_segments: [
-    ...MARKET_RESEARCH_TABS,
     { key: 'jtbd', label: 'JTBD' },
+    ...MARKET_RESEARCH_TABS,
   ],
   value_prop: [
     { key: 'jtbd', label: 'JTBD' },
