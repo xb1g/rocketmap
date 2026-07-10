@@ -1698,6 +1698,7 @@ export function CanvasClient({
           blockType={deepDiveBlock}
           canvasId={canvasId}
           deepDiveData={deepDiveBlockData.deepDiveData}
+          segments={deepDiveBlockData.linkedSegments ?? []}
           allBlocksFilled={allBlocksFilled}
           filledCount={filledCount}
           onDataChange={(data) => handleDeepDiveDataChange(deepDiveBlock, data)}

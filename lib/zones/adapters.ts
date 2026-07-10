@@ -2,10 +2,18 @@ import type {
   BlockData,
   BlockType,
   EconomicsAlert,
+  JTBDData,
+  JTBDStatement,
   MarketResearchData,
+  ProductScopeRow,
+  RevenueModelEntry,
+  RevenuePricingData,
+  RevenuePricingSegment,
   SegmentEconomics,
   SegmentScorecard,
   UnitEconomicsData,
+  ValueProductData,
+  WtpTestDraft,
 } from '@/lib/types/canvas';
 import type { MetricDefinition, ZoneOutput, ZoneReadiness } from '@/lib/types/zones';
 import { ZONE_DEFINITIONS } from '@/lib/zones/chain';
@@ -42,6 +50,13 @@ function currency(value: number | null | undefined): string | null {
 
 function asArray<T>(value: unknown): T[] {
   return Array.isArray(value) ? value as T[] : [];
+}
+
+function phaseData<T>(block: BlockData | undefined, key: string): T | null {
+  const data = block?.deepDiveData as unknown;
+  if (!data || typeof data !== 'object') return null;
+  const value = (data as Record<string, unknown>)[key];
+  return value && typeof value === 'object' ? value as T : null;
 }
 
 function newerUnitEconomics(
@@ -131,12 +146,108 @@ function unitEconomicsMetrics(segments: SegmentEconomics[]): MetricDefinition[] 
   ]);
 }
 
+function jtbdPainTypes(statement: JTBDStatement): string[] {
+  return [
+    ...asArray<string>(statement.painTypes),
+    ...asArray<{ type?: string }>(statement.pains)
+      .map((pain) => pain.type)
+      .filter((type): type is string => Boolean(type)),
+  ];
+}
+
+function productScopeRows(data: ValueProductData | null): ProductScopeRow[] {
+  return [
+    ...asArray<ProductScopeRow>(data?.productScope),
+    ...asArray<ProductScopeRow>(data?.productScopeRows),
+  ];
+}
+
+function revenueModels(data: RevenuePricingData | null): RevenueModelEntry[] {
+  const segmentModels = asArray<RevenuePricingSegment>(data?.segments).map((segment) => ({
+    id: segment.segmentId,
+    segmentId: segment.segmentId,
+    model: segment.revenueModel,
+    paymentMoment: segment.paymentMoment,
+    price: segment.pricePoint,
+  }));
+  return [...asArray<RevenueModelEntry>(data?.models), ...segmentModels];
+}
+
+function revenueWtpTests(data: RevenuePricingData | null): WtpTestDraft[] {
+  const segmentTests = asArray<RevenuePricingSegment>(data?.segments).map((segment) => ({
+    id: segment.segmentId,
+    segmentId: segment.segmentId,
+    testType: segment.wtpTestPreference,
+    description: `Run a ${segment.wtpTestPreference.replace('_', ' ')} test for ${segment.segmentName}`,
+    successCriteria: `${segment.segmentName} makes a real payment commitment`,
+    successThreshold: segment.pricePoint
+      ? `Paid commitment at ${segment.pricePoint}`
+      : 'Qualified paid commitment',
+  }));
+  return [...asArray<WtpTestDraft>(data?.wtpTests), ...segmentTests];
+}
+
+function jtbdMetrics(data: JTBDData | null): MetricDefinition[] {
+  return asArray<JTBDStatement>(data?.statements).map((statement) => ({
+    id: `jtbd-confidence-${statement.id}`,
+    name: `JTBD confidence: ${statement.role}`,
+    targetThreshold: 'High confidence from direct evidence before downstream value/product work',
+    currentValue: statement.confidence ?? 'low',
+    source: 'JTBD',
+  }));
+}
+
+function jtbdAssumptions(data: JTBDData | null): string[] {
+  return asArray<JTBDStatement>(data?.statements).map((statement) => {
+    const segment = statement.segmentId ?? 'selected segment';
+    return `${statement.role} job for ${segment}: ${statement.job}`;
+  });
+}
+
+function valueProductMetrics(data: ValueProductData | null): MetricDefinition[] {
+  return productScopeRows(data).map((row) => ({
+    id: `product-proof-${row.id}`,
+    name: `Proof metric: ${row.feature}`,
+    targetThreshold: row.proofMetric,
+    linkedAssumption: `${row.feature} will produce ${row.outcome}`,
+    source: 'Value/Product Scope',
+  }));
+}
+
+function valueProductAssumptions(data: ValueProductData | null): string[] {
+  return productScopeRows(data).map((row) => (
+    `${row.feature} will produce ${row.outcome}`
+  ));
+}
+
+function revenuePricingMetrics(data: RevenuePricingData | null): MetricDefinition[] {
+  return revenueWtpTests(data).map((test) => ({
+    id: `wtp-threshold-${test.id}`,
+    name: `WTP test threshold: ${test.testType}`,
+    targetThreshold: test.successThreshold,
+    linkedAssumption: test.successCriteria,
+    source: 'Revenue/Pricing WTP',
+  }));
+}
+
+function revenuePricingAssumptions(data: RevenuePricingData | null): string[] {
+  return revenueModels(data).map((model) => {
+    const segment = model.segmentId ?? 'selected segment';
+    const price = model.price ?? model.model;
+    return `${segment} will pay ${price} at moment: ${model.paymentMoment}`;
+  });
+}
+
 export function buildZoneOutputs(blocks: BlockData[]): ZoneOutput[] {
   const byType = blockMap(blocks);
   const customerSegments = byType.get('customer_segments');
+  const valueProp = byType.get('value_prop');
   const revenueStreams = byType.get('revenue_streams');
   const costStructure = byType.get('cost_structure');
   const marketData = customerSegments?.deepDiveData ?? null;
+  const jtbd = phaseData<JTBDData>(customerSegments, 'jtbd') ?? phaseData<JTBDData>(valueProp, 'jtbd');
+  const valueProduct = phaseData<ValueProductData>(valueProp, 'valueProduct');
+  const revenuePricing = phaseData<RevenuePricingData>(revenueStreams, 'revenuePricing');
   const unitEconomics = newerUnitEconomics(
     revenueStreams?.deepDiveData?.unitEconomics,
     costStructure?.deepDiveData?.unitEconomics,
@@ -169,6 +280,39 @@ export function buildZoneOutputs(blocks: BlockData[]): ZoneOutput[] {
       assumptions.push(...marketAssumptions(marketData));
     }
 
+    if (definition.id === 'pain_jtbd' && jtbd) {
+      const statements = asArray<JTBDStatement>(jtbd.statements);
+      structuredData.jtbd = {
+        statementCount: statements.length,
+        roles: Array.from(new Set(statements.map((statement) => statement.role))),
+        painTypes: Array.from(new Set(statements.flatMap(jtbdPainTypes))),
+      };
+      metrics.push(...jtbdMetrics(jtbd));
+      assumptions.push(...jtbdAssumptions(jtbd));
+    }
+
+    if (definition.id === 'value_product' && valueProduct) {
+      const productScope = productScopeRows(valueProduct);
+      structuredData.valueProduct = {
+        positioning: valueProduct.positioning ?? null,
+        productScopeCount: productScope.length,
+      };
+      metrics.push(...valueProductMetrics(valueProduct));
+      assumptions.push(...valueProductAssumptions(valueProduct));
+    }
+
+    if (definition.id === 'revenue_pricing' && revenuePricing) {
+      const models = revenueModels(revenuePricing);
+      const wtpTests = revenueWtpTests(revenuePricing);
+      structuredData.revenuePricing = {
+        modelCount: models.length,
+        wtpTestCount: wtpTests.length,
+        models: models.map((model) => model.model),
+      };
+      metrics.push(...revenuePricingMetrics(revenuePricing));
+      assumptions.push(...revenuePricingAssumptions(revenuePricing));
+    }
+
     if (definition.id === 'unit_economics' && unitEconomics) {
       const segments = asArray<SegmentEconomics>(unitEconomics.segments);
       const alerts = asArray<EconomicsAlert>(unitEconomics.alerts);
@@ -187,14 +331,25 @@ export function buildZoneOutputs(blocks: BlockData[]): ZoneOutput[] {
       ...sourceTexts,
       definition.id === 'customer_market' ? marketData?.tamSamSom : null,
       definition.id === 'customer_market' ? asArray(marketData?.segmentation?.segments) : null,
+      definition.id === 'pain_jtbd' ? asArray(jtbd?.statements) : null,
+      definition.id === 'value_product' ? productScopeRows(valueProduct) : null,
+      definition.id === 'revenue_pricing' ? revenueModels(revenuePricing) : null,
+      definition.id === 'revenue_pricing' ? revenueWtpTests(revenuePricing) : null,
       definition.id === 'unit_economics' ? asArray(unitEconomics?.segments) : null,
     ];
+    const moduleReady =
+      (definition.id === 'pain_jtbd' && asArray(jtbd?.statements).length > 0) ||
+      (definition.id === 'value_product' && productScopeRows(valueProduct).length > 0) ||
+      (definition.id === 'revenue_pricing' && (
+        revenueModels(revenuePricing).length > 0 ||
+        revenueWtpTests(revenuePricing).length > 0
+      ));
 
     return {
       zone: definition.id,
       label: definition.label,
       sourceBlocks: definition.sourceBlocks,
-      readiness: readinessFor(readinessInputs),
+      readiness: moduleReady ? 'ready' : readinessFor(readinessInputs),
       structuredData,
       assumptions,
       metrics,

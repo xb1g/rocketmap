@@ -1,15 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import type { BlockType, DeepDiveModule, MarketResearchData, UnitEconomicsData } from '@/lib/types/canvas';
+import type { BlockType, DeepDiveModule, MarketResearchData, Segment, UnitEconomicsData } from '@/lib/types/canvas';
 import { BLOCK_DEFINITIONS } from '@/app/components/canvas/constants';
 import { MarketResearchView } from './market-research/MarketResearchView';
 import { EconomicsView } from './unit-economics/EconomicsView';
+import { JTBDModule } from './jtbd/JTBDModule';
+import { ValueProductView } from './value-product/ValueProductView';
+import { RevenuePricingView } from './revenue-pricing/RevenuePricingView';
+import { normalizeJTBDData } from '@/lib/zones/phase1-jtbd';
+import type { ValueProductData as ViewValueProductData } from '@/lib/zones/phase1-value-product';
+import type { RevenuePricingData as ViewRevenuePricingData } from '@/lib/zones/phase1-revenue-pricing';
 
 interface DeepDiveOverlayProps {
   blockType: BlockType;
   canvasId: string;
   deepDiveData: MarketResearchData | null;
+  segments?: Segment[];
   allBlocksFilled?: boolean;
   filledCount?: number;
   onDataChange: (data: MarketResearchData) => void;
@@ -29,32 +36,110 @@ const ECONOMICS_TABS: { key: DeepDiveModule; label: string }[] = [
   { key: 'sensitivity_analysis', label: 'Sensitivity' },
 ];
 
-export function DeepDiveOverlay({
-  blockType,
-  canvasId,
-  deepDiveData,
-  allBlocksFilled,
-  filledCount,
-  onDataChange,
-  onClose,
-}: DeepDiveOverlayProps) {
-  const isEconomicsBlock = blockType === 'revenue_streams' || blockType === 'cost_structure';
-  const moduleTabs = isEconomicsBlock ? ECONOMICS_TABS : MARKET_RESEARCH_TABS;
-  const [activeModule, setActiveModule] = useState<DeepDiveModule>(
-    isEconomicsBlock ? 'unit_economics' : 'tam_sam_som'
-  );
-  const [generatingModule, setGeneratingModule] = useState<DeepDiveModule | null>(null);
+const BLOCK_MODULE_TABS: Partial<Record<BlockType, { key: DeepDiveModule; label: string }[]>> = {
+  customer_segments: [
+    ...MARKET_RESEARCH_TABS,
+    { key: 'jtbd', label: 'JTBD' },
+  ],
+  value_prop: [
+    { key: 'jtbd', label: 'JTBD' },
+    { key: 'value_product', label: 'Value / Product' },
+  ],
+  revenue_streams: [
+    { key: 'revenue_pricing', label: 'Revenue / Pricing' },
+    ...ECONOMICS_TABS,
+  ],
+  cost_structure: ECONOMICS_TABS,
+};
 
-  const def = BLOCK_DEFINITIONS.find((d) => d.type === blockType);
-  const label = def?.bmcLabel ?? blockType;
-  const overlayTitle = isEconomicsBlock ? 'Unit Economics' : 'Market Research';
+const MARKET_RESEARCH_MODULES = new Set<DeepDiveModule>(
+  MARKET_RESEARCH_TABS.map((tab) => tab.key),
+);
 
-  const data: MarketResearchData = deepDiveData ?? {
+function emptyDeepDiveData(): MarketResearchData {
+  return {
     tamSamSom: null,
     segmentation: null,
     personas: null,
     marketValidation: null,
     competitiveLandscape: null,
+  };
+}
+
+function valueProductViewData(data: MarketResearchData): ViewValueProductData {
+  return {
+    roleMappings: data.valueProduct?.roleMappings ?? [],
+    positioning: data.valueProduct?.positioning ?? {
+      customer: '',
+      pain: '',
+      outcome: '',
+      mechanism: '',
+      alternative: '',
+    },
+    productScopeRows: data.valueProduct?.productScopeRows ?? data.valueProduct?.productScope ?? [],
+  };
+}
+
+export function DeepDiveOverlay({
+  blockType,
+  canvasId,
+  deepDiveData,
+  segments = [],
+  allBlocksFilled,
+  filledCount,
+  onDataChange,
+  onClose,
+}: DeepDiveOverlayProps) {
+  const moduleTabs = BLOCK_MODULE_TABS[blockType] ?? MARKET_RESEARCH_TABS;
+  const [activeModule, setActiveModule] = useState<DeepDiveModule>(
+    moduleTabs[0]?.key ?? 'tam_sam_som'
+  );
+  const [generatingModule, setGeneratingModule] = useState<DeepDiveModule | null>(null);
+
+  const def = BLOCK_DEFINITIONS.find((d) => d.type === blockType);
+  const label = def?.bmcLabel ?? blockType;
+  const overlayTitle = activeModule === 'revenue_pricing'
+    ? 'Revenue / Pricing'
+    : activeModule === 'value_product'
+      ? 'Value / Product'
+      : activeModule === 'jtbd'
+        ? 'Pain + JTBD'
+        : activeModule === 'unit_economics' || activeModule === 'sensitivity_analysis'
+          ? 'Unit Economics'
+          : 'Market Research';
+
+  const data: MarketResearchData = deepDiveData ?? emptyDeepDiveData();
+  const segmentOptions = segments.map((segment) => ({
+    id: segment.$id ?? String(segment.id ?? segment.name),
+    $id: segment.$id,
+    name: segment.name,
+  }));
+
+  const handleSave = async (updated: MarketResearchData) => {
+    onDataChange(updated);
+    await fetch(`/api/canvas/${canvasId}/blocks/${blockType}/deep-dive`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deepDiveJson: JSON.stringify(updated) }),
+    });
+  };
+
+  const handleGenerate = async (module: DeepDiveModule, inputs?: Record<string, string>) => {
+    if (!allBlocksFilled) return;
+    setGeneratingModule(module);
+    try {
+      const res = await fetch(`/api/canvas/${canvasId}/blocks/${blockType}/deep-dive`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ module, inputs: inputs ?? {} }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        onDataChange(json.updatedDeepDive);
+      }
+    } finally {
+      setGeneratingModule(null);
+    }
   };
 
   return (
@@ -108,7 +193,7 @@ export function DeepDiveOverlay({
               </div>
             </div>
           )}
-          {blockType === 'customer_segments' && (
+          {blockType === 'customer_segments' && MARKET_RESEARCH_MODULES.has(activeModule) && (
             <MarketResearchView
               activeModule={activeModule}
               data={data}
@@ -120,14 +205,75 @@ export function DeepDiveOverlay({
               onDataChange={onDataChange}
             />
           )}
-          {(blockType === 'revenue_streams' || blockType === 'cost_structure') && (
+          {activeModule === 'jtbd' && (
+            <JTBDModule
+              data={normalizeJTBDData(data.jtbd)}
+              segments={segmentOptions}
+              isGenerating={generatingModule === 'jtbd'}
+              aiEnabled={allBlocksFilled ?? false}
+              onGenerate={() => handleGenerate('jtbd')}
+              onSave={(jtbd) => handleSave({ ...data, jtbd })}
+            />
+          )}
+          {activeModule === 'value_product' && (
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={() => handleGenerate('value_product')}
+                disabled={generatingModule === 'value_product' || !allBlocksFilled}
+                className={`ui-btn ui-btn-sm ui-btn-block ${
+                  generatingModule === 'value_product'
+                    ? 'ui-btn-secondary glow-ai text-state-ai'
+                    : !allBlocksFilled
+                      ? 'ui-btn-ghost text-foreground-muted/40 cursor-not-allowed'
+                      : 'ui-btn-secondary text-foreground-muted hover:text-foreground'
+                }`}
+              >
+                {generatingModule === 'value_product'
+                  ? 'Generating Value / Product...'
+                  : !allBlocksFilled
+                    ? 'Fill all blocks to unlock AI'
+                    : 'Generate Value / Product'}
+              </button>
+              <ValueProductView data={valueProductViewData(data)} />
+            </div>
+          )}
+          {activeModule === 'revenue_pricing' && (
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={() => handleGenerate('revenue_pricing')}
+                disabled={generatingModule === 'revenue_pricing' || !allBlocksFilled}
+                className={`ui-btn ui-btn-sm ui-btn-block ${
+                  generatingModule === 'revenue_pricing'
+                    ? 'ui-btn-secondary glow-ai text-state-ai'
+                    : !allBlocksFilled
+                      ? 'ui-btn-ghost text-foreground-muted/40 cursor-not-allowed'
+                      : 'ui-btn-secondary text-foreground-muted hover:text-foreground'
+                }`}
+              >
+                {generatingModule === 'revenue_pricing'
+                  ? 'Generating Revenue / Pricing...'
+                  : !allBlocksFilled
+                    ? 'Fill all blocks to unlock AI'
+                    : 'Generate Revenue / Pricing'}
+              </button>
+              <RevenuePricingView
+                segments={segments}
+                initialData={(data.revenuePricing ?? null) as ViewRevenuePricingData | null}
+                onDataChange={(revenuePricing) => handleSave({ ...data, revenuePricing })}
+              />
+            </div>
+          )}
+          {(blockType === 'revenue_streams' || blockType === 'cost_structure') &&
+            (activeModule === 'unit_economics' || activeModule === 'sensitivity_analysis') && (
             <EconomicsView
               activeModule={activeModule === 'sensitivity_analysis' ? 'sensitivity_analysis' : 'unit_economics'}
-              economicsData={(deepDiveData as unknown as UnitEconomicsData) ?? null}
+              economicsData={data.unitEconomics ?? null}
               canvasId={canvasId}
               blockType={blockType}
               aiEnabled={allBlocksFilled ?? false}
-              onDataChange={(d) => onDataChange(d as unknown as MarketResearchData)}
+              onDataChange={(unitEconomics: UnitEconomicsData) => handleSave({ ...data, unitEconomics })}
             />
           )}
         </div>

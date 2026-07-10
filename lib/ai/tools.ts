@@ -201,6 +201,116 @@ export const analyzeCompetitors = tool({
   execute: async (params) => params,
 });
 
+// ─── Phase 1 BM-OS Tools ────────────────────────────────────────────────────
+
+const customerRoleSchema = z.enum([
+  'user',
+  'buyer',
+  'decision_maker',
+  'influencer',
+  'beneficiary',
+  'economic_customer',
+]);
+
+const jtbdPainTypeSchema = z.enum([
+  'functional',
+  'emotional',
+  'social',
+  'economic',
+  'status',
+]);
+
+const revenueModelSchema = z.enum([
+  'one_time',
+  'license',
+  'rev_share',
+  'saas',
+  'sponsorship',
+]);
+
+const wtpTestSchema = z.enum(['reserve', 'deposit', 'paid_pilot']);
+
+export const generateJTBD = tool({
+  description: 'Generate structured jobs-to-be-done statements, pain types, and customer role splits for the selected customer/value context.',
+  inputSchema: z.object({
+    statements: z.array(z.object({
+      id: z.string().describe('Stable identifier, e.g. jtbd-1'),
+      segmentId: z.string().optional().describe('Segment id if available'),
+      role: customerRoleSchema,
+      situation: z.string().describe('The triggering situation: When ...'),
+      job: z.string().describe('The progress sought: I want ...'),
+      outcome: z.string().describe('The desired outcome: so I can ...'),
+      pains: z.array(z.object({
+        id: z.string(),
+        type: jtbdPainTypeSchema,
+        description: z.string(),
+        intensity: z.number().min(1).max(5).optional(),
+        evidence: z.string().optional(),
+      })).describe('Functional/emotional/social/economic/status pains behind the job'),
+      priority: z.enum(['low', 'medium', 'high']),
+      evidence: z.string().optional(),
+      confidence: z.enum(['low', 'medium', 'high']).optional(),
+    })).min(1),
+    roleSplits: z.array(z.object({
+      segmentId: z.string().optional(),
+      user: z.string(),
+      buyer: z.string(),
+      decision_maker: z.string(),
+      influencer: z.string(),
+      beneficiary: z.string(),
+      economic_customer: z.string(),
+    })).optional(),
+    notes: z.string().optional(),
+  }),
+  execute: async (params) => params,
+});
+
+export const mapValueProduct = tool({
+  description: 'Map customer roles and pains to a positioning statement and pain -> outcome -> feature -> proof metric product scope.',
+  inputSchema: z.object({
+    roleMappings: z.array(z.object({
+      id: z.string(),
+      role: z.string(),
+      customer: z.string(),
+      pain: z.string(),
+      desiredOutcome: z.string(),
+      valuePromise: z.string(),
+    })).describe('Per customer-role value mapping'),
+    positioning: z.object({
+      customer: z.string(),
+      pain: z.string(),
+      outcome: z.string(),
+      mechanism: z.string(),
+      alternative: z.string(),
+    }),
+    productScopeRows: z.array(z.object({
+      id: z.string(),
+      pain: z.string(),
+      outcome: z.string(),
+      feature: z.string(),
+      proofMetric: z.string().describe('A measurable proof metric or threshold'),
+    })).min(1),
+    notes: z.string().optional(),
+  }),
+  execute: async (params) => params,
+});
+
+export const designRevenuePricing = tool({
+  description: 'Design per-segment revenue model, payment moment, price point, and willingness-to-pay test preference.',
+  inputSchema: z.object({
+    segments: z.array(z.object({
+      segmentId: z.string(),
+      segmentName: z.string(),
+      revenueModel: revenueModelSchema,
+      paymentMoment: z.string().describe('What moment creates enough value that this segment pays now'),
+      pricePoint: z.string().optional(),
+      wtpTestPreference: wtpTestSchema.describe('Use paid commitment tests, not would-you-pay surveys'),
+    })).min(1),
+    notes: z.string().optional(),
+  }),
+  execute: async (params) => params,
+});
+
 // ─── Segment Evaluation Tools ────────────────────────────────────────────────
 
 const decisionCriterionSchema = z.object({
@@ -639,6 +749,9 @@ const allTools: Record<string, ReturnType<typeof tool<any, any>>> = {
   generatePersonas,
   validateMarketSize,
   analyzeCompetitors,
+  generateJTBD,
+  mapValueProduct,
+  designRevenuePricing,
   scoreSegment,
   compareSegments,
   suggestSegmentProfile,

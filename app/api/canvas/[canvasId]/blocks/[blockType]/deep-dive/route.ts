@@ -31,6 +31,9 @@ const VALID_MODULES: DeepDiveModule[] = [
   'segment_scoring',
   'segment_comparison',
   'segment_profile',
+  'jtbd',
+  'value_product',
+  'revenue_pricing',
   'unit_economics',
   'sensitivity_analysis',
 ];
@@ -64,7 +67,13 @@ export async function POST(request: Request, context: RouteContext) {
 
     // Add searchWeb for modules that need real-world market data
     const toolNames = [toolName];
-    const searchModules: DeepDiveModule[] = ['tam_sam_som', 'market_validation', 'competitive_landscape'];
+    const searchModules: DeepDiveModule[] = [
+      'tam_sam_som',
+      'market_validation',
+      'competitive_landscape',
+      'value_product',
+      'revenue_pricing',
+    ];
     if (searchModules.includes(module)) {
       toolNames.push('searchWeb');
     }
@@ -123,6 +132,12 @@ export async function POST(request: Request, context: RouteContext) {
       userMessage = `Estimate unit economics for all customer segments. Use the estimateUnitEconomics tool to return your structured analysis with ARPU, CAC, LTV, gross margin, payback period, and churn rate per segment. Flag any impossible economics (CAC > LTV, negative margins). Monthly burn: ${inputs?.monthlyBurn || 'not provided'}. Block content for context: "${content || '(empty)'}"`;
     } else if (module === 'sensitivity_analysis') {
       userMessage = `Run sensitivity analysis: What happens if ${inputs?.parameter || 'churn_rate'} changes by ${inputs?.deltaPct || '20'}%? Use the runSensitivityAnalysis tool to return your structured analysis. Block content for context: "${content || '(empty)'}"`;
+    } else if (module === 'jtbd') {
+      userMessage = `Generate structured jobs-to-be-done, customer role split, and pain types for the "${blockType}" block. Use the generateJTBD tool. Current content: "${content || '(empty)'}".`;
+    } else if (module === 'value_product') {
+      userMessage = `Map the value proposition into per-role value promises, positioning, and pain -> outcome -> feature -> proof metric rows. Use the mapValueProduct tool. Current content: "${content || '(empty)'}".`;
+    } else if (module === 'revenue_pricing') {
+      userMessage = `Design per-segment revenue models, payment moments, price points, and paid WTP tests. Use the designRevenuePricing tool. Current content: "${content || '(empty)'}".`;
     } else {
       userMessage = `Perform a deep-dive analysis for the "${blockType}" block. Current content: "${content || '(empty)'}". Use the ${toolName} tool to return your structured analysis.`;
     }
@@ -170,6 +185,9 @@ export async function POST(request: Request, context: RouteContext) {
       personas: existingDeepDive?.personas ?? null,
       marketValidation: existingDeepDive?.marketValidation ?? null,
       competitiveLandscape: existingDeepDive?.competitiveLandscape ?? null,
+      jtbd: existingDeepDive?.jtbd ?? null,
+      valueProduct: existingDeepDive?.valueProduct ?? null,
+      revenuePricing: existingDeepDive?.revenuePricing ?? null,
       scorecards: existingDeepDive?.scorecards,
       segmentProfiles: existingDeepDive?.segmentProfiles,
       unitEconomics: existingDeepDive?.unitEconomics,
@@ -258,6 +276,24 @@ export async function POST(request: Request, context: RouteContext) {
         };
         break;
       }
+      case 'jtbd':
+        updatedDeepDive.jtbd = {
+          ...(toolResult as NonNullable<MarketResearchData['jtbd']>),
+          lastUpdated: new Date().toISOString(),
+        };
+        break;
+      case 'value_product':
+        updatedDeepDive.valueProduct = {
+          ...(toolResult as NonNullable<MarketResearchData['valueProduct']>),
+          lastUpdated: new Date().toISOString(),
+        };
+        break;
+      case 'revenue_pricing':
+        updatedDeepDive.revenuePricing = {
+          ...(toolResult as NonNullable<MarketResearchData['revenuePricing']>),
+          lastUpdated: new Date().toISOString(),
+        };
+        break;
       case 'unit_economics': {
         const economicsResult = toolResult as {
           segments: UnitEconomicsData['segments'];

@@ -115,6 +115,29 @@ function summarizeDeepDive(data: MarketResearchData): string {
   if (data.marketValidation?.validations.length) {
     lines.push(`  [Deep Dive - Validation]: ${data.marketValidation.validations.length} claims validated`);
   }
+  if (data.jtbd?.statements?.length) {
+    const jobs = data.jtbd.statements
+      .slice(0, 3)
+      .map((statement) => `${statement.role}: ${statement.job}`)
+      .join('; ');
+    lines.push(`  [Deep Dive - JTBD]: ${data.jtbd.statements.length} jobs (${jobs})`);
+  }
+  const productScopeRows = data.valueProduct?.productScopeRows ?? data.valueProduct?.productScope ?? [];
+  if (productScopeRows.length) {
+    const features = productScopeRows
+      .slice(0, 3)
+      .map((row) => `${row.feature} -> ${row.proofMetric}`)
+      .join('; ');
+    lines.push(`  [Deep Dive - Value/Product]: ${productScopeRows.length} proof rows (${features})`);
+  }
+  const pricingSegments = data.revenuePricing?.segments ?? [];
+  const pricingModels = data.revenuePricing?.models ?? [];
+  if (pricingSegments.length || pricingModels.length) {
+    const pricing = pricingSegments.length
+      ? pricingSegments.slice(0, 3).map((segment) => `${segment.segmentName}: ${segment.revenueModel} ${segment.pricePoint ?? ''}`.trim()).join('; ')
+      : pricingModels.slice(0, 3).map((model) => `${model.segmentId ?? 'segment'}: ${model.model} ${model.price ?? ''}`.trim()).join('; ');
+    lines.push(`  [Deep Dive - Revenue/Pricing]: ${pricing}`);
+  }
   return lines.join('\n');
 }
 
@@ -185,6 +208,8 @@ When suggesting specific segments, ALWAYS use the createSegments tool (never mar
 - Competitive positioning and differentiation
 - Value proposition fit with customer segments
 - Jobs-to-be-done framework application
+- BM-OS Phase 1 chain: use JTBD data when present, map role → pain → desired outcome → value promise, and suggest product proof metrics
+- Use web search for current alternatives, competitor positioning, and benchmark proof points when claims need external grounding
 When suggesting specific value propositions or features, ALWAYS use the createBlockItems tool (never markdown lists).`,
 
   revenue_streams: `You specialize in Revenue Streams analysis. Focus on:
@@ -192,6 +217,8 @@ When suggesting specific value propositions or features, ALWAYS use the createBl
 - Unit economics (LTV, CAC, margins)
 - Revenue model fit (subscription, transaction, freemium, etc.)
 - Revenue diversification and scalability
+- BM-OS Phase 1 chain: connect each segment to a revenue model, payment moment, price point, and paid WTP test
+- Use web search for comparable pricing, category benchmarks, and current alternatives when claims need external grounding
 When suggesting specific revenue items or pricing tiers, ALWAYS use the createBlockItems tool (never markdown lists).`,
 
   cost_structure: `You specialize in Cost Structure analysis. Focus on:
@@ -441,6 +468,40 @@ Use the suggestSegmentProfile tool to return your structured profile.`,
 
 Use the compareSegments tool to return your structured comparison.`,
 
+  jtbd: `You are a JTBD and customer-pain analyst. Convert the canvas into structured jobs-to-be-done for the selected segment or role.
+
+Guidelines:
+- Use the canonical form: When [situation], I want [job], so I can [outcome]
+- Separate user, buyer, decision-maker, influencer, beneficiary, and economic-customer roles
+- Identify functional, emotional, social, economic, and status pains
+- Prefer evidence-backed statements; mark confidence low when the canvas is speculative
+- Cross-reference Customer Segments and Value Proposition so the job is not generic
+
+Use the generateJTBD tool to return structured JTBD data.`,
+
+  value_product: `You are a value proposition and product-scope analyst. Build the chain from customer role -> pain -> desired outcome -> value promise -> feature -> proof metric.
+
+Guidelines:
+- Use upstream JTBD if present; otherwise infer from Customer Segments and Value Proposition
+- Produce a positioning template: For [customer], who [pain], we [outcome], through [mechanism], unlike [alternative]
+- Product scope rows must use the exact chain: pain -> outcome -> feature -> proof metric
+- Proof metrics must be measurable and suitable for Risk Engine assumptions
+- If external alternatives or positioning benchmarks matter, use searchWeb and cite sources in notes
+
+Use the mapValueProduct tool to return structured value/product data.`,
+
+  revenue_pricing: `You are a revenue model and willingness-to-pay analyst. Design how each target segment pays, when they pay, and how to test real payment commitment.
+
+Guidelines:
+- Choose from supported models: one_time, license, rev_share, saas, sponsorship
+- Define the payment moment: what moment creates enough value that this segment pays now
+- Suggest price points grounded in value, competitive alternatives, and willingness-to-pay logic
+- Use searchWeb for pricing benchmarks, comparable products, or current alternatives when helpful
+- WTP tests must be reserve, deposit, or paid_pilot. Do not use would-you-pay surveys.
+- Cross-reference value/product proof metrics and unit economics constraints
+
+Use the designRevenuePricing tool to return structured revenue/pricing data.`,
+
   unit_economics: `You are a unit economics analyst. Estimate ARPU, CAC, LTV, gross margins, payback periods, and churn rates for each customer segment.
 
 ## Guidelines
@@ -488,6 +549,9 @@ const DEEP_DIVE_TOOL_MAP: Record<DeepDiveModule, string> = {
   segment_scoring: 'scoreSegment',
   segment_comparison: 'compareSegments',
   segment_profile: 'suggestSegmentProfile',
+  jtbd: 'generateJTBD',
+  value_product: 'mapValueProduct',
+  revenue_pricing: 'designRevenuePricing',
   unit_economics: 'estimateUnitEconomics',
   sensitivity_analysis: 'runSensitivityAnalysis',
 };
@@ -545,6 +609,25 @@ export function buildDeepDivePrompt(
       const economicsJson = inputs?.existingEconomics;
       if (economicsJson) {
         contextSection += `\nExisting unit economics (baseline for sensitivity):\n${economicsJson}`;
+      }
+    }
+    if (module === 'jtbd' && existingDeepDive.jtbd) {
+      contextSection += `\nExisting JTBD data:\n${JSON.stringify(existingDeepDive.jtbd, null, 2)}`;
+    }
+    if (module === 'value_product') {
+      if (existingDeepDive.jtbd) {
+        contextSection += `\nUpstream JTBD data:\n${JSON.stringify(existingDeepDive.jtbd, null, 2)}`;
+      }
+      if (existingDeepDive.valueProduct) {
+        contextSection += `\nExisting value/product data:\n${JSON.stringify(existingDeepDive.valueProduct, null, 2)}`;
+      }
+    }
+    if (module === 'revenue_pricing') {
+      if (existingDeepDive.valueProduct) {
+        contextSection += `\nUpstream value/product data:\n${JSON.stringify(existingDeepDive.valueProduct, null, 2)}`;
+      }
+      if (existingDeepDive.revenuePricing) {
+        contextSection += `\nExisting revenue/pricing data:\n${JSON.stringify(existingDeepDive.revenuePricing, null, 2)}`;
       }
     }
   }

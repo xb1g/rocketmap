@@ -1005,6 +1005,7 @@ export function BlockFocusPanel({
                 </button>
 
                 {(blockType === "customer_segments" ||
+                  blockType === "value_prop" ||
                   blockType === "revenue_streams" ||
                   blockType === "cost_structure") &&
                   onDeepDive &&
@@ -1022,6 +1023,7 @@ export function BlockFocusPanel({
             {/* Deep dive gate message */}
             {!readOnly &&
               (blockType === "customer_segments" ||
+                blockType === "value_prop" ||
                 blockType === "revenue_streams" ||
                 blockType === "cost_structure") &&
               onDeepDive &&

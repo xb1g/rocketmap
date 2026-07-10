@@ -153,6 +153,9 @@ export type DeepDiveModule =
   | "segment_scoring"
   | "segment_comparison"
   | "segment_profile"
+  | "jtbd"
+  | "value_product"
+  | "revenue_pricing"
   | "unit_economics"
   | "sensitivity_analysis";
 
@@ -231,6 +234,142 @@ export interface CompetitiveLandscapeData {
   competitors: Competitor[];
 }
 
+// ─── Phase 1 BM-OS Deep Dive Types ─────────────────────────────────────────
+
+export type CustomerRoleType =
+  | "user"
+  | "buyer"
+  | "decision_maker"
+  | "influencer"
+  | "beneficiary"
+  | "economic_customer";
+
+export type JTBDPainType =
+  | "functional"
+  | "emotional"
+  | "social"
+  | "economic"
+  | "status";
+
+export interface JTBDPain {
+  id: string;
+  type: JTBDPainType;
+  description: string;
+  intensity?: number;
+  evidence?: string;
+}
+
+export interface JTBDRoleSplit {
+  segmentId?: string;
+  user: string;
+  buyer: string;
+  decision_maker: string;
+  influencer: string;
+  beneficiary: string;
+  economic_customer: string;
+}
+
+export interface JTBDStatement {
+  id: string;
+  segmentId?: string;
+  role: CustomerRoleType;
+  situation: string;
+  job: string;
+  outcome: string;
+  statement?: string;
+  pains?: JTBDPain[];
+  painTypes?: JTBDPainType[];
+  priority?: "low" | "medium" | "high";
+  evidence?: string;
+  confidence?: "low" | "medium" | "high";
+}
+
+export interface JTBDData {
+  statements: JTBDStatement[];
+  roleSplits?: JTBDRoleSplit[];
+  notes?: string;
+  lastUpdated?: string;
+}
+
+export interface ValueRoleMapping {
+  id: string;
+  role: string;
+  customer: string;
+  pain: string;
+  desiredOutcome: string;
+  valuePromise: string;
+}
+
+export interface PositioningTemplate {
+  customer: string;
+  pain: string;
+  outcome: string;
+  mechanism: string;
+  alternative: string;
+}
+
+export interface ProductScopeRow {
+  id: string;
+  pain: string;
+  outcome: string;
+  feature: string;
+  proofMetric: string;
+}
+
+export interface ValueProductData {
+  roleMappings?: ValueRoleMapping[];
+  positioning?: PositioningTemplate;
+  productScope?: ProductScopeRow[];
+  productScopeRows?: ProductScopeRow[];
+  notes?: string;
+  lastUpdated?: string;
+}
+
+export type RevenueModelId =
+  | "one_time"
+  | "license"
+  | "rev_share"
+  | "saas"
+  | "sponsorship";
+
+export type WtpTestType = "reserve" | "deposit" | "paid_pilot";
+
+export interface RevenueModelEntry {
+  id: string;
+  segmentId?: string;
+  model: RevenueModelId;
+  paymentMoment: string;
+  price?: string;
+}
+
+export interface WtpTestDraft {
+  id: string;
+  segmentId?: string;
+  testType: WtpTestType;
+  description: string;
+  successCriteria: string;
+  successThreshold: string;
+  costEstimate?: string;
+  durationEstimate?: string;
+}
+
+export interface RevenuePricingSegment {
+  segmentId: string;
+  segmentName: string;
+  revenueModel: RevenueModelId;
+  paymentMoment: string;
+  pricePoint?: string;
+  wtpTestPreference: WtpTestType;
+}
+
+export interface RevenuePricingData {
+  models?: RevenueModelEntry[];
+  wtpTests?: WtpTestDraft[];
+  segments?: RevenuePricingSegment[];
+  notes?: string;
+  lastUpdated?: string;
+}
+
 // ─── Segment Profile (Pre-Score Data) ─────────────────────────────────────
 
 export interface SegmentProfile {
@@ -254,6 +393,9 @@ export interface MarketResearchData {
   personas: PersonasData | null;
   marketValidation: MarketValidationData | null;
   competitiveLandscape: CompetitiveLandscapeData | null;
+  jtbd?: JTBDData | null;
+  valueProduct?: ValueProductData | null;
+  revenuePricing?: RevenuePricingData | null;
   scorecards?: SegmentScorecard[];
   segmentProfiles?: Record<string, SegmentProfile>;
   unitEconomics?: UnitEconomicsData | null;

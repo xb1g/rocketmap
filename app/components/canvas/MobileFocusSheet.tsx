@@ -251,6 +251,7 @@ export function MobileFocusSheet({
             </button>
 
             {(blockType === "customer_segments" ||
+              blockType === "value_prop" ||
               blockType === "revenue_streams" ||
               blockType === "cost_structure") &&
               onDeepDive &&
@@ -266,6 +267,7 @@ export function MobileFocusSheet({
 
           {/* Deep dive gate message */}
           {(blockType === "customer_segments" ||
+            blockType === "value_prop" ||
             blockType === "revenue_streams" ||
             blockType === "cost_structure") &&
             onDeepDive &&
