@@ -41,7 +41,7 @@ function PersonaCard({
     .toUpperCase();
 
   return (
-    <div className="p-4 rounded-lg bg-canvas-surface border border-border space-y-3">
+    <div className="p-4 rounded-xl bg-canvas-surface border border-border shadow-sm space-y-3">
       <div className="flex items-start gap-3">
         {/* Avatar */}
         <div className="w-10 h-10 rounded-full bg-linear-to-br from-chroma-indigo/10 to-chroma-pink/10 border border-foreground/10 flex items-center justify-center text-xs font-semibold text-foreground shrink-0">

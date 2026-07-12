@@ -25,7 +25,7 @@ function ValidationItemCard({
   onChange: (updated: ValidationItem) => void;
 }) {
   return (
-    <div className="p-3 rounded-lg bg-canvas-surface border border-border space-y-2">
+    <div className="p-3 rounded-xl bg-canvas-surface border border-border shadow-sm space-y-2">
       <div className="flex items-start justify-between gap-2">
         <textarea
           value={item.claim}
@@ -111,8 +111,8 @@ export function MarketValidationModule({
       )}
 
       {current.overallAssessment && (
-        <div className="p-3 rounded-lg bg-canvas-surface space-y-1">
-          <span className="text-[10px] font-mono text-foreground-muted uppercase tracking-wider">
+        <div className="p-3 rounded-xl bg-canvas-surface border border-border shadow-sm space-y-1">
+          <span className="text-[10px] font-mono text-foreground-muted uppercase tracking-widest font-bold opacity-80">
             Overall Assessment
           </span>
           <textarea

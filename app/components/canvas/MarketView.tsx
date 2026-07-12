@@ -170,15 +170,15 @@ export function MarketView({
               <div className="market-view-empty">
                 <h4>No linked customer segments yet</h4>
                 <p>
-                  Add customer segments in the canvas, then score them here to
-                  choose the first beachhead.
+                  Add customer segments on the canvas, then score them here to
+                  choose a beachhead.
                 </p>
                 <button
                   type="button"
                   className="ui-btn ui-btn-sm ui-btn-secondary"
                   onClick={onOpenCustomerSegments}
                 >
-                  Add segments
+                  Add customer segments
                 </button>
               </div>
             )}

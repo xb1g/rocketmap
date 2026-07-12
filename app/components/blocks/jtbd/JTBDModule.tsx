@@ -122,7 +122,7 @@ function StatementEditor({
   onRemove: () => void;
 }) {
   return (
-    <div className="p-4 rounded-lg bg-canvas-surface border border-border space-y-4">
+    <div className="p-4 rounded-xl bg-canvas-surface border border-border shadow-sm space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[10px] font-mono text-foreground-muted/60 uppercase tracking-wider">
@@ -156,7 +156,7 @@ function StatementEditor({
                 }),
               )
             }
-            className="input-soft w-full px-2 py-1.5 text-xs text-foreground-muted"
+            className="input-soft bg-foreground/5 hover:bg-foreground/10 focus:bg-foreground/10 border border-transparent focus:border-chroma-indigo/50 rounded-xl transition-all duration-300 shadow-inner w-full px-2 py-1.5 text-xs text-foreground-muted"
           >
             <option value="">Unassigned</option>
             {segments.map((segment) => (
@@ -179,7 +179,7 @@ function StatementEditor({
                 }),
               )
             }
-            className="input-soft w-full px-2 py-1.5 text-xs text-foreground-muted"
+            className="input-soft bg-foreground/5 hover:bg-foreground/10 focus:bg-foreground/10 border border-transparent focus:border-chroma-indigo/50 rounded-xl transition-all duration-300 shadow-inner w-full px-2 py-1.5 text-xs text-foreground-muted"
           >
             {CUSTOMER_ROLE_TYPES.map((role) => (
               <option key={role} value={role}>
@@ -228,7 +228,7 @@ function StatementEditor({
                 onChange(updatedStatement(statement, { [field]: event.target.value }))
               }
               rows={3}
-              className="input-soft w-full px-2 py-1.5 text-xs text-foreground-muted resize-none"
+              className="input-soft bg-foreground/5 hover:bg-foreground/10 focus:bg-foreground/10 border border-transparent focus:border-chroma-indigo/50 rounded-xl transition-all duration-300 shadow-inner w-full px-2 py-1.5 text-xs text-foreground-muted resize-none"
             />
           </label>
         ))}
@@ -256,7 +256,7 @@ function StatementEditor({
                     )
                   }
                   rows={2}
-                  className="input-soft w-full px-2 py-1.5 text-xs text-foreground-muted resize-none"
+                  className="input-soft bg-foreground/5 hover:bg-foreground/10 focus:bg-foreground/10 border border-transparent focus:border-chroma-indigo/50 rounded-xl transition-all duration-300 shadow-inner w-full px-2 py-1.5 text-xs text-foreground-muted resize-none"
                 />
               </label>
             );
@@ -277,7 +277,7 @@ function RoleSplitEditor({
   onChange: (split: JTBDRoleSplit) => void;
 }) {
   return (
-    <div className="p-4 rounded-lg bg-canvas-surface border border-border space-y-3">
+    <div className="p-4 rounded-xl bg-canvas-surface border border-border shadow-sm space-y-3">
       <div>
         <div className="text-[10px] font-mono text-foreground-muted/60 uppercase tracking-wider">
           Customer role split
@@ -296,7 +296,7 @@ function RoleSplitEditor({
               value={split[role]}
               onChange={(event) => onChange({ ...split, [role]: event.target.value })}
               rows={2}
-              className="input-soft w-full px-2 py-1.5 text-xs text-foreground-muted resize-none"
+              className="input-soft bg-foreground/5 hover:bg-foreground/10 focus:bg-foreground/10 border border-transparent focus:border-chroma-indigo/50 rounded-xl transition-all duration-300 shadow-inner w-full px-2 py-1.5 text-xs text-foreground-muted resize-none"
             />
           </label>
         ))}
@@ -388,7 +388,7 @@ export function JTBDModule({
           <select
             value={resolvedActiveSegmentId ?? ''}
             onChange={(event) => setActiveSegmentId(event.target.value || undefined)}
-            className="input-soft px-2 py-1.5 text-xs text-foreground-muted"
+            className="input-soft bg-foreground/5 hover:bg-foreground/10 focus:bg-foreground/10 border border-transparent focus:border-chroma-indigo/50 rounded-xl transition-all duration-300 shadow-inner px-2 py-1.5 text-xs text-foreground-muted"
             aria-label="Active segment for JTBD role split"
           >
             {segments.map((segment) => (

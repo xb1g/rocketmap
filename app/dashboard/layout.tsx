@@ -35,6 +35,7 @@ export default async function DashboardLayout({
         }}
       />
       <main className="dashboard-main">
+        <div className="dashboard-atmosphere" aria-hidden="true" />
         <div className="dashboard-content">
           {children}
         </div>

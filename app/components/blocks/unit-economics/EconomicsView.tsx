@@ -109,10 +109,10 @@ export function EconomicsView({
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-3 py-1.5 text-xs transition-colors border-b-2 -mb-px ${
+            className={`ui-tab-btn px-3 py-1.5 text-xs -mb-px border-b-2 rounded-none ${
               tab === t.key
-                ? 'text-foreground border-foreground'
-                : 'text-foreground-muted/50 border-transparent hover:text-foreground-muted'
+                ? 'is-active border-foreground'
+                : 'border-transparent'
             }`}
           >
             {t.label}

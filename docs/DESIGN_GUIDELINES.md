@@ -1,6 +1,6 @@
 # RocketMap Design Guidelines
 
-**Last Updated:** 2026-02-14
+**Last Updated:** 2026-07-10
 **Status:** Living document - update after each design iteration
 
 ---
@@ -10,9 +10,10 @@
 1. [Typography System](#typography-system)
 2. [Color System](#color-system)
 3. [Component Architecture](#component-architecture)
-4. [State & Interaction Patterns](#state--interaction-patterns)
-5. [AI Agent Requirements](#ai-agent-requirements)
-6. [Design Validation Checklist](#design-validation-checklist)
+4. [Dashboard / Workspace UI](#dashboard--workspace-ui)
+5. [State & Interaction Patterns](#state--interaction-patterns)
+6. [AI Agent Requirements](#ai-agent-requirements)
+7. [Design Validation Checklist](#design-validation-checklist)
 
 ---
 
@@ -243,6 +244,162 @@ Every BMC block must support these states:
 | Glow pulse       | 2s ease-in-out    | Critical state       |
 | Shimmer          | 20s ease infinite | Holographic effect   |
 | Hover            | 200ms ease-out    | Interactive feedback |
+| Dashboard motion | 160–220ms         | Workspace UI (see below) |
+
+---
+
+## Dashboard / Workspace UI
+
+Linear-inspired workspace shell for `/dashboard/*`. **Calm, dense, scannable** — chromatic glow reserved for canvas block states, not dashboard chrome.
+
+**Source of truth:** `app/globals.css` (dashboard section), `app/dashboard/layout.tsx`, `app/components/dashboard/*`.
+
+### Philosophy
+
+| Principle | Rule |
+| --------- | ---- |
+| **Rest vs. canvas** | Dashboard stays neutral; state colors only for data (progress, public badge, AI quota) |
+| **Dimensional, not flat** | Buttons use subtle vertical gradients + inset top highlight + soft drop shadow |
+| **Ghost on hover** | Primary buttons stay solid at rest; **hover morphs to ghost style** (surface gradient, foreground text) |
+| **Motion is felt, not seen** | Short eases, ≤0.5px lift, no bounce or overshoot |
+| **Typography** | Body font (Inter) for page titles and nav — **not** display serif on dashboard chrome |
+
+### Layout
+
+| Element | Value | Class |
+| ------- | ----- | ----- |
+| Sidebar width | 220px fixed | `.dashboard-sidebar` |
+| Main offset | `margin-left: 220px` | `.dashboard-main` |
+| Content max-width | 960px centered | `.dashboard-content` |
+| Sidebar surface | `--canvas-surface` | darker shell layer |
+| Atmosphere | Dot grid + soft gradient | `.dashboard-atmosphere` |
+
+```
+.dashboard-layout
+├── .dashboard-sidebar          ← fixed left rail
+│   ├── .sidebar-top            ← brand + .sidebar-new-btn
+│   ├── .sidebar-scroll         ← .sidebar-section nav groups
+│   └── .sidebar-lower          ← AI quota, theme, user
+└── .dashboard-main
+    ├── .dashboard-atmosphere   ← decorative, pointer-events: none
+    └── .dashboard-content      ← page content
+```
+
+**Nav sections:** uppercase mono labels (`.sidebar-section-label`) — `Workspace` (Canvases, Brainstorm), `Account` (Account, Settings).
+
+### Motion Tokens
+
+Scoped on `.dashboard-layout`:
+
+```css
+--dash-ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+--dash-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+--dash-duration: 220ms;
+--dash-duration-fast: 160ms;
+```
+
+| Animation | Duration | Easing | Class / target |
+| --------- | -------- | ------ | -------------- |
+| Page enter | 480ms | `--dash-ease-out` | `.dash-page` |
+| Row stagger | 420ms + 40ms × index | `--dash-ease-out` | `.canvas-row` |
+| Button hover | 160–220ms | `--dash-ease` / `--dash-ease-out` | `.dash-btn`, `.sidebar-new-btn` |
+| Progress bar | 600ms | `--dash-ease-out` | `.canvas-row-progress-bar` |
+
+**Hover micro-interactions:**
+
+- Buttons: `translateY(-0.5px)` lift; active: `translateY(0.5px)` press-in
+- Button icons: `scale(1.06)` on hover
+- Sidebar nav: `translateX(1px)` on hover
+- Row actions: fade + slide from `translateX(4px)` → `0`
+- Timestamps: crossfade relative ↔ absolute (opacity + 2px Y)
+- BMC preview dots: `scale(1.08)` on row hover when filled
+
+**Reduced motion:** all dashboard transforms and entrance animations disabled under `@media (prefers-reduced-motion: reduce)`.
+
+### Buttons
+
+Use **`.dash-btn-*`** on dashboard pages — not `.ui-btn-*` (canvas/settings legacy).
+
+| Class | Rest state | Hover state |
+| ----- | ---------- | ----------- |
+| `.dash-btn-primary` | Solid foreground fill, inverted text, gradient + inset highlight | **Ghost morph** — surface gradient, `--foreground` text, lift |
+| `.dash-btn-ghost` | Surface gradient, `--border`, muted text | Brighter surface gradient, lift |
+| `.sidebar-new-btn` | Same as ghost (full-width sidebar CTA) | Same hover treatment + lift |
+
+**Dimensional recipe (all dashboard buttons):**
+
+```css
+/* Rest — primary example */
+background: linear-gradient(180deg, lighter-stop 0%, base-stop 100%);
+box-shadow:
+  inset 0 1px 0 rgba(255, 255, 255, 0.12–0.55),  /* top highlight */
+  0 1px 2px rgba(var(--ink-shadow), 0.05–0.14); /* drop shadow */
+
+/* Hover — primary morphs to ghost */
+color: var(--foreground);
+background: linear-gradient(180deg, --surface-raised 98%, --foreground 2% …);
+transform: translateY(-0.5px);
+```
+
+**Dark mode primary rest:** `#fafafa → #e4e4e7` gradient. **Dark hover:** rgba white overlays (ghost), not brighter solid fill.
+
+### Canvas List (`.canvas-row`)
+
+Dense issue-list rows — not card grid.
+
+| Part | Class | Notes |
+| ---- | ----- | ----- |
+| Group container | `.canvas-group-list` | 8px radius, 1px border, `--surface-raised` |
+| Group label | `.canvas-group-label` | Mono uppercase, `--foreground-subtle` |
+| Row | `.canvas-row` | Flex; border-bottom between rows |
+| Link hit area | `.canvas-row-link` | BMC preview + title + stats + time |
+| BMC preview | `.bmc-preview` / `.bmc-preview-cell.filled` | 3×3 dot grid, 9 blocks |
+| Actions | `.canvas-row-actions` | Opacity 0 → 1 on row hover |
+
+**Grouping:** Today → This week → This month → Older (by `$updatedAt`).
+
+**Page header:** `.dash-title` (Inter 600, 22px) + optional `.dash-stats` (mono values). Toolbar: `.dash-search` + `.dash-actions`.
+
+### Empty States
+
+| Class | Use |
+| ----- | --- |
+| `.dash-empty` | Zero canvases — animated 3×3 grid visual |
+| `.dash-empty-filter` | Search no-results |
+
+### Typography (dashboard-specific)
+
+| Element | Font | Size | Weight |
+| ------- | ---- | ---- | ------ |
+| Page title | `--font-body` | 1.375rem (22px) | 600 |
+| Nav items | `--font-body` | 0.8125rem (13px) | 500 |
+| Section labels | `--font-mono` | 0.625rem (10px) | 500, uppercase |
+| Row title | `--font-body` | 0.8125rem | 500 |
+| Stats / time | `--font-mono` | 0.6875–0.8125rem | 600 / 400 |
+| Brand text | `--font-body` | 0.8125rem | 600 |
+
+❌ **Don't** use `.font-display` / Crimson Text for dashboard page titles or sidebar brand.
+
+### Dashboard ANTI-PATTERNS ❌
+
+❌ Keyboard shortcut badges on dashboard buttons (removed — keep UI clean)
+❌ Emoji in sidebar brand (use `.sidebar-brand-mark` SVG)
+❌ Card-style canvas list with 14px radius per item (use grouped rows)
+❌ Primary button staying solid on hover (must morph to ghost)
+❌ Chromatic glow / `.glow-*` on dashboard chrome
+❌ Bouncy or spring animations on buttons
+❌ Hard `display: none` toggles for animated content (use opacity crossfade)
+
+### Dashboard Checklist ✓
+
+- [ ] Uses `.dash-btn-primary` / `.dash-btn-ghost`, not `.ui-btn-*`
+- [ ] Primary hover morphs to ghost style
+- [ ] Motion uses `--dash-ease` / `--dash-duration` tokens
+- [ ] `prefers-reduced-motion` disables transforms and entrance animations
+- [ ] Page title uses Inter (`--font-body`), not display serif
+- [ ] Canvas list uses `.canvas-row` in `.canvas-group-list`
+- [ ] Sidebar 220px, content max 960px
+- [ ] No chromatic glow on dashboard shell
 
 ---
 
@@ -382,6 +539,14 @@ COMPONENTS:
 - State transitions: 300-500ms ease-out
 - Border radius: 10px (blocks), 14px (cards)
 
+DASHBOARD (/dashboard/*):
+- Layout: .dashboard-layout, .dashboard-sidebar (220px), .dashboard-content (960px max)
+- Buttons: .dash-btn-primary (solid rest → ghost hover), .dash-btn-ghost, .sidebar-new-btn
+- Motion: --dash-ease, --dash-ease-out, --dash-duration (220ms), --dash-duration-fast (160ms)
+- List: .canvas-row in .canvas-group-list; .bmc-preview for block fill dots
+- Typography: Inter only on dashboard chrome (no display serif for page titles)
+- Philosophy: calm workspace shell; dimensional gradients + subtle lift on hover
+
 PHILOSOPHY:
 "Calm Until Critical" - visual emphasis only when blocks need attention
 
@@ -422,6 +587,16 @@ Use this before shipping any UI changes:
 - [ ] Spacing matches guidelines (6px gaps, 1.25rem padding, etc.)
 - [ ] Border radius consistent (10px blocks, 14px cards)
 - [ ] Animations respect prefers-reduced-motion
+
+### Dashboard ✓
+
+- [ ] Dashboard uses `.dash-btn-*` (not `.ui-btn-*`) with primary→ghost hover morph
+- [ ] Dimensional buttons: gradient + inset highlight + soft shadow
+- [ ] Motion tokens (`--dash-ease`, `--dash-duration`) used; no bounce/spring
+- [ ] Canvas list is `.canvas-row` groups, not individual cards
+- [ ] Dashboard titles/nav use Inter; no Crimson Text on workspace chrome
+- [ ] Sidebar 220px; content max-width 960px
+- [ ] `prefers-reduced-motion` disables dashboard lifts and row entrance animations
 
 ### Interactions ✓
 
@@ -500,6 +675,20 @@ Use this before shipping any UI changes:
   <p className="font-body text-foreground-muted">{blockDescription}</p>
 </div>
 ```
+
+### Dashboard Button Pattern
+
+```tsx
+<button type="button" className="dash-btn dash-btn-primary" onClick={onCreate}>
+  <PlusIcon />
+  New canvas
+</button>
+<button type="button" className="dash-btn dash-btn-ghost" onClick={onSecondary}>
+  AI guided
+</button>
+```
+
+Primary rests solid; hover CSS morphs to ghost (surface gradient + foreground text + 0.5px lift). See [Dashboard / Workspace UI](#dashboard--workspace-ui).
 
 ---
 

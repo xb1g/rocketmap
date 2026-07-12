@@ -27,7 +27,7 @@ function CompetitorCard({
   onRemove: () => void;
 }) {
   return (
-    <div className="p-4 rounded-lg bg-canvas-surface border border-border space-y-3">
+    <div className="p-4 rounded-xl bg-canvas-surface border border-border shadow-sm space-y-3">
       <div className="flex items-start justify-between">
         <input
           value={competitor.name}

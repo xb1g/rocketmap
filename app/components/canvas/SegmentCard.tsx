@@ -93,7 +93,7 @@ export const SegmentCard = forwardRef<HTMLDivElement, SegmentCardProps>(
     return (
       <div
         ref={ref}
-        className="rounded-[14px] border border-border bg-canvas-surface hover:bg-foreground/5 transition-colors"
+        className="rounded-[12px] border border-border bg-canvas-surface hover:bg-foreground/5 transition-colors group/segcard"
       >
         <div className="p-1.5">
           <div className="flex items-start gap-1.5">
@@ -122,7 +122,7 @@ export const SegmentCard = forwardRef<HTMLDivElement, SegmentCardProps>(
                 onBlur={handleDescBlur}
                 onClick={(e) => e.stopPropagation()}
                 onMouseDown={(e) => e.stopPropagation()}
-                className="text-[9px] text-foreground-muted/50 w-full cursor-text outline-none hover:text-foreground-muted/70 whitespace-pre-wrap break-words leading-tight mt-0.5"
+                className="text-[9px] text-foreground-muted/50 w-full cursor-text outline-none hover:text-foreground-muted/70 whitespace-pre-wrap break-words leading-tight mt-0.5 line-clamp-2 group-hover/segcard:line-clamp-none focus:line-clamp-none"
                 data-placeholder="Description..."
                 spellCheck={false}
                 style={{ minHeight: '12px' }}

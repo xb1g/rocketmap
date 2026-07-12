@@ -65,20 +65,20 @@ export function LinkPicker({
       <div className="flex border-b border-border">
         <button
           onClick={() => setTab("segments")}
-          className={`flex-1 text-[9px] py-1.5 transition-colors ${
+          className={`ui-tab-btn flex-1 rounded-none px-2 py-1.5 text-[0.68rem] transition-colors ${
             tab === "segments"
-              ? "text-foreground border-b border-(--chroma-indigo)"
-              : "text-foreground-subtle hover:text-foreground-muted"
+              ? "is-active"
+              : ""
           }`}
         >
           Segments
         </button>
         <button
           onClick={() => setTab("blocks")}
-          className={`flex-1 text-[9px] py-1.5 transition-colors ${
+          className={`ui-tab-btn flex-1 rounded-none px-2 py-1.5 text-[0.68rem] transition-colors ${
             tab === "blocks"
-              ? "text-foreground border-b border-(--chroma-indigo)"
-              : "text-foreground-subtle hover:text-foreground-muted"
+              ? "is-active"
+              : ""
           }`}
         >
           Blocks

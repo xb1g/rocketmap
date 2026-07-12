@@ -184,7 +184,9 @@ export function SegmentFocusPicker({
             aria-label="Clear segment focus"
             className="ui-btn ui-btn-xs rounded-l-none border-l-0 flex items-center text-foreground-muted hover:text-foreground transition-colors"
             style={{
-              border: `1px solid color-mix(in srgb, ${focusColor} 45%, transparent)`,
+              borderTop: `1px solid color-mix(in srgb, ${focusColor} 45%, transparent)`,
+              borderRight: `1px solid color-mix(in srgb, ${focusColor} 45%, transparent)`,
+              borderBottom: `1px solid color-mix(in srgb, ${focusColor} 45%, transparent)`,
               borderLeft: "none",
               background: `color-mix(in srgb, ${focusColor} 12%, transparent)`,
             }}

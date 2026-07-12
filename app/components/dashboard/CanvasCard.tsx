@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DropdownMenu } from "@radix-ui/themes";
+import { CanvasBmcPreview } from "./CanvasBmcPreview";
 import type { BlockType, CanvasData } from "@/lib/types/canvas";
 
 interface CanvasCardProps {
@@ -13,6 +14,7 @@ interface CanvasCardProps {
   onTogglePublic: (canvasId: string, isPublic: boolean) => void;
   onDuplicate: (canvasId: string) => void;
   onDelete: (canvasId: string) => void;
+  index?: number;
 }
 
 function timeAgo(dateStr: string): string {
@@ -21,12 +23,19 @@ function timeAgo(dateStr: string): string {
   const diff = now - then;
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return `${mins}m`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return `${Math.floor(days / 30)}mo ago`;
+  if (days < 30) return `${days}d`;
+  return `${Math.floor(days / 30)}mo`;
+}
+
+function formatDate(dateStr: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(dateStr));
 }
 
 export function CanvasCard({
@@ -35,87 +44,114 @@ export function CanvasCard({
   onTogglePublic,
   onDuplicate,
   onDelete,
+  index = 0,
 }: CanvasCardProps) {
   const progressPct = Math.round((canvas.blocksCount / 9) * 100);
+  const hasViability =
+    canvas.viabilityScore !== null || canvas.viabilityPotentialScore !== null;
 
   return (
-    <article className="canvas-card">
-      <div className="canvas-card-main">
-        <div className="canvas-card-text">
-          <Link
-            href={`/canvas/${canvas.slug}`}
-            className="canvas-card-title"
-          >
-            {canvas.title}
-          </Link>
+    <article
+      className="canvas-row"
+      style={{ animationDelay: `${index * 40}ms` }}
+    >
+      <Link href={`/canvas/${canvas.slug}`} className="canvas-row-link">
+        <CanvasBmcPreview filledBlocks={canvas.filledBlocks} />
+
+        <div className="canvas-row-body">
+          <div className="canvas-row-title-row">
+            <span className="canvas-row-title">{canvas.title}</span>
+            {canvas.isPublic ? (
+              <span className="canvas-row-badge canvas-row-badge-public">
+                Public
+              </span>
+            ) : null}
+          </div>
           {canvas.description ? (
-            <p className="canvas-card-desc">{canvas.description}</p>
+            <p className="canvas-row-desc">{canvas.description}</p>
+          ) : (
+            <p className="canvas-row-desc canvas-row-desc-empty">
+              No description
+            </p>
+          )}
+        </div>
+
+        <div className="canvas-row-stats">
+          <div className="canvas-row-progress">
+            <div className="canvas-row-progress-track">
+              <div
+                className="canvas-row-progress-bar"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+            <span className="canvas-row-progress-label">
+              {canvas.blocksCount}/9
+            </span>
+          </div>
+
+          {hasViability ? (
+            <span className="canvas-row-viability">
+              {canvas.viabilityScore ?? "—"}
+              {canvas.viabilityPotentialScore !== null &&
+              canvas.viabilityPotentialScore !== canvas.viabilityScore ? (
+                <>
+                  <span className="canvas-row-viability-arrow">→</span>
+                  {canvas.viabilityPotentialScore}
+                </>
+              ) : null}
+            </span>
           ) : null}
         </div>
 
-        <div className="canvas-card-menu">
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger>
-              <button
-                className="canvas-card-menu-btn"
-                aria-label="Canvas options"
-                type="button"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <circle cx="12" cy="5" r="1.5" />
-                  <circle cx="12" cy="12" r="1.5" />
-                  <circle cx="12" cy="19" r="1.5" />
-                </svg>
-              </button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content size="1" variant="soft">
-              <DropdownMenu.Item asChild>
-                <Link
-                  href={`/canvas/${canvas.slug}`}
-                  style={{ textDecoration: "none", color: "inherit" }}
-                >
-                  Open
-                </Link>
-              </DropdownMenu.Item>
-              <DropdownMenu.Item onSelect={() => onShare(canvas.slug)}>
-                Copy link
-              </DropdownMenu.Item>
-              <DropdownMenu.Item
-                onSelect={() => onTogglePublic(canvas.$id, !canvas.isPublic)}
-              >
-                {canvas.isPublic ? "Make private" : "Make public"}
-              </DropdownMenu.Item>
-              <DropdownMenu.Item onSelect={() => onDuplicate(canvas.$id)}>
-                Duplicate
-              </DropdownMenu.Item>
-              <DropdownMenu.Separator />
-              <DropdownMenu.Item color="red" onSelect={() => onDelete(canvas.$id)}>
-                Delete
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
-        </div>
-      </div>
-
-      <div className="canvas-card-footer">
-        <div className="canvas-card-progress">
-          <div className="canvas-card-progress-track">
-            <div
-              className="canvas-card-progress-bar"
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-          <span className="canvas-card-progress-label">{canvas.blocksCount}/9</span>
-        </div>
-
-        <div className="canvas-card-meta">
-          <span
-            className={`canvas-card-visibility ${canvas.isPublic ? "public" : "private"}`}
-          >
-            {canvas.isPublic ? "Public" : "Private"}
+        <time className="canvas-row-time" dateTime={canvas.$updatedAt}>
+          <span className="canvas-row-time-relative">
+            {timeAgo(canvas.$updatedAt ?? "")}
           </span>
-          <span className="canvas-card-time">{timeAgo(canvas.$updatedAt ?? "")}</span>
-        </div>
+          <span className="canvas-row-time-absolute">
+            {formatDate(canvas.$updatedAt ?? "")}
+          </span>
+        </time>
+      </Link>
+
+      <div className="canvas-row-actions">
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            <button
+              className="canvas-row-menu-btn"
+              aria-label="Canvas options"
+              type="button"
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M3 8a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm5.5 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM13 8a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
+              </svg>
+            </button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content size="1" variant="soft" align="end">
+            <DropdownMenu.Item asChild>
+              <Link
+                href={`/canvas/${canvas.slug}`}
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                Open
+              </Link>
+            </DropdownMenu.Item>
+            <DropdownMenu.Item onSelect={() => onShare(canvas.slug)}>
+              Copy link
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              onSelect={() => onTogglePublic(canvas.$id, !canvas.isPublic)}
+            >
+              {canvas.isPublic ? "Make private" : "Make public"}
+            </DropdownMenu.Item>
+            <DropdownMenu.Item onSelect={() => onDuplicate(canvas.$id)}>
+              Duplicate
+            </DropdownMenu.Item>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Item color="red" onSelect={() => onDelete(canvas.$id)}>
+              Delete
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
       </div>
     </article>
   );

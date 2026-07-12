@@ -55,7 +55,7 @@ function EstimateSection({
 }) {
   if (!estimate) return null;
   return (
-    <div className="space-y-2 p-3 rounded-lg bg-canvas-surface">
+    <div className="p-3 rounded-xl bg-canvas-surface border border-border shadow-sm">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-foreground">{label}</span>
         <div className="flex items-center gap-2">
@@ -138,7 +138,7 @@ export function TamSamSomModule({
           },
         ].map(({ label, value, setter, field }) => (
           <div key={field} className="space-y-1">
-            <label className="text-[10px] font-mono text-foreground-muted uppercase tracking-wider">
+            <label className="text-[10px] font-mono text-foreground-muted uppercase tracking-widest font-bold opacity-80">
               {label}
             </label>
             <input
@@ -205,7 +205,7 @@ export function TamSamSomModule({
 
           {/* Reasoning */}
           {current.reasoning && (
-            <div className="p-3 rounded-lg bg-canvas-surface space-y-1">
+            <div className="p-3 rounded-xl bg-canvas-surface border border-border shadow-sm space-y-1">
               <span className="text-[10px] text-foreground-muted uppercase tracking-wider">
                 Reasoning
               </span>

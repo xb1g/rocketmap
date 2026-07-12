@@ -150,7 +150,7 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
     return (
       <div
         ref={ref}
-        className={`block-item-card group relative transition-opacity duration-300 motion-reduce:transition-none ${focusOpacityClass}${cardHasHighlightedSegment ? ' ring-1 ring-foreground/20' : ''}`}
+        className={`block-item-card group group/card relative transition-opacity duration-300 motion-reduce:transition-none ${focusOpacityClass}${cardHasHighlightedSegment ? ' ring-1 ring-foreground/20' : ''}`}
         style={cardHasHighlightedSegment ? { transition: 'box-shadow 150ms ease, ring 150ms ease, opacity 300ms ease' } : undefined}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
@@ -181,7 +181,7 @@ export const BlockCard = forwardRef<HTMLDivElement, BlockCardProps>(
               e.stopPropagation();
             }}
             onMouseDown={(e) => e.stopPropagation()}
-            className="text-[10px] text-foreground/80 text-left w-full transition-colors whitespace-pre-wrap break-words leading-relaxed cursor-text outline-none hover:text-foreground [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-foreground/30"
+            className="text-[10px] text-foreground/80 text-left w-full transition-colors whitespace-pre-wrap break-words leading-relaxed cursor-text outline-none hover:text-foreground line-clamp-2 group-hover/card:line-clamp-none focus:line-clamp-none [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-foreground/30"
             data-placeholder="Enter block content..."
             spellCheck={false}
             style={{ minHeight: '18px' }}

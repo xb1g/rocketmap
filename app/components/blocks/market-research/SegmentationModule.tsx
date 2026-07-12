@@ -114,7 +114,7 @@ function SegmentCard({
 }) {
   const priorityLabel = PRIORITY_LABELS[segment.priority];
   return (
-    <div className="p-4 rounded-lg bg-canvas-surface border border-border space-y-3">
+    <div className="p-4 rounded-xl bg-canvas-surface border border-border shadow-sm space-y-3">
       <div className="flex items-start justify-between">
         <input
           value={segment.name}

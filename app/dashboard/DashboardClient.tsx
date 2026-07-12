@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OnboardingModal } from "../components/OnboardingModal";
 import { CanvasCard } from "../components/dashboard/CanvasCard";
@@ -29,6 +29,36 @@ interface DashboardClientProps {
   }[];
 }
 
+type CanvasGroup = {
+  label: string;
+  items: DashboardClientProps["canvases"];
+};
+
+function groupCanvasesByRecency(
+  canvases: DashboardClientProps["canvases"],
+): CanvasGroup[] {
+  const now = Date.now();
+  const day = 86400000;
+  const groups: Record<string, DashboardClientProps["canvases"]> = {
+    Today: [],
+    "This week": [],
+    "This month": [],
+    Older: [],
+  };
+
+  for (const canvas of canvases) {
+    const age = now - new Date(canvas.$updatedAt).getTime();
+    if (age < day) groups.Today.push(canvas);
+    else if (age < day * 7) groups["This week"].push(canvas);
+    else if (age < day * 30) groups["This month"].push(canvas);
+    else groups.Older.push(canvas);
+  }
+
+  return Object.entries(groups)
+    .filter(([, items]) => items.length > 0)
+    .map(([label, items]) => ({ label, items }));
+}
+
 export function DashboardClient({
   user,
   onboardingCompleted,
@@ -37,6 +67,8 @@ export function DashboardClient({
   const [showOnboarding, setShowOnboarding] = useState(!onboardingCompleted);
   const [showGuidedModal, setShowGuidedModal] = useState(false);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [creating, setCreating] = useState(false);
   const shareFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
 
@@ -71,6 +103,8 @@ export function DashboardClient({
   };
 
   const handleNewCanvas = async () => {
+    if (creating) return;
+    setCreating(true);
     try {
       const res = await fetch("/api/canvas", {
         method: "POST",
@@ -82,6 +116,7 @@ export function DashboardClient({
       router.push(`/canvas/${slug}`);
     } catch (error) {
       console.error("Failed to create canvas:", error);
+      setCreating(false);
     }
   };
 
@@ -101,10 +136,10 @@ export function DashboardClient({
     try {
       const url = `${window.location.origin}/canvas/${slug}`;
       await navigator.clipboard.writeText(url);
-      showShareFeedbackMessage("Canvas link copied to clipboard.");
+      showShareFeedbackMessage("Link copied");
     } catch (error) {
       console.error("Failed to copy link:", error);
-      showShareFeedbackMessage("Failed to copy link. Please try again.");
+      showShareFeedbackMessage("Couldn't copy link");
     }
   };
 
@@ -116,11 +151,11 @@ export function DashboardClient({
         body: JSON.stringify({ isPublic }),
       });
       if (!res.ok) throw new Error("Failed to update canvas visibility");
-      showShareFeedbackMessage("Canvas visibility updated.");
+      showShareFeedbackMessage(isPublic ? "Canvas is public" : "Canvas is private");
       router.refresh();
     } catch (error) {
       console.error("Failed to update visibility:", error);
-      showShareFeedbackMessage("Failed to update visibility. Please try again.");
+      showShareFeedbackMessage("Couldn't update visibility");
     }
   };
 
@@ -135,17 +170,44 @@ export function DashboardClient({
     }
   };
 
+  const filteredCanvases = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return canvases;
+    return canvases.filter(
+      (c) =>
+        c.title.toLowerCase().includes(q) ||
+        c.description.toLowerCase().includes(q),
+    );
+  }, [canvases, search]);
+
+  const groupedCanvases = useMemo(
+    () => groupCanvasesByRecency(filteredCanvases),
+    [filteredCanvases],
+  );
+
+  const totalBlocks = canvases.reduce((sum, c) => sum + c.blocksCount, 0);
+  const avgCompletion =
+    canvases.length > 0
+      ? Math.round((totalBlocks / (canvases.length * 9)) * 100)
+      : 0;
+
   useEffect(() => {
     return () => clearShareFeedback();
   }, []);
 
-  const firstName = user.name ? user.name.split(" ")[0] : "there";
+  let rowIndex = 0;
 
   return (
     <>
-      {shareFeedback && (
-        <div className="dashboard-toast">{shareFeedback}</div>
-      )}
+      {shareFeedback ? (
+        <div className="dash-toast" role="status">
+          <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14">
+            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14Zm3.78-9.22a.75.75 0 0 0-1.06-1.06L7.25 8.19 5.28 6.22a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l4.5-4.5Z" />
+          </svg>
+          {shareFeedback}
+        </div>
+      ) : null}
+
       <OnboardingModal
         isOpen={showOnboarding}
         onComplete={handleOnboardingComplete}
@@ -156,64 +218,151 @@ export function DashboardClient({
         onOpenChange={setShowGuidedModal}
       />
 
-      <header className="dashboard-header">
-        <div>
-          <h1 className="dashboard-title">Welcome back, {firstName}</h1>
-          <p className="dashboard-subtitle">{canvases.length} canvas{canvases.length === 1 ? "" : "es"}</p>
-        </div>
-        <div className="dashboard-actions">
-          <button
-            className="ui-btn ui-btn-secondary"
-            onClick={() => setShowGuidedModal(true)}
-          >
-            Chat to Create
-          </button>
-          <button
-            className="ui-btn ui-btn-primary"
-            onClick={handleNewCanvas}
-          >
-            Start Blank
-          </button>
-        </div>
-      </header>
+      <div className="dash-page">
+        <header className="dash-header">
+          <div className="dash-header-main">
+            <h1 className="dash-title">Canvases</h1>
+            {canvases.length > 0 ? (
+              <div className="dash-stats">
+                <span className="dash-stat">
+                  <span className="dash-stat-value">{canvases.length}</span>
+                  <span className="dash-stat-label">total</span>
+                </span>
+                <span className="dash-stat-divider" />
+                <span className="dash-stat">
+                  <span className="dash-stat-value">{avgCompletion}%</span>
+                  <span className="dash-stat-label">avg fill</span>
+                </span>
+              </div>
+            ) : null}
+          </div>
 
-      {canvases.length > 0 ? (
-        <section className="canvas-list">
-          {canvases.map((canvas) => (
-            <CanvasCard
-              key={canvas.$id}
-              canvas={canvas}
-              onShare={handleShare}
-              onTogglePublic={handleTogglePublic}
-              onDuplicate={handleDuplicate}
-              onDelete={handleDelete}
-            />
-          ))}
-        </section>
-      ) : (
-        <div className="empty-state">
-          <div className="empty-state-icon">&#x1F680;</div>
-          <h2 className="empty-state-title">Launch your first canvas</h2>
-          <p className="empty-state-text">
-            Start building your business model. Map out your assumptions,
-            validate your ideas, and stress-test your startup.
-          </p>
-          <div className="dashboard-actions" style={{ justifyContent: "center" }}>
+          <div className="dash-toolbar">
+            {canvases.length > 0 ? (
+              <div className="dash-search">
+                <svg className="dash-search-icon" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85ZM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0Z" />
+                </svg>
+                <input
+                  type="search"
+                  className="dash-search-input"
+                  placeholder="Filter canvases…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  aria-label="Filter canvases"
+                />
+                {search ? (
+                  <button
+                    type="button"
+                    className="dash-search-clear"
+                    onClick={() => setSearch("")}
+                    aria-label="Clear search"
+                  >
+                    ×
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+
+            <div className="dash-actions">
+              <button
+                type="button"
+                className="dash-btn dash-btn-ghost"
+                onClick={() => setShowGuidedModal(true)}
+              >
+                <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14">
+                  <path d="M8 1.5a.5.5 0 0 1 .5.5v1.5a.5.5 0 0 1-1 0V2a.5.5 0 0 1 .5-.5ZM3.05 3.05a.5.5 0 0 1 .707 0l1.06 1.06a.5.5 0 1 1-.707.707L3.05 3.757a.5.5 0 0 1 0-.707ZM12.95 3.05a.5.5 0 0 1 0 .707l-1.06 1.06a.5.5 0 1 1-.707-.707l1.06-1.06a.5.5 0 0 1 .707 0ZM1.5 8a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H2a.5.5 0 0 1-.5-.5Zm12 0a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H14a.5.5 0 0 1-.5-.5ZM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 1a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z" />
+                </svg>
+                AI guided
+              </button>
+              <button
+                type="button"
+                className="dash-btn dash-btn-primary"
+                onClick={handleNewCanvas}
+                disabled={creating}
+              >
+                <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14">
+                  <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4Z" />
+                </svg>
+                New canvas
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {canvases.length > 0 && filteredCanvases.length === 0 ? (
+          <div className="dash-empty-filter">
+            <p>No canvases match &ldquo;{search}&rdquo;</p>
             <button
-              className="ui-btn ui-btn-secondary"
-              onClick={() => setShowGuidedModal(true)}
+              type="button"
+              className="dash-btn dash-btn-ghost"
+              onClick={() => setSearch("")}
             >
-              Chat to Create
-            </button>
-            <button
-              className="ui-btn ui-btn-primary"
-              onClick={handleNewCanvas}
-            >
-              Start Blank
+              Clear filter
             </button>
           </div>
-        </div>
-      )}
+        ) : filteredCanvases.length > 0 ? (
+          <div className="canvas-list">
+            {groupedCanvases.map((group) => (
+              <section key={group.label} className="canvas-group">
+                <h2 className="canvas-group-label">{group.label}</h2>
+                <div className="canvas-group-list">
+                  {group.items.map((canvas) => {
+                    const idx = rowIndex++;
+                    return (
+                      <CanvasCard
+                        key={canvas.$id}
+                        canvas={canvas}
+                        index={idx}
+                        onShare={handleShare}
+                        onTogglePublic={handleTogglePublic}
+                        onDuplicate={handleDuplicate}
+                        onDelete={handleDelete}
+                      />
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <div className="dash-empty">
+            <div className="dash-empty-visual" aria-hidden="true">
+              <div className="dash-empty-grid">
+                {Array.from({ length: 9 }).map((_, i) => (
+                  <span
+                    key={i}
+                    className="dash-empty-cell"
+                    style={{ animationDelay: `${i * 80}ms` }}
+                  />
+                ))}
+              </div>
+            </div>
+            <h2 className="dash-empty-title">Start your first canvas</h2>
+            <p className="dash-empty-text">
+              Map assumptions, validate ideas, and stress-test your startup
+              model — block by block.
+            </p>
+            <div className="dash-empty-actions">
+              <button
+                type="button"
+                className="dash-btn dash-btn-primary"
+                onClick={handleNewCanvas}
+                disabled={creating}
+              >
+                New canvas
+              </button>
+              <button
+                type="button"
+                className="dash-btn dash-btn-ghost"
+                onClick={() => setShowGuidedModal(true)}
+              >
+                Or start with AI
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </>
   );
 }
